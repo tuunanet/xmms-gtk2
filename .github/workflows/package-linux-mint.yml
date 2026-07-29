@@ -40,9 +40,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -r /etc/linuxmint/info
-          grep -Fx "RELEASE=${MINT_RELEASE}" /etc/linuxmint/info
-          grep -Fx "CODENAME=${MINT_CODENAME}" /etc/linuxmint/info
+          mint_sources=/etc/apt/sources.list.d/official-package-repositories.list
+          test -r "${mint_sources}"
+          awk -v codename="${MINT_CODENAME}" '
+            $1 == "deb" &&
+            $2 ~ /^https?:\/\/packages\.linuxmint\.com\/?$/ &&
+            $3 == codename { found = 1 }
+            END { exit !found }
+          ' "${mint_sources}"
           test "$(dpkg --print-architecture)" = amd64
 
       - name: Install package build dependencies

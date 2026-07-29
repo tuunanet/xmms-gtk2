@@ -122,6 +122,15 @@ require_absent_text .github/workflows/package-linux-mint.yml 'push:' \
 require_text .github/workflows/package-linux-mint.yml \
 	'linuxmintd/mint22.3-amd64@sha256:f71f1a261ef2957022ae74ad2b89ebbc8fcb2f25e40d8d7cdb599aa9e2748a8e' \
 	'pins the Linux Mint 22.3 build image'
+require_text .github/workflows/package-linux-mint.yml \
+	'official-package-repositories.list' \
+	'verifies the Linux Mint package repository configured by the image'
+require_text .github/workflows/package-linux-mint.yml \
+	'codename="${MINT_CODENAME}"' \
+	'verifies the Linux Mint image codename'
+require_absent_text .github/workflows/package-linux-mint.yml \
+	'/etc/linuxmint/info' \
+	'does not require desktop-only Linux Mint identity metadata'
 require_text .github/workflows/package-linux-mint.yml 'DEB_DISTRIBUTION: zena' \
 	'marks package metadata for Linux Mint Zena'
 require_text .github/workflows/package-linux-mint.yml \
