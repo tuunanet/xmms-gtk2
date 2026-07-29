@@ -26425,7 +26425,7 @@ _ACEOF
 
 if test -n "$GCC"
 then
-  CFLAGS="$CFLAGS -Wall -Wpointer-arith -finline-functions"
+  CFLAGS="$CFLAGS -Wall -Wpointer-arith -finline-functions -Wno-error=incompatible-pointer-types"
   case "$CFLAGS" in
     -g*) ;;
     *\ -g*) ;;
