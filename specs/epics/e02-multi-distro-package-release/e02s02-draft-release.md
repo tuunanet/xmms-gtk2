@@ -91,7 +91,7 @@ The workflow may repair a draft on rerun but must fail before uploading when a r
 ## 18. Implementation Steps
 
 1. Add failing contracts for annotated-tag validation, fan-in dependencies, write-permission isolation, checksum re-verification, and draft-only release commands → verify: `tests/test-package-recipes.sh .`
-2. Add validation and final assembly jobs using pinned download action and GitHub CLI → verify: `tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))" && actionlint .github/workflows/package-linux-mint.yml`
+2. Add validation and final assembly jobs using pinned download action and GitHub CLI → verify: `tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-linux-packages.yml'))" && actionlint .github/workflows/release-linux-packages.yml`
 3. Synchronize release architecture and maintainer instructions → verify: `grep -q 'draft GitHub Release' docs/releases.md && grep -q 'SHA256SUMS' README.md && grep -q 'contents: write' docs/architecture/build-and-test.md`
 
 ## 19. Manual Verification

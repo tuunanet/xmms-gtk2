@@ -4,7 +4,7 @@ verifier: verify-work
 phases:
   workflow_contract:
     passed: true
-    command: "export PATH=/tmp/actionlint:$PATH; tests/test-package-recipes.sh . && python3 -c \"import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))\" && actionlint .github/workflows/package-linux-mint.yml"
+    command: "export PATH=/tmp/actionlint:$PATH; tests/test-package-recipes.sh . && python3 -c \"import yaml; yaml.safe_load(open('.github/workflows/release-linux-packages.yml'))\" && actionlint .github/workflows/release-linux-packages.yml"
   release_assembly:
     passed: true
     environment: "local staging assembled from the successful Linux Mint artifact and locally built Ubuntu 26.04 packages"

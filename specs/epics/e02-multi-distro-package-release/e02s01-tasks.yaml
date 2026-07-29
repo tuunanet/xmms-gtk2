@@ -16,7 +16,7 @@ tasks:
         - CI
   - id: 2
     description: Build and validate packages in pinned Mint and Ubuntu userspaces
-    verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))" && actionlint .github/workflows/package-linux-mint.yml && grep -q 'No new security findings in affected paths' specs/security/REVIEW.md
+    verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-linux-packages.yml'))" && actionlint .github/workflows/release-linux-packages.yml && grep -q 'No new security findings in affected paths' specs/security/REVIEW.md
     risk: P0
     security: medium
     status: passing

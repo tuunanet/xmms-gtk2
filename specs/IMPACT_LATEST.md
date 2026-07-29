@@ -1,6 +1,6 @@
 ## Target
 
-`.github/workflows/package-linux-mint.yml`, its artifact contract, and the GitHub Release publication boundary.
+`.github/workflows/release-linux-packages.yml`, its artifact contract, and the GitHub Release publication boundary.
 
 ## Dependents (8)
 

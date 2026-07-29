@@ -15,7 +15,7 @@ tasks:
         - CI
   - id: 2
     description: Build, validate, and upload Linux Mint release artifacts
-    verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))"
+    verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-linux-packages.yml'))"
     risk: P1
     status: passing
     allure:

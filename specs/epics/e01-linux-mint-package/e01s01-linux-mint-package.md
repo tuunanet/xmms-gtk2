@@ -93,7 +93,7 @@ The result includes source, SHA-256 sums, and package/build metadata.
 ## 18. Implementation Steps
 
 1. Add failing packaging contract checks for the workflow → verify: `tests/test-package-recipes.sh .`
-2. Add the pinned manual workflow and artifact verification → verify: `tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))"`
+2. Add the pinned manual workflow and artifact verification → verify: `tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-linux-packages.yml'))"`
 3. Update public package documentation → verify: `grep -q 'Linux Mint 22.3' README.md && grep -q 'Linux Mint package' docs/releases.md`
 
 ## 19. Manual Verification

@@ -40,7 +40,7 @@ The workflow is the hosted package-build orchestrator. Maintainers call it throu
 
 | Candidate | Source | Verdict | Notes |
 |---|---|---|---|
-| Existing Mint package job | `.github/workflows/package-linux-mint.yml` | extend | Reuse its build, package inspection, install, smoke-test, and checksum gates. |
+| Existing Mint package job | `.github/workflows/release-linux-packages.yml` | extend | Reuse its build, package inspection, install, smoke-test, and checksum gates. |
 | Existing package helper | `tools/build-deb.sh` | compose | Already accepts `DEB_DISTRIBUTION` and `DEB_REVISION`. |
 | Official Ubuntu image | `ubuntu:26.04`, amd64 manifest `sha256:7c2884fd32770fc6c173b78e0dc2278a2851d89f5447919edbc45475ac55dd6a` | adopt | Image identifies Ubuntu 26.04 LTS Resolute and ships glibc 2.43. |
 | Hosted `ubuntu-26.04` runner | GitHub-hosted runners | reject | Container pinning gives an explicit target userspace independent of runner-label rollout. |
@@ -90,7 +90,7 @@ Ubuntu package control versions use `1~ubuntu26.04`, while downloadable DEB file
 ## 18. Implementation Steps
 
 1. Add failing static contracts for Ubuntu image, identity, revision, names, and two-target gating → verify: `tests/test-package-recipes.sh .`
-2. Extend the package job into two pinned target variants with shared validation → verify: `tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))" && actionlint .github/workflows/package-linux-mint.yml`
+2. Extend the package job into two pinned target variants with shared validation → verify: `tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release-linux-packages.yml'))" && actionlint .github/workflows/release-linux-packages.yml`
 3. Document the new Ubuntu package target → verify: `grep -q 'Ubuntu 26.04' README.md && grep -q 'Ubuntu 26.04' docs/releases.md && grep -q 'Ubuntu 26.04' docs/architecture/build-and-test.md`
 
 ## 19. Manual Verification

@@ -60,7 +60,7 @@ for file in \
 	packaging/debian/source/format \
 	packaging/debian/xmms.install \
 	tools/build-deb.sh \
-	.github/workflows/package-linux-mint.yml
+	.github/workflows/release-linux-packages.yml
 do
 	require_file "$file"
 done
@@ -85,9 +85,9 @@ require_text Makefile.am 'docs/architecture/build-and-test.md' \
 	'distributes the C lint architecture guide'
 require_text Makefile.am 'tools/build-deb.sh' \
 	'builds Debian packages through the shared helper'
-require_text Makefile.am '.github/workflows/package-linux-mint.yml' \
+require_text Makefile.am '.github/workflows/release-linux-packages.yml' \
 	'distributes the Linux Mint package workflow'
-require_text Makefile.in '.github/workflows/package-linux-mint.yml' \
+require_text Makefile.in '.github/workflows/release-linux-packages.yml' \
 	'ships the generated Linux Mint workflow distribution rule'
 require_text packaging/debian/control ' cppcheck,' \
 	'declares the C analyzer as a Debian build dependency'
@@ -113,98 +113,98 @@ require_text tools/build-deb.sh 'lintian --fail-on error' \
 	'runs Debian package policy checks from make deb'
 require_absent_text tools/build-deb.sh 'sudo' \
 	'never elevates privileges from make deb'
-require_text .github/workflows/package-linux-mint.yml 'workflow_dispatch:' \
+require_text .github/workflows/release-linux-packages.yml 'workflow_dispatch:' \
 	'builds distribution packages only on manual dispatch'
-require_absent_text .github/workflows/package-linux-mint.yml 'pull_request:' \
+require_absent_text .github/workflows/release-linux-packages.yml 'pull_request:' \
 	'does not build release artifacts for pull requests'
-require_absent_text .github/workflows/package-linux-mint.yml 'push:' \
+require_absent_text .github/workflows/release-linux-packages.yml 'push:' \
 	'does not build release artifacts on push'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'linuxmintd/mint22.3-amd64@sha256:f71f1a261ef2957022ae74ad2b89ebbc8fcb2f25e40d8d7cdb599aa9e2748a8e' \
 	'pins the Linux Mint 22.3 build image'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'ubuntu@sha256:7c2884fd32770fc6c173b78e0dc2278a2851d89f5447919edbc45475ac55dd6a' \
 	'pins the Ubuntu 26.04 amd64 build image'
-require_text .github/workflows/package-linux-mint.yml 'target_id: ubuntu' \
+require_text .github/workflows/release-linux-packages.yml 'target_id: ubuntu' \
 	'adds an Ubuntu package target'
-require_text .github/workflows/package-linux-mint.yml 'target_release: "26.04"' \
+require_text .github/workflows/release-linux-packages.yml 'target_release: "26.04"' \
 	'identifies Ubuntu 26.04'
-require_text .github/workflows/package-linux-mint.yml 'target_codename: resolute' \
+require_text .github/workflows/release-linux-packages.yml 'target_codename: resolute' \
 	'identifies Ubuntu Resolute'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'deb_revision: 1~ubuntu26.04' \
 	'uses an Ubuntu 26.04 package revision'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'${ASSET_SUFFIX}_amd64.deb' \
 	'checks target-specific downloadable package names'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'xmms-${{ inputs.version }}-${{ matrix.asset_suffix }}-amd64' \
 	'uploads distinct target artifacts'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'official-package-repositories.list' \
 	'verifies the Linux Mint package repository configured by the image'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'codename="${TARGET_CODENAME}"' \
 	'verifies the Linux Mint image codename'
-require_absent_text .github/workflows/package-linux-mint.yml \
+require_absent_text .github/workflows/release-linux-packages.yml \
 	'/etc/linuxmint/info' \
 	'does not require desktop-only Linux Mint identity metadata'
-require_text .github/workflows/package-linux-mint.yml 'deb_distribution: zena' \
+require_text .github/workflows/release-linux-packages.yml 'deb_distribution: zena' \
 	'marks package metadata for Linux Mint Zena'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'deb_revision: 1~linuxmint22.3' \
 	'uses a Linux Mint package revision'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'PACKAGES-SHA256SUMS' \
 	'publishes package checksums'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'PACKAGE-METADATA.txt' \
 	'publishes package provenance and control metadata'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'actions/upload-artifact' \
 	'uploads target release artifacts'
-require_text .github/workflows/package-linux-mint.yml 'validate-release:' \
+require_text .github/workflows/release-linux-packages.yml 'validate-release:' \
 	'validates the selected release before package builds'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'refs/tags/v${VERSION}' \
 	'requires the matching version tag'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'git cat-file -t "refs/tags/${GITHUB_REF_NAME}"' \
 	'requires an annotated release tag'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'git merge-base --is-ancestor "${GITHUB_SHA}" origin/main' \
 	'requires the tagged commit on main'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'needs: [validate-release]' \
 	'gates package builds on release validation'
-require_text .github/workflows/package-linux-mint.yml 'create-release:' \
+require_text .github/workflows/release-linux-packages.yml 'create-release:' \
 	'adds final release assembly'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'needs: [validate-release, build-package]' \
 	'gates release assembly on both package variants'
-require_text .github/workflows/package-linux-mint.yml 'contents: write' \
+require_text .github/workflows/release-linux-packages.yml 'contents: write' \
 	'grants release write permission explicitly'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c' \
 	'pins artifact downloads'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'sha256sum --check SHA256SUMS' \
 	're-verifies downloaded package artifacts'
-require_text .github/workflows/package-linux-mint.yml 'RELEASE-METADATA.txt' \
+require_text .github/workflows/release-linux-packages.yml 'RELEASE-METADATA.txt' \
 	'publishes combined release provenance'
-require_text .github/workflows/package-linux-mint.yml 'gh release create' \
+require_text .github/workflows/release-linux-packages.yml 'gh release create' \
 	'creates a GitHub Release'
-require_text .github/workflows/package-linux-mint.yml '--verify-tag' \
+require_text .github/workflows/release-linux-packages.yml '--verify-tag' \
 	'prevents implicit release tag creation'
-require_text .github/workflows/package-linux-mint.yml '--draft' \
+require_text .github/workflows/release-linux-packages.yml '--draft' \
 	'leaves release publication to a maintainer'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'--json isDraft' \
 	'checks existing release mutability'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'GH_REPO: ${{ github.repository }}' \
 	'selects the release repository without a checkout'
-require_text .github/workflows/package-linux-mint.yml \
+require_text .github/workflows/release-linux-packages.yml \
 	'gh release upload "${RELEASE_TAG}" --clobber' \
 	'allows safe draft repair on rerun'
 require_text packaging/debian/control 'Package: xmms' \

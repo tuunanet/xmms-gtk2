@@ -197,7 +197,7 @@ flowchart LR
 | `packaging/debian/` | `control`, `rules`, `.install` files for `xmms` and `libxmms-dev` |
 | `tools/build-deb.sh` | Helper invoked via `make deb` |
 | `packaging/xmms.desktop` | Desktop entry metadata |
-| `.github/workflows/package-linux-mint.yml` | Manual Linux Mint 22.3 + Ubuntu 26.04 package builds and draft Release assembly |
+| `.github/workflows/release-linux-packages.yml` | Manual Linux Mint 22.3 + Ubuntu 26.04 package builds and draft Release assembly |
 
 Debian packages are a **distribution** concern; runtime architecture does not
 change when installed from deb vs `make install`.
@@ -206,7 +206,7 @@ change when installed from deb vs `make install`.
 
 ## 5. Package automation (GitHub Actions)
 
-[`.github/workflows/package-linux-mint.yml`](../../.github/workflows/package-linux-mint.yml)
+[`.github/workflows/release-linux-packages.yml`](../../.github/workflows/release-linux-packages.yml)
 is manually dispatched on a matching annotated version tag. It validates that
 tag before running a two-target matrix in digest-pinned Linux Mint 22.3 Zena
 and Ubuntu 26.04 Resolute amd64 containers:
