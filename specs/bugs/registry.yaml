@@ -1,4 +1,12 @@
 bugs:
+  - bug_id: BUG-2026-07-29T191610-release-job-repository
+    date: 2026-07-29
+    status: resolved
+    severity: high
+    priority: P1
+    scope: release
+    summary: Draft-release assembly could not select its repository without a checkout.
+    file: specs/bugs/BUG-2026-07-29T191610-release-job-repository.md
   - bug_id: BUG-2026-07-29T215100-gcc15-callbacks
     date: 2026-07-29
     status: resolved
