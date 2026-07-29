@@ -20,6 +20,10 @@ phases:
     exit_code: 0
     captured_at: "2026-07-29T18:15:00Z"
     note: "Single final static contract run; hosted draft creation is intentionally deferred until a new matching annotated tag exists."
+  hosted_negative_path:
+    passed: true
+    run: "https://github.com/tuunanet/xmms-gtk2/actions/runs/30455493302"
+    verified: "A branch dispatch for 1.2.12 stopped in tag validation, so neither package nor release-write job ran."
   manual:
     steps:
       - step: "Dispatch on a new annotated vVERSION tag contained in main."

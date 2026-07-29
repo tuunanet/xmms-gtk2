@@ -25,11 +25,15 @@ phases:
     exit_code: 0
     captured_at: "2026-07-29T18:15:00Z"
     note: "Single final static contract run; full application tests and the Ubuntu target build passed separately."
+  hosted_negative_path:
+    passed: true
+    run: "https://github.com/tuunanet/xmms-gtk2/actions/runs/30455493302"
+    verified: "A branch dispatch for 1.2.12 failed in Validate release tag before either package matrix job started."
   manual:
     steps:
       - step: "Dispatch on a new annotated vVERSION tag contained in main."
         expected: "Mint and Ubuntu jobs complete before draft assembly starts."
-        actual: "Pending the next release tag; v1.2.12 is immutable and intentionally rejected."
+        actual: "Pending the next release tag; the branch-dispatch guard was verified live."
         passed: pending
   gaps:
     closed: true
