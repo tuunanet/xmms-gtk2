@@ -68,8 +68,9 @@ static void playlistslider_set_pos(PlaylistSlider * ps, int y)
 }
 
 
-void playlistslider_button_press_cb(GtkWidget * widget, GdkEventButton * event, PlaylistSlider * ps)
+void playlistslider_button_press_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	PlaylistSlider *ps = data;
 	int y = event->y - ps->ps_widget.y;
 
 	if (!inside_widget(event->x, event->y, &ps->ps_widget))
@@ -100,8 +101,10 @@ void playlistslider_button_press_cb(GtkWidget * widget, GdkEventButton * event, 
 	}
 }
 
-void playlistslider_button_release_cb(GtkWidget * widget, GdkEventButton * event, PlaylistSlider * ps)
+void playlistslider_button_release_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	PlaylistSlider *ps = data;
+
 	if (ps->ps_is_draging)
 	{
 		ps->ps_is_draging &= ~event->button;
@@ -109,8 +112,9 @@ void playlistslider_button_release_cb(GtkWidget * widget, GdkEventButton * event
 	}
 }
 
-void playlistslider_motion_cb(GtkWidget * widget, GdkEventMotion * event, PlaylistSlider * ps)
+void playlistslider_motion_cb(GtkWidget * widget, GdkEventMotion * event, gpointer data)
 {
+	PlaylistSlider *ps = data;
 	int y;
 
 	if (!ps->ps_is_draging)
@@ -132,9 +136,9 @@ PlaylistSlider *create_playlistslider(GList ** wlist, GdkPixmap * parent, GdkGC 
 	ps->ps_widget.width = 8;
 	ps->ps_widget.height = h;
 	ps->ps_widget.visible = 1;
-	ps->ps_widget.button_press_cb = GTK_SIGNAL_FUNC(playlistslider_button_press_cb);
-	ps->ps_widget.button_release_cb = GTK_SIGNAL_FUNC(playlistslider_button_release_cb);
-	ps->ps_widget.motion_cb = GTK_SIGNAL_FUNC(playlistslider_motion_cb);
+	ps->ps_widget.button_press_cb = playlistslider_button_press_cb;
+	ps->ps_widget.button_release_cb = playlistslider_button_release_cb;
+	ps->ps_widget.motion_cb = playlistslider_motion_cb;
 	ps->ps_widget.draw = playlistslider_draw;
 	ps->ps_list = list;
 	add_widget(wlist, ps);

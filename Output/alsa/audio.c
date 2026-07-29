@@ -30,6 +30,7 @@
 
 
 #include "alsa.h"
+#include "pcm-state.h"
 #include <ctype.h>
 #include <pthread.h>
 #include <math.h>
@@ -470,20 +471,34 @@ static void alsa_cleanup_mixer(void)
 	}
 }
 
+static void alsa_ensure_volume_control(void)
+{
+	if (!mixer_start)
+		return;
+
+	mixer_start = FALSE;
+	if (alsa_cfg.soft_volume)
+		return;
+
+	if (alsa_setup_mixer() < 0)
+	{
+		alsa_cleanup_mixer();
+		alsa_cfg.soft_volume = TRUE;
+		g_warning("ALSA mixer unavailable; using software volume control");
+	}
+}
+
 void alsa_get_volume(int *l, int *r)
 {
 	long ll = *l, lr = *r;
 
-	if (mixer_start)
-	{
-		alsa_setup_mixer();
-		mixer_start = FALSE;
-	}
+	alsa_ensure_volume_control();
 
 	if (alsa_cfg.soft_volume)
 	{
 		*l = alsa_cfg.vol.left;
 		*r = alsa_cfg.vol.right;
+		return;
 	}
 
 	if (!pcm_element)
@@ -510,6 +525,8 @@ void alsa_get_volume(int *l, int *r)
 
 void alsa_set_volume(int l, int r)
 {
+	alsa_ensure_volume_control();
+
 	if (alsa_cfg.soft_volume)
 	{
 		alsa_cfg.vol.left = l;
@@ -814,8 +831,14 @@ static void *alsa_loop(void *arg)
 	{
 		if (get_thread_buffer_filled() > prebuffer_size)
 			prebuffer = FALSE;
-		if (!paused && !prebuffer &&
-		    get_thread_buffer_filled() > hw_period_size_in)
+		AlsaPcmAction action = alsa_pcm_action(
+			paused, prebuffer,
+			get_thread_buffer_filled() > hw_period_size_in,
+			snd_pcm_state(alsa_pcm) == SND_PCM_STATE_PREPARED);
+
+		if (action == ALSA_PCM_WRITE)
+			alsa_write_out_thread_data();
+		else if (action == ALSA_PCM_POLL)
 		{
 			snd_pcm_poll_descriptors(alsa_pcm, pfds, npfds);
 			if (poll(pfds, npfds, 10) > 0)

@@ -1,3 +1,4 @@
+.\" Installation data root: @datarootdir@
 .TH XMMS 1 "17 March 2004" "Version @VERSION@" "XMMS Manual Pages"
 .SH NAME
 XMMS \- an audio player for X.

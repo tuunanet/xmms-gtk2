@@ -1,6 +1,6 @@
 /*  XMMS - Cross-platform multimedia player
  *  Copyright (C) 1998-2001  Peter Alm, Mikael Alm, Olle Hallnas, Thomas Nilsson and 4Front Technologies
- *  Copyright (C) 1999-2001  Håvard Kvålen
+ *  Copyright (C) 1999-2001  Hï¿½vard Kvï¿½len
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -75,14 +75,16 @@ static void configure_win_ok_cb(GtkWidget * w, gpointer data)
 	gtk_widget_destroy(configure_win);
 }
 
-static void configure_win_audio_dev_cb(GtkWidget * widget, gint device)
+typedef void (*DeviceMenuCallback)(GtkWidget *widget, gpointer device);
+
+static void configure_win_audio_dev_cb(GtkWidget * widget, gpointer device)
 {
-	audio_device = device;
+	audio_device = GPOINTER_TO_INT(device);
 }
 
-static void configure_win_mixer_dev_cb(GtkWidget * widget, gint device)
+static void configure_win_mixer_dev_cb(GtkWidget * widget, gpointer device)
 {
-	mixer_device = device;
+	mixer_device = GPOINTER_TO_INT(device);
 }
 
 static void audio_device_toggled(GtkToggleButton * widget, gpointer data)
@@ -99,7 +101,7 @@ static void mixer_device_toggled(GtkToggleButton * widget, gpointer data)
 	gtk_widget_set_sensitive(mixer_alt_device_entry, use_alt_device);
 }
 
-static void scan_devices(gchar * type, GtkWidget * option_menu, GtkSignalFunc sigfunc)
+static void scan_devices(gchar * type, GtkWidget * option_menu, DeviceMenuCallback callback)
 {
 	GtkWidget *menu, *item;
 	FILE *file;
@@ -136,7 +138,7 @@ static void scan_devices(gchar * type, GtkWidget * option_menu, GtkSignalFunc si
 				}
 				else
 					item = gtk_menu_item_new_with_label(buffer);
-				gtk_signal_connect(GTK_OBJECT(item), "activate", sigfunc, (gpointer) index++);
+				gtk_signal_connect(GTK_OBJECT(item), "activate", GTK_SIGNAL_FUNC(callback), GINT_TO_POINTER(index++));
 				gtk_widget_show(item);
 				gtk_menu_append(GTK_MENU(menu), item);
 			}
@@ -149,7 +151,7 @@ static void scan_devices(gchar * type, GtkWidget * option_menu, GtkSignalFunc si
 	else
 	{
 		item = gtk_menu_item_new_with_label(_("Default"));
-		gtk_signal_connect(GTK_OBJECT(item), "activate", sigfunc, (gpointer) 0);
+		gtk_signal_connect(GTK_OBJECT(item), "activate", GTK_SIGNAL_FUNC(callback), GINT_TO_POINTER(0));
 		gtk_widget_show(item);
 		gtk_menu_append(GTK_MENU(menu), item);
 	}
@@ -175,7 +177,7 @@ void oss_configure(void)
 		return;
 	}
 
-	configure_win = gtk_window_new(GDK_WINDOW_DIALOG);
+	configure_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_signal_connect(GTK_OBJECT(configure_win), "destroy", GTK_SIGNAL_FUNC(gtk_widget_destroyed), &configure_win);
 	gtk_window_set_title(GTK_WINDOW(configure_win), _("OSS Driver configuration"));
 	gtk_window_set_policy(GTK_WINDOW(configure_win), FALSE, FALSE, FALSE);
@@ -211,7 +213,7 @@ void oss_configure(void)
 	gtk_box_pack_start_defaults(GTK_BOX(adevice_box), audio_alt_box);
 	adevice_use_alt_check = gtk_check_button_new_with_label(_("Use alternate device:"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(adevice_use_alt_check), oss_cfg.use_alt_audio_device);
-	gtk_signal_connect(GTK_OBJECT(adevice_use_alt_check), "toggled", audio_device_toggled, adevice);
+	gtk_signal_connect(GTK_OBJECT(adevice_use_alt_check), "toggled", GTK_SIGNAL_FUNC(audio_device_toggled), adevice);
 	gtk_box_pack_start(GTK_BOX(audio_alt_box), adevice_use_alt_check, FALSE, FALSE, 0);
 	audio_alt_device_entry = gtk_entry_new();
 	if (oss_cfg.alt_audio_device != NULL)
@@ -245,7 +247,7 @@ void oss_configure(void)
 	gtk_box_pack_start_defaults(GTK_BOX(mdevice_box), mixer_alt_box);
 	mdevice_use_alt_check = gtk_check_button_new_with_label(_("Use alternate device:"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mdevice_use_alt_check), oss_cfg.use_alt_mixer_device);
-	gtk_signal_connect(GTK_OBJECT(mdevice_use_alt_check), "toggled", mixer_device_toggled, mdevice);
+	gtk_signal_connect(GTK_OBJECT(mdevice_use_alt_check), "toggled", GTK_SIGNAL_FUNC(mixer_device_toggled), mdevice);
 	gtk_box_pack_start(GTK_BOX(mixer_alt_box), mdevice_use_alt_check, FALSE, FALSE, 0);
 	mixer_alt_device_entry = gtk_entry_new();
 	if (oss_cfg.alt_mixer_device != NULL)

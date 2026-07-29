@@ -69,8 +69,10 @@ void tbutton_draw(Widget * w)
 	}
 }
 
-void tbutton_button_press_cb(GtkWidget * widget, GdkEventButton * event, TButton * button)
+void tbutton_button_press_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	TButton *button = data;
+
 	if (event->button != 1)
 		return;
 	if (inside_widget(event->x, event->y, &button->tb_widget))
@@ -81,8 +83,10 @@ void tbutton_button_press_cb(GtkWidget * widget, GdkEventButton * event, TButton
 	}
 }
 
-void tbutton_button_release_cb(GtkWidget * widget, GdkEventButton * event, TButton * button)
+void tbutton_button_release_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	TButton *button = data;
+
 	if (event->button != 1)
 		return;
 	if (button->tb_inside && button->tb_pressed)
@@ -97,8 +101,9 @@ void tbutton_button_release_cb(GtkWidget * widget, GdkEventButton * event, TButt
 		button->tb_pressed = 0;
 }
 
-void tbutton_motion_cb(GtkWidget * widget, GdkEventMotion * event, TButton * button)
+void tbutton_motion_cb(GtkWidget * widget, GdkEventMotion * event, gpointer data)
 {
+	TButton *button = data;
 	int inside;
 
 	if (!button->tb_pressed)
@@ -125,9 +130,9 @@ TButton *create_tbutton(GList ** wlist, GdkPixmap * parent, GdkGC * gc, gint x, 
 	b->tb_widget.width = w;
 	b->tb_widget.height = h;
 	b->tb_widget.visible = 1;
-	b->tb_widget.button_press_cb = GTK_SIGNAL_FUNC(tbutton_button_press_cb);
-	b->tb_widget.button_release_cb = GTK_SIGNAL_FUNC(tbutton_button_release_cb);
-	b->tb_widget.motion_cb = GTK_SIGNAL_FUNC(tbutton_motion_cb);
+	b->tb_widget.button_press_cb = tbutton_button_press_cb;
+	b->tb_widget.button_release_cb = tbutton_button_release_cb;
+	b->tb_widget.motion_cb = tbutton_motion_cb;
 	b->tb_widget.draw = tbutton_draw;
 	b->tb_nux = nux;
 	b->tb_nuy = nuy;

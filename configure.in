@@ -5,7 +5,7 @@ AC_CANONICAL_HOST
 cflags_set=${CFLAGS+set}
 AM_CONFIG_HEADER([config.h xmms/i18n.h])
 
-AM_INIT_AUTOMAKE([xmms], [1.2.11])
+AM_INIT_AUTOMAKE([xmms], [1.2.12])
 
 AC_ARG_ENABLE([one-plugin-dir],
 [  --enable-one-plugin-dir  use a single plugin dir [default=no]],,
@@ -293,11 +293,8 @@ LIBS=$LIBS_save
 
 
 dnl ***
-dnl *** This is just a copy of po/LINGUAS and is here to avoid breaking
-dnl *** compatibility with automake 1.4
+dnl *** po/LINGUAS is the canonical list of available translations.
 dnl ***
-ALL_LINGUAS="af az be bg bs ca cs cy da de el en en_GB eo es et eu fi fr ga gl hr hu id it ja ka ko lt lv mk ms nn nl no pl pt pt_BR ro ru sk sl sq sr sr@Latn sv tg th tr uk uz vi wa zh_CN zh_TW"
-
 AM_GNU_GETTEXT
 
 localedir=${datadir}/locale
@@ -583,6 +580,7 @@ AM_CONDITIONAL([HAVE_SUN], [test "x$have_sun" = "xyes"])
 
 plugindir=$libdir/xmms
 AC_SUBST([plugindir])
+BUILD_PLUGIN_DIR=`pwd`
 
 if test "x$enable_one_plugin_dir" = "xyes"; then
   pluginsubs="\\\"Plugins\\\""
@@ -607,7 +605,7 @@ AC_SUBST([GENERAL_PLUGIN_DIR])
 AC_SUBST([VISUALIZATION_PLUGIN_DIR])
 AC_SUBST([pluginsubs])
 
-XMMS_DEFINES="$CFLAGS -DDATA_DIR=\\\"$datadir/xmms\\\" -DPLUGIN_DIR=\\\"$plugindir\\\" -DPLUGINSUBS=$pluginsubs -DLOCALEDIR=\\\"$localedir\\\""
+XMMS_DEFINES="$CFLAGS -DDATA_DIR=\\\"$datadir/xmms\\\" -DPLUGIN_DIR=\\\"$plugindir\\\" -DBUILD_PLUGIN_DIR=\\\"$BUILD_PLUGIN_DIR\\\" -DPLUGINSUBS=$pluginsubs -DLOCALEDIR=\\\"$localedir\\\""
 
 if test "x$enable_user_plugin_dir" = "xno"; then
 	AC_DEFINE(DISABLE_USER_PLUGIN_DIR,, [Define to disable per user plugin directory])
@@ -627,7 +625,6 @@ AC_OUTPUT([
 Makefile
 xmms.1
 wmxmms.1
-xmms.spec
 xmms-config
 xmms/Makefile
 xmms/defskin/Makefile

@@ -274,86 +274,64 @@ static void gtk_move_backward_character (GtkEntry *entry)
 	gtk_entry_move_cursor(GTK_EDITABLE(entry), -1);
 }
 
+static gboolean xmms_entry_is_word_character(const gchar *text, gint position)
+{
+	return g_unichar_isalnum(g_utf8_get_char(g_utf8_offset_to_pointer(text, position)));
+}
+
+gint xmms_entry_word_position(const gchar *text, gint position, gboolean forward)
+{
+	gint length = g_utf8_strlen(text, -1);
+
+	position = CLAMP(position, 0, length);
+
+	if (forward)
+	{
+		while (position < length && !xmms_entry_is_word_character(text, position))
+			position++;
+	}
+	else
+	{
+		while (position >= 0 && !xmms_entry_is_word_character(text, position))
+			position--;
+		while (position >= 0 && xmms_entry_is_word_character(text, position))
+			position--;
+		position++;
+	}
+
+	return position;
+}
+
 static void gtk_move_forward_word (GtkEntry *entry)
 {
-	GtkEditable *editable;
-	GdkWChar *text;
-	int i;
-
-	editable = GTK_EDITABLE (entry);
+	GtkEditable *editable = GTK_EDITABLE(entry);
 
 	/* Prevent any leak of information */
-	if (!gtk_entry_get_visibility(editable))
+	if (!gtk_entry_get_visibility(entry))
 	{
-		gtk_editable_set_position(GTK_EDITABLE(entry), -1);
+		gtk_editable_set_position(editable, -1);
 		return;
 	}
 
-	if (entry->text && (gtk_editable_get_position(editable) < entry->text_length))
-	{
-		text = entry->text;
-		i = gtk_editable_get_position(editable);
-
-		if (
-		    !isalnum(text[i]))
-			for (; i < entry->text_length; i++)
-			{
-				if (isalnum(text[i]))
-					break;
-			}
-
-		for (; i < entry->text_length; i++)
-		{
-			if (isalnum(text[i]))
-				break;
-		}
-
-		gtk_editable_set_position(GTK_EDITABLE(entry), i);
-	}
+	gtk_editable_set_position(editable,
+				  xmms_entry_word_position(gtk_entry_get_text(entry),
+							   gtk_editable_get_position(editable), TRUE));
 }
 
 static void gtk_move_backward_word(GtkEntry *entry)
 {
-	GtkEditable *editable;
-	GdkWChar *text;
-	int i;
-
-	editable = GTK_EDITABLE (entry);
+	GtkEditable *editable = GTK_EDITABLE(entry);
 
 	/* Prevent any leak of information */
-	if (!gtk_entry_get_visibility(editable))
+	if (!gtk_entry_get_visibility(entry))
 	{
-		gtk_editable_set_position(GTK_EDITABLE(entry), 0);
+		gtk_editable_set_position(editable, 0);
 		return;
 	}
 
-	if (entry->text && gtk_editable_get_position(editable) > 0)
-	{
-		text = entry->text;
-		i = gtk_editable_get_position(editable);
-
-		if (
-		    !isalnum(text[i]))
-			for (; i >= 0; i--)
-			{
-				if (gdk_iswalnum(text[i]))
-					break;
-			}
-		for (; i >= 0; i--)
-		{
-			if (
-			    !isalnum(text[i]))
-			{
-				i++;
-				break;
-			}
-		}
-
-		if (i < 0)
-			i = 0;
-
-		gtk_editable_set_position(GTK_EDITABLE(entry), i);
-	}
+	gtk_editable_set_position(editable,
+				  xmms_entry_word_position(gtk_entry_get_text(entry),
+							   gtk_editable_get_position(editable), FALSE));
 }
 
 static void gtk_move_beginning_of_line (GtkEntry *entry)

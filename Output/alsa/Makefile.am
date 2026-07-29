@@ -2,6 +2,7 @@ alsasources = \
 alsa.c alsa.h \
 about.c \
 audio.c \
+pcm-state.c pcm-state.h \
 configure.c \
 init.c
 

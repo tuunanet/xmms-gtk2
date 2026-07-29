@@ -1,0 +1,35 @@
+name: Compatibility or enhancement request
+description: Propose a preservation-focused improvement
+title: "[Enhancement]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or compatibility gap
+      description: Describe the user or maintainer need, not only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Explain how the change would preserve classic XMMS behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility impact
+      description: Note affected platforms, plugins, file formats, or existing workflows.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Project scope
+      options:
+        - label: This request supports preservation, modern-system compatibility, reliability, security, or maintainability.
+          required: true

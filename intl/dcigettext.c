@@ -147,7 +147,7 @@ extern int errno;
 # if !defined HAVE_GETCWD
 char *getwd ();
 #  define getcwd(buf, max) getwd (buf)
-# else
+# elif !defined HAVE_UNISTD_H
 char *getcwd ();
 # endif
 # ifndef HAVE_STPCPY

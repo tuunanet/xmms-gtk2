@@ -5,7 +5,7 @@ libdir = $(plugindir)/$(INPUT_PLUGIN_DIR)
 
 COMMON_SRC = \
 mpg123.c mpg123.h \
-common.c \
+common.c stream-position.c stream-position.h \
 tabinit.c l2tables.h \
 configure.c fileinfo.c \
 decode_2to1.c decode_4to1.c \
@@ -51,5 +51,5 @@ EXTRA_DIST = decode.c decode_i386.c decode_i586.s decode_3dnow.s dct64_i386.c \
 
 libmpg123_la_SOURCES = $(COMMON_SRC) $(EXTRA_SRC)
 libmpg123_la_LDFLAGS = @PLUGIN_LDFLAGS@
-libmpg123_la_LIBADD = @GTK_LIBS@ @PTHREAD_LIBS@ @Z_LIBS@ $(top_builddir)/libxmms/libxmms.la
+libmpg123_la_LIBADD = @GTK_LIBS@ @PTHREAD_LIBS@ @Z_LIBS@ $(top_builddir)/libxmms/libxmms.la -lm
 INCLUDES = @GTK_CFLAGS@ @ARCH_DEFINES@ -I$(top_builddir)/intl -I$(top_srcdir)

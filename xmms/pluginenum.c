@@ -42,6 +42,12 @@ char *plugin_dir_list[] =
 	NULL
 };
 
+static const char *build_plugin_dir_list[] =
+{
+	"Output", "Input", "Effect", "General", "Visualization",
+	NULL
+};
+
 extern struct InputPluginData *ip_data;
 extern struct OutputPluginData *op_data;
 extern struct EffectPluginData *ep_data;
@@ -50,6 +56,7 @@ extern struct VisPluginData *vp_data;
 
 void scan_plugins(char *dirname);
 void add_plugin(char * filename);
+static void scan_build_tree_plugins(const char *dirname);
 
 static int d_iplist_compare(const void *a, const void *b)
 {
@@ -136,6 +143,24 @@ void init_plugins(void)
 		g_free(dir);
 	}
 	dirsel = 0;
+#endif
+
+#ifdef BUILD_PLUGIN_DIR
+	/*
+	 * An uninstalled binary needs the plugins that were built alongside it.
+	 * Do not use that tree after installation, where PLUGIN_DIR is available.
+	 */
+	if (!g_file_test(PLUGIN_DIR, G_FILE_TEST_IS_DIR))
+	{
+		while (build_plugin_dir_list[dirsel])
+		{
+			dir = g_strconcat(BUILD_PLUGIN_DIR, "/",
+					  build_plugin_dir_list[dirsel++], NULL);
+			scan_build_tree_plugins(dir);
+			g_free(dir);
+		}
+		dirsel = 0;
+	}
 #endif
 
 	while (plugin_dir_list[dirsel])
@@ -363,6 +388,26 @@ void add_plugin(char * filename)
 	}
 	else
 		close_dynamic_lib(h);
+}
+
+static void scan_build_tree_plugins(const char *dirname)
+{
+	DIR *dir;
+	struct dirent *ent;
+	char *plugin_dir;
+
+	if (!(dir = opendir(dirname)))
+		return;
+
+	while ((ent = readdir(dir)) != NULL)
+	{
+		if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
+			continue;
+		plugin_dir = g_build_filename(dirname, ent->d_name, ".libs", NULL);
+		scan_plugins(plugin_dir);
+		g_free(plugin_dir);
+	}
+	closedir(dir);
 }
 
 void scan_plugins(char *dirname)

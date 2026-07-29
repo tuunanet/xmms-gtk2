@@ -64,6 +64,7 @@ struct _XmmsEntryClass
 
 GtkType xmms_entry_get_type(void);
 GtkWidget* xmms_entry_new(void);
+gint xmms_entry_word_position(const gchar *text, gint position, gboolean forward);
 
 #ifdef __cplusplus
 }

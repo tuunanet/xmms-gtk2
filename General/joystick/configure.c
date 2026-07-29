@@ -77,9 +77,9 @@ static void joyconf_apply_cb(GtkWidget * w, gpointer data)
 /* ---------------------------------------------------------------------- */
 void joy_configure(void)
 {
-	static gint pack_pos[4] =
-	{GTK_SIDE_TOP, GTK_SIDE_BOTTOM, GTK_SIDE_LEFT, GTK_SIDE_RIGHT},
-	     hist_val[4];
+	static const guint dir_rows[4] = {0, 2, 1, 1};
+	static const guint dir_columns[4] = {1, 1, 0, 2};
+	static gint hist_val[4];
 	GtkWidget *vbox, *vbox2, *hbox, *box, *box2, *frame, *table, *label, *button, *item;
 	GtkWidget *dir_pack, *blist;
 	int i, j;
@@ -89,7 +89,7 @@ void joy_configure(void)
 
 	if (!joyconf_mainwin)
 	{
-		joyconf_mainwin = gtk_window_new(GDK_WINDOW_DIALOG);
+		joyconf_mainwin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		gtk_signal_connect(GTK_OBJECT(joyconf_mainwin), "destroy", GTK_SIGNAL_FUNC(gtk_widget_destroyed), &joyconf_mainwin);
 		gtk_window_set_title(GTK_WINDOW(joyconf_mainwin), _("XMMS Joystick Configuration"));
 		gtk_window_set_policy(GTK_WINDOW(joyconf_mainwin), FALSE, FALSE, FALSE);
@@ -182,8 +182,10 @@ void joy_configure(void)
 		/* -------------------------------------------------- */
 		frame = gtk_frame_new(_("Directionals:"));
 		gtk_box_pack_start(GTK_BOX(box), frame, FALSE, FALSE, 0);
-		dir_pack = gtk_packer_new();
+		dir_pack = gtk_table_new(3, 3, FALSE);
 		gtk_container_set_border_width(GTK_CONTAINER(dir_pack), 5);
+		gtk_table_set_row_spacings(GTK_TABLE(dir_pack), 5);
+		gtk_table_set_col_spacings(GTK_TABLE(dir_pack), 5);
 		gtk_container_add(GTK_CONTAINER(frame), dir_pack);
 		hist_val[0] = joy_cfg.up;
 		hist_val[1] = joy_cfg.down;
@@ -194,7 +196,9 @@ void joy_configure(void)
 		{
 			blist = gtk_option_menu_new();
 			gtk_widget_set_usize(blist, 120, -1);
-			gtk_packer_add(GTK_PACKER(dir_pack), blist, pack_pos[i], GTK_ANCHOR_CENTER, 0, 0, 5, 5, 0, 0);
+			gtk_table_attach_defaults(GTK_TABLE(dir_pack), blist,
+						  dir_columns[i], dir_columns[i] + 1,
+						  dir_rows[i], dir_rows[i] + 1);
 			gtk_option_menu_remove_menu(GTK_OPTION_MENU(blist));
 			gtk_option_menu_set_menu(GTK_OPTION_MENU(blist), joy_menus[i]);
 			gtk_option_menu_set_history(GTK_OPTION_MENU(blist), hist_val[i]);
@@ -207,8 +211,10 @@ void joy_configure(void)
 		/* -------------------------------------------------- */
 		frame = gtk_frame_new(_("Directionals (alternate):"));
 		gtk_box_pack_start(GTK_BOX(box), frame, FALSE, FALSE, 0);
-		dir_pack = gtk_packer_new();
+		dir_pack = gtk_table_new(3, 3, FALSE);
 		gtk_container_set_border_width(GTK_CONTAINER(dir_pack), 5);
+		gtk_table_set_row_spacings(GTK_TABLE(dir_pack), 5);
+		gtk_table_set_col_spacings(GTK_TABLE(dir_pack), 5);
 		gtk_container_add(GTK_CONTAINER(frame), dir_pack);
 		hist_val[0] = joy_cfg.alt_up;
 		hist_val[1] = joy_cfg.alt_down;
@@ -219,7 +225,9 @@ void joy_configure(void)
 		{
 			blist = gtk_option_menu_new();
 			gtk_widget_set_usize(blist, 120, -1);
-			gtk_packer_add(GTK_PACKER(dir_pack), blist, pack_pos[i], GTK_ANCHOR_CENTER, 0, 0, 5, 5, 0, 0);
+			gtk_table_attach_defaults(GTK_TABLE(dir_pack), blist,
+						  dir_columns[i], dir_columns[i] + 1,
+						  dir_rows[i], dir_rows[i] + 1);
 			gtk_option_menu_remove_menu(GTK_OPTION_MENU(blist));
 			gtk_option_menu_set_menu(GTK_OPTION_MENU(blist), joy_menus[4 + i]);
 			gtk_option_menu_set_history(GTK_OPTION_MENU(blist), hist_val[i]);

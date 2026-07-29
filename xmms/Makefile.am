@@ -23,6 +23,7 @@ general.c general.h \
 visualization.c visualization.h \
 fullscreen.c fullscreen.h \
 pluginenum.c pluginenum.h \
+outputplugin.c outputplugin.h \
 playlist.c playlist.h \
 controlsocket.c controlsocket.h \
 dock.c dock.h \

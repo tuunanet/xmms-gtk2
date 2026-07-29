@@ -1,0 +1,45 @@
+Source: xmms
+Section: sound
+Priority: optional
+Maintainer: XMMS Classic contributors <47913151+tuunanet@users.noreply.github.com>
+Build-Depends:
+ cppcheck,
+ debhelper-compat (= 13),
+ gettext,
+ libasound2-dev [linux-any],
+ libgl-dev,
+ libgtk2.0-dev,
+ libmikmod-dev,
+ libsm-dev,
+ libvorbis-dev,
+ libxxf86vm-dev,
+ pkg-config,
+ xvfb,
+ zlib1g-dev
+Standards-Version: 4.7.2
+Homepage: https://github.com/tuunanet/xmms-classic
+Rules-Requires-Root: no
+
+Package: xmms
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Recommends: unzip
+Description: classic skinnable audio player
+ XMMS Classic is a maintained preservation fork of XMMS 1.2.11. It keeps the
+ classic skinnable interface and plugin architecture usable on current Linux
+ and BSD systems while retaining historical runtime identifiers.
+ .
+ This package includes the player, bundled input and output plugins,
+ visualizations, effects, translations, and the Window Maker dock applet.
+
+Package: libxmms-dev
+Section: libdevel
+Architecture: any
+Depends:
+ libglib2.0-dev,
+ libgtk2.0-dev,
+ xmms (= ${binary:Version}),
+ ${misc:Depends}
+Description: development files for XMMS Classic plugins
+ Headers, static and shared-library linker files, xmms-config, and the Autoconf
+ macro required to build compatible XMMS plugins.

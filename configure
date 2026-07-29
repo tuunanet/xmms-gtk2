@@ -3368,7 +3368,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=xmms
- VERSION=1.2.11
+ VERSION=1.2.12
 
 
 cat >>confdefs.h <<_ACEOF
@@ -22558,10 +22558,6 @@ CFLAGS=$CFLAGS_save
 LIBS=$LIBS_save
 
 
-ALL_LINGUAS="af az be bg bs ca cs cy da de el en en_GB eo es et eu fi fr ga gl hr hu id it ja ka ko lt lv mk ms nn nl no pl pt pt_BR ro ru sk sl sq sr sr@Latn sv tg th tr uk uz vi wa zh_CN zh_TW"
-
-
-
         MKINSTALLDIRS=
   if test -n "$ac_aux_dir"; then
     case "$ac_aux_dir" in
@@ -26554,6 +26550,7 @@ fi
 
 
 plugindir=$libdir/xmms
+BUILD_PLUGIN_DIR=`pwd`
 
 
 if test "x$enable_one_plugin_dir" = "xyes"; then
@@ -26579,7 +26576,7 @@ fi
 
 
 
-XMMS_DEFINES="$CFLAGS -DDATA_DIR=\\\"$datadir/xmms\\\" -DPLUGIN_DIR=\\\"$plugindir\\\" -DPLUGINSUBS=$pluginsubs -DLOCALEDIR=\\\"$localedir\\\""
+XMMS_DEFINES="$CFLAGS -DDATA_DIR=\\\"$datadir/xmms\\\" -DPLUGIN_DIR=\\\"$plugindir\\\" -DBUILD_PLUGIN_DIR=\\\"$BUILD_PLUGIN_DIR\\\" -DPLUGINSUBS=$pluginsubs -DLOCALEDIR=\\\"$localedir\\\""
 
 if test "x$enable_user_plugin_dir" = "xno"; then
 
@@ -26600,7 +26597,7 @@ subdirs="$subdirs libxmms"
 
 
 
-ac_config_files="$ac_config_files Makefile xmms.1 wmxmms.1 xmms.spec xmms-config xmms/Makefile xmms/defskin/Makefile Output/Makefile Output/OSS/Makefile Output/esd/Makefile Output/disk_writer/Makefile Output/solaris/Makefile Output/sun/Makefile Output/alsa/Makefile Input/Makefile Input/wav/Makefile Input/mpg123/Makefile Input/mikmod/Makefile Input/cdaudio/Makefile Input/tonegen/Makefile Input/vorbis/Makefile Effect/Makefile Effect/voice/Makefile Effect/echo_plugin/Makefile Effect/stereo_plugin/Makefile General/Makefile General/ir/Makefile General/joystick/Makefile General/song_change/Makefile Visualization/Makefile Visualization/blur_scope/Makefile Visualization/sanalyzer/Makefile Visualization/opengl_spectrum/Makefile wmxmms/Makefile po/Makefile.in intl/Makefile"
+ac_config_files="$ac_config_files Makefile xmms.1 wmxmms.1 xmms-config xmms/Makefile xmms/defskin/Makefile Output/Makefile Output/OSS/Makefile Output/esd/Makefile Output/disk_writer/Makefile Output/solaris/Makefile Output/sun/Makefile Output/alsa/Makefile Input/Makefile Input/wav/Makefile Input/mpg123/Makefile Input/mikmod/Makefile Input/cdaudio/Makefile Input/tonegen/Makefile Input/vorbis/Makefile Effect/Makefile Effect/voice/Makefile Effect/echo_plugin/Makefile Effect/stereo_plugin/Makefile General/Makefile General/ir/Makefile General/joystick/Makefile General/song_change/Makefile Visualization/Makefile Visualization/blur_scope/Makefile Visualization/sanalyzer/Makefile Visualization/opengl_spectrum/Makefile wmxmms/Makefile po/Makefile.in intl/Makefile"
 
 ac_config_commands="$ac_config_commands default"
 
@@ -27387,7 +27384,6 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "xmms.1") CONFIG_FILES="$CONFIG_FILES xmms.1" ;;
     "wmxmms.1") CONFIG_FILES="$CONFIG_FILES wmxmms.1" ;;
-    "xmms.spec") CONFIG_FILES="$CONFIG_FILES xmms.spec" ;;
     "xmms-config") CONFIG_FILES="$CONFIG_FILES xmms-config" ;;
     "xmms/Makefile") CONFIG_FILES="$CONFIG_FILES xmms/Makefile" ;;
     "xmms/defskin/Makefile") CONFIG_FILES="$CONFIG_FILES xmms/defskin/Makefile" ;;

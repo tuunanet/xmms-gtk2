@@ -134,11 +134,11 @@ void playlist_popup(gint x, gint y, gint num_items, gint * nx, gint * ny, gint *
 	gtk_signal_connect(GTK_OBJECT(popup->window), "motion_notify_event", GTK_SIGNAL_FUNC(playlist_popup_motion), NULL);
 	gtk_signal_connect(GTK_OBJECT(popup->window), "button_release_event", GTK_SIGNAL_FUNC(playlist_popup_release), NULL);
 	util_set_cursor(popup->window);
-	gdk_window_move(popup->window->window, x - 1, y - 1);
+	util_move_popup_window(popup->window, x - 1, y - 1);
 	gtk_widget_show(popup->window);
 	gdk_window_raise(popup->window->window);
 	gdk_flush();
 	playlist_popup_draw(popup);
-	gdk_pointer_grab(popup->window->window, FALSE, GDK_BUTTON_MOTION_MASK | GDK_BUTTON_RELEASE_MASK, GDK_NONE, GDK_NONE, GDK_CURRENT_TIME);
+	gdk_pointer_grab(popup->window->window, FALSE, GDK_BUTTON_MOTION_MASK | GDK_BUTTON_RELEASE_MASK, NULL, NULL, GDK_CURRENT_TIME);
 	gdk_flush();
 }

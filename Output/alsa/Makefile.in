@@ -57,8 +57,8 @@ libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libALSA_la_DEPENDENCIES =
 am__libALSA_la_SOURCES_DIST = alsa.c alsa.h about.c audio.c \
-	configure.c init.c
-am__objects_1 = alsa.lo about.lo audio.lo configure.lo init.lo
+	pcm-state.c pcm-state.h configure.c init.c
+am__objects_1 = alsa.lo about.lo audio.lo pcm-state.lo configure.lo init.lo
 @HAVE_ALSA_TRUE@am__objects_2 = $(am__objects_1)
 am_libALSA_la_OBJECTS = $(am__objects_2)
 libALSA_la_OBJECTS = $(am_libALSA_la_OBJECTS)
@@ -256,6 +256,7 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 datadir = @datadir@
+datarootdir = @datarootdir@
 exec_prefix = @exec_prefix@
 host = @host@
 host_alias = @host_alias@
@@ -286,6 +287,7 @@ alsasources = \
 alsa.c alsa.h \
 about.c \
 audio.c \
+pcm-state.c pcm-state.h \
 configure.c \
 init.c
 
@@ -371,6 +373,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/about.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/alsa.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm-state.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configure.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init.Plo@am__quote@
 

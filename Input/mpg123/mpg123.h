@@ -304,6 +304,7 @@ void mpg123_id3v2_destroy(struct id3v2tag_t* tag);
 char *mpg123_format_song_title(struct id3v2tag_t *tag, char *filename);
 double mpg123_relative_pos(void);
 gboolean mpg123_get_first_frame(FILE *fh, struct frame *frm, guint8 **buffer);
+guint mpg123_get_file_duration(FILE *file);
 const char *mpg123_get_id3_genre(unsigned char genre_code);
 
 

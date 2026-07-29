@@ -56,7 +56,8 @@ am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libmpg123_la_DEPENDENCIES = $(top_builddir)/libxmms/libxmms.la
-am__libmpg123_la_SOURCES_DIST = mpg123.c mpg123.h common.c tabinit.c \
+am__libmpg123_la_SOURCES_DIST = mpg123.c mpg123.h common.c \
+	stream-position.c stream-position.h tabinit.c \
 	l2tables.h configure.c fileinfo.c decode_2to1.c decode_4to1.c \
 	layer1.c layer2.c layer3.c equalizer.c http.c huffman.h \
 	getbits.h dxhead.c dxhead.h id3.c id3.h id3_frame.c \
@@ -65,7 +66,7 @@ am__libmpg123_la_SOURCES_DIST = mpg123.c mpg123.h common.c tabinit.c \
 	decode_i386.c dct64_i386.c decode_i586.s decode_3dnow.s \
 	dct64_3dnow.s dct36_3dnow.s getcpuflags.s dct64_MMX.s \
 	decode_MMX.s
-am__objects_1 = mpg123.lo common.lo tabinit.lo configure.lo \
+am__objects_1 = mpg123.lo common.lo stream-position.lo tabinit.lo configure.lo \
 	fileinfo.lo decode_2to1.lo decode_4to1.lo layer1.lo layer2.lo \
 	layer3.lo equalizer.lo http.lo dxhead.lo id3.lo id3_frame.lo \
 	id3_frame_content.lo id3_frame_text.lo id3_frame_url.lo \
@@ -284,6 +285,7 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 datadir = @datadir@
+datarootdir = @datarootdir@
 exec_prefix = @exec_prefix@
 host = @host@
 host_alias = @host_alias@
@@ -313,7 +315,7 @@ xmmsdir = @xmmsdir@
 lib_LTLIBRARIES = libmpg123.la
 COMMON_SRC = \
 mpg123.c mpg123.h \
-common.c \
+common.c stream-position.c stream-position.h \
 tabinit.c l2tables.h \
 configure.c fileinfo.c \
 decode_2to1.c decode_4to1.c \
@@ -338,7 +340,7 @@ EXTRA_DIST = decode.c decode_i386.c decode_i586.s decode_3dnow.s dct64_i386.c \
 
 libmpg123_la_SOURCES = $(COMMON_SRC) $(EXTRA_SRC)
 libmpg123_la_LDFLAGS = @PLUGIN_LDFLAGS@
-libmpg123_la_LIBADD = @GTK_LIBS@ @PTHREAD_LIBS@ @Z_LIBS@ $(top_builddir)/libxmms/libxmms.la
+libmpg123_la_LIBADD = @GTK_LIBS@ @PTHREAD_LIBS@ @Z_LIBS@ $(top_builddir)/libxmms/libxmms.la -lm
 INCLUDES = @GTK_CFLAGS@ @ARCH_DEFINES@ -I$(top_builddir)/intl -I$(top_srcdir)
 all: all-am
 
@@ -410,6 +412,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stream-position.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configure.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dct64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dct64_i386.Plo@am__quote@

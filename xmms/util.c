@@ -30,7 +30,7 @@ static GQuark quark_popup_data;
 
 
 /*
- * find_file_recursively() by Jörg Schuler Wed, 17 Feb 1999 23:50:52
+ * find_file_recursively() by Jï¿½rg Schuler Wed, 17 Feb 1999 23:50:52
  * +0100 Placed under GPL version 2 or (at your option) any later
  * version
  */
@@ -125,7 +125,7 @@ void del_directory(const char *dirname)
 	FTS *fts;
 	FTSENT *p;
 
-	fts = fts_open(argv, FTS_PHYSICAL, (int (*)())NULL);
+	fts = fts_open(argv, FTS_PHYSICAL, NULL);
 	while ((p = fts_read(fts)) != NULL) {
 		switch (p->fts_info) {
 		case FTS_D:
@@ -441,7 +441,14 @@ struct MenuPos
 	gint y;
 };
 
-static void util_menu_position(GtkMenu *menu, gint *x, gint *y, gpointer data)
+void util_move_popup_window(GtkWidget *window, gint x, gint y)
+{
+	/* Preserve the requested initial position when GTK maps the popup. */
+	gtk_window_move(GTK_WINDOW(window), x, y);
+}
+
+static void util_menu_position(GtkMenu *menu, gint *x, gint *y,
+			       gboolean *push_in, gpointer data)
 {
 	GtkRequisition requisition;
 	gint screen_width;
@@ -455,6 +462,7 @@ static void util_menu_position(GtkMenu *menu, gint *x, gint *y, gpointer data)
 
 	*x = CLAMP(pos->x - 2, 0, MAX(0, screen_width - requisition.width));
 	*y = CLAMP(pos->y - 2, 0, MAX(0, screen_height - requisition.height));
+	*push_in = FALSE;
 }
 
 static void util_menu_delete_popup_data(GtkObject *object,
@@ -515,8 +523,7 @@ void util_item_factory_popup_with_data(GtkItemFactory * ifactory,
 	}
 
 	gtk_menu_popup(GTK_MENU(ifactory->widget), NULL, NULL,
-		       (GtkMenuPositionFunc) util_menu_position,
-		       pos, mouse_button, time);
+		       util_menu_position, pos, mouse_button, time);
 }
 
 void util_item_factory_popup(GtkItemFactory * ifactory, guint x, guint y,
@@ -553,7 +560,7 @@ GtkWidget* util_create_add_url_window(gchar *caption, GtkSignalFunc ok_func, Gtk
 {
 	GtkWidget *win, *vbox, *bbox, *ok, *enqueue, *cancel, *combo;
 
-	win = gtk_window_new(GDK_WINDOW_DIALOG);
+	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(win), caption);
 	gtk_window_set_position(GTK_WINDOW(win), GTK_WIN_POS_MOUSE);
 	gtk_window_set_default_size(GTK_WINDOW(win), 400, -1);
@@ -565,7 +572,7 @@ GtkWidget* util_create_add_url_window(gchar *caption, GtkSignalFunc ok_func, Gtk
 	combo = gtk_combo_new();
 	if(cfg.url_history)
 		gtk_combo_set_popdown_strings(GTK_COMBO(combo), cfg.url_history);
-	gtk_signal_connect(GTK_OBJECT(GTK_COMBO(combo)->entry), "activate", util_add_url_callback, GTK_COMBO(combo)->entry);
+	gtk_signal_connect(GTK_OBJECT(GTK_COMBO(combo)->entry), "activate", GTK_SIGNAL_FUNC(util_add_url_callback), GTK_COMBO(combo)->entry);
 	gtk_signal_connect(GTK_OBJECT(GTK_COMBO(combo)->entry), "activate", ok_func, GTK_COMBO(combo)->entry);
 	gtk_box_pack_start(GTK_BOX(vbox), combo, FALSE, FALSE, 0);
 	gtk_window_set_focus(GTK_WINDOW(win), GTK_COMBO(combo)->entry);
@@ -580,7 +587,7 @@ GtkWidget* util_create_add_url_window(gchar *caption, GtkSignalFunc ok_func, Gtk
 	gtk_button_box_set_spacing(GTK_BUTTON_BOX(bbox), 5);
 
 	ok = gtk_button_new_with_label(_("OK"));
-	gtk_signal_connect(GTK_OBJECT(ok), "clicked", util_add_url_callback, GTK_COMBO(combo)->entry);
+	gtk_signal_connect(GTK_OBJECT(ok), "clicked", GTK_SIGNAL_FUNC(util_add_url_callback), GTK_COMBO(combo)->entry);
 	gtk_signal_connect(GTK_OBJECT(ok), "clicked", ok_func, GTK_COMBO(combo)->entry);
 
 	GTK_WIDGET_SET_FLAGS(ok, GTK_CAN_DEFAULT);
@@ -592,7 +599,7 @@ GtkWidget* util_create_add_url_window(gchar *caption, GtkSignalFunc ok_func, Gtk
 	{
 		/* I18N: "Enqueue" here means "Add to playlist" */
 		enqueue = gtk_button_new_with_label(_("Enqueue"));
-		gtk_signal_connect(GTK_OBJECT(enqueue), "clicked", util_add_url_callback, GTK_COMBO(combo)->entry);
+		gtk_signal_connect(GTK_OBJECT(enqueue), "clicked", GTK_SIGNAL_FUNC(util_add_url_callback), GTK_COMBO(combo)->entry);
 		gtk_signal_connect(GTK_OBJECT(enqueue), "clicked", enqueue_func, GTK_COMBO(combo)->entry);
 		GTK_WIDGET_SET_FLAGS(enqueue, GTK_CAN_DEFAULT);
 		gtk_box_pack_start(GTK_BOX(bbox), enqueue, FALSE, FALSE, 0);
@@ -607,16 +614,6 @@ GtkWidget* util_create_add_url_window(gchar *caption, GtkSignalFunc ok_func, Gtk
 
 	gtk_widget_show(vbox);
 	return win;
-}
-
-static int int_compare_func(gconstpointer a, gconstpointer b)
-{
-	if (GPOINTER_TO_INT(a) < GPOINTER_TO_INT(b))
-		return -1;
-	if (GPOINTER_TO_INT(a) > GPOINTER_TO_INT(b))
-		return 1;
-	else
-		return 0;
 }
 
 static void filebrowser_changed(GtkFileSelection * filesel)
@@ -668,10 +665,10 @@ static void filebrowser_entry_changed(GtkEditable *entry, gpointer data)
 		filebrowser_changed(GTK_FILE_SELECTION(data));
 }
 
-static void filebrowser_dir_select(GtkCList *clist, int row, int col, GdkEventButton *event, gpointer data)
+static void filebrowser_dir_activated(GtkTreeView *tree, GtkTreePath *path,
+					GtkTreeViewColumn *column, gpointer data)
 {
-	if (event && event->type == GDK_2BUTTON_PRESS)
-		gtk_idle_add(filebrowser_idle_changed, data);
+	gtk_idle_add(filebrowser_idle_changed, data);
 }
 
 gboolean util_filebrowser_is_dir(GtkFileSelection * filesel)
@@ -721,52 +718,31 @@ gboolean util_filebrowser_is_dir(GtkFileSelection * filesel)
 
 static void filebrowser_add_files(GtkFileSelection * filesel)
 {
-	GList *sel_list = NULL, *node;
-	char *text, *ptr;
+	gchar **filenames;
+	const gchar *filename;
+	gchar *directory;
+	gint i;
+
+	filenames = gtk_file_selection_get_selections(filesel);
+	filename = filenames[0] ? filenames[0] :
+		gtk_file_selection_get_filename(filesel);
 
 	if (cfg.filesel_path)
 		g_free(cfg.filesel_path);
+	directory = g_path_get_dirname(filename);
+	cfg.filesel_path = g_strconcat(directory, "/", NULL);
+	g_free(directory);
 
-	/*
-	 * There got to be some clean way to do this too
-	 */
-	gtk_label_get(GTK_LABEL(GTK_BIN(filesel->history_pulldown)->child), &ptr);
-	/* This will give an extra slash if the current dir is the root. */
-	cfg.filesel_path = g_strconcat(ptr, "/", NULL);
-
-	node = GTK_CLIST(filesel->file_list)->selection;
-	while (node)
+	if (filenames[0])
 	{
-		sel_list = g_list_prepend(sel_list, node->data);
-		node = g_list_next(node);
+		for (i = 0; filenames[i] != NULL; i++)
+			playlist_add(filenames[i]);
 	}
-	sel_list = g_list_sort(sel_list, int_compare_func);
+	else if (filename[0] && filename[strlen(filename) - 1] != '/')
+		playlist_add((gchar *) filename);
 
-	node = sel_list;
-
-	if (node)
-	{
-		do {
-			char *tmp;
-			gtk_clist_get_text(GTK_CLIST(filesel->file_list),
-					   GPOINTER_TO_INT(node->data), 0, &text);
-			tmp = g_strconcat(cfg.filesel_path, text, NULL);
-			playlist_add(tmp);
-			g_free(tmp);
-		} while ((node = g_list_next(node)) != NULL);
-	}
-	else
-	{
-		/*
-		 * No files selected, but the user may have
-		 * typed a filename.
-		 */
-		text = gtk_file_selection_get_filename(filesel);
-		if (text[strlen(text) - 1] != '/')
-			playlist_add(text);
-		gtk_file_selection_set_filename(filesel, "");
-	}
-	g_list_free(sel_list);
+	gtk_file_selection_set_filename(filesel, "");
+	g_strfreev(filenames);
 	playlistwin_update_list();
 }
 
@@ -795,7 +771,8 @@ static void filebrowser_add_selected_files(GtkWidget * w, gpointer data)
 	GtkFileSelection *filesel = GTK_FILE_SELECTION(data);
 
 	filebrowser_add_files(filesel);
-	gtk_clist_unselect_all(GTK_CLIST(filesel->file_list));
+	gtk_tree_selection_unselect_all(
+		gtk_tree_view_get_selection(GTK_TREE_VIEW(filesel->file_list)));
 
 	/*HACK*/
 	gtk_entry_set_text(GTK_ENTRY(filesel->selection_entry), "");
@@ -804,17 +781,12 @@ static void filebrowser_add_selected_files(GtkWidget * w, gpointer data)
 static void filebrowser_add_all_files(GtkWidget * w, gpointer data)
 {
 	GtkFileSelection *filesel = GTK_FILE_SELECTION(data);
+	GtkTreeSelection *selection;
 
-	gtk_clist_freeze(GTK_CLIST(filesel->file_list));
-	gtk_clist_select_all(GTK_CLIST(filesel->file_list));
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(filesel->file_list));
+	gtk_tree_selection_select_all(selection);
 	filebrowser_add_files(filesel);
-	/*
-	 * We want gtk_clist_undo_selection() but it seems to be buggy
-	 * in GTK+ 1.2.6
-	 */
-	/*  gtk_clist_undo_selection(GTK_CLIST(GTK_FILE_SELECTION(filesel)->file_list)); */
-	gtk_clist_unselect_all(GTK_CLIST(filesel->file_list));
-	gtk_clist_thaw(GTK_CLIST(filesel->file_list));
+	gtk_tree_selection_unselect_all(selection);
 
 	gtk_entry_set_text(GTK_ENTRY(filesel->selection_entry), "");
 }
@@ -823,7 +795,7 @@ GtkWidget * util_create_filebrowser(gboolean play_button)
 {
 	GtkWidget *filebrowser, *bbox, *add_selected, *add_all, *label, *button;
 	GtkFileSelection *fb;
-	GtkSignalFunc sf;
+	void (*sf)(GtkWidget *, GtkWidget *);
 	char *title;
 
 	if (play_button)
@@ -834,18 +806,17 @@ GtkWidget * util_create_filebrowser(gboolean play_button)
 	filebrowser = gtk_file_selection_new(title);
 	fb = GTK_FILE_SELECTION(filebrowser);
 
-	gtk_clist_set_selection_mode(GTK_CLIST(fb->file_list),
-				     GTK_SELECTION_EXTENDED);
+	gtk_file_selection_set_select_multiple(fb, TRUE);
 	gtk_signal_connect(GTK_OBJECT(fb->selection_entry), "changed",
-			   filebrowser_entry_changed, filebrowser);
-	gtk_signal_connect(GTK_OBJECT(fb->dir_list), "select_row",
-			   filebrowser_dir_select, filebrowser);
+			   GTK_SIGNAL_FUNC(filebrowser_entry_changed), filebrowser);
+	gtk_signal_connect(GTK_OBJECT(fb->dir_list), "row-activated",
+			   GTK_SIGNAL_FUNC(filebrowser_dir_activated), filebrowser);
 	if (play_button)
 		sf = filebrowser_play;
 	else
 		sf = filebrowser_add;
 	gtk_signal_connect(GTK_OBJECT(fb->ok_button),
-			   "clicked", sf, filebrowser);
+			   "clicked", GTK_SIGNAL_FUNC(sf), filebrowser);
 	gtk_signal_connect_object(GTK_OBJECT(fb->cancel_button), "clicked",
 				  GTK_SIGNAL_FUNC(gtk_widget_destroy),
 				  GTK_OBJECT(filebrowser));
@@ -859,11 +830,11 @@ GtkWidget * util_create_filebrowser(gboolean play_button)
 	add_selected  = gtk_button_new_with_label(_("Add selected files"));
 	gtk_box_pack_start(GTK_BOX(bbox), add_selected, FALSE, FALSE, 0);
 	gtk_signal_connect(GTK_OBJECT(add_selected), "clicked",
-			   filebrowser_add_selected_files, filebrowser);
+			   GTK_SIGNAL_FUNC(filebrowser_add_selected_files), filebrowser);
 	add_all = gtk_button_new_with_label(_("Add all files in directory"));
 	gtk_box_pack_start(GTK_BOX(bbox), add_all, FALSE, FALSE, 0);
 	gtk_signal_connect(GTK_OBJECT(add_all), "clicked",
-			   filebrowser_add_all_files, filebrowser);
+			   GTK_SIGNAL_FUNC(filebrowser_add_all_files), filebrowser);
 	gtk_widget_show_all(bbox);
 
 	/*
@@ -916,13 +887,37 @@ GtkWidget * util_create_filebrowser(gboolean play_button)
 	return filebrowser;
 }
 
+static const gchar *util_font_resolve_default(const gchar *name)
+{
+	if (!strcmp(name, XMMS_LEGACY_PLAYLIST_FONT) ||
+	    !strcmp(name, XMMS_INTERIM_PLAYLIST_FONT) ||
+	    !strcmp(name, XMMS_INTERIM_FIXED_PLAYLIST_FONT) ||
+	    !strcmp(name, XMMS_INTERIM_PROPORTIONAL_PLAYLIST_FONT) ||
+	    !strcmp(name, XMMS_DEFAULT_PLAYLIST_FONT))
+		return XMMS_DEFAULT_PLAYLIST_FONT;
+	if (!strcmp(name, XMMS_LEGACY_MAINWIN_FONT) ||
+	    !strcmp(name, XMMS_INTERIM_MAINWIN_FONT) ||
+	    !strcmp(name, XMMS_INTERIM_FIXED_MAINWIN_FONT) ||
+	    !strcmp(name, XMMS_INTERIM_PROPORTIONAL_MAINWIN_FONT) ||
+	    !strcmp(name, XMMS_DEFAULT_MAINWIN_FONT))
+		return XMMS_DEFAULT_MAINWIN_FONT;
+	return NULL;
+}
+
 GdkFont *util_font_load(char *name)
 {
 	GdkFont *font;
+	const gchar *default_name;
 
-	/* First try the prefered way, then just try to get some font */
-
-	if (!cfg.use_fontsets)
+	/* Select the same built-in font used by the historical fallback path. */
+	default_name = util_font_resolve_default(name);
+	if (default_name)
+	{
+		font = gdk_font_load(default_name);
+		if (!font)
+			font = gdk_font_load("fixed");
+	}
+	else if (!cfg.use_fontsets)
 	{
 		if ((font = gdk_font_load(name)) == NULL)
 			font = gdk_fontset_load(name);

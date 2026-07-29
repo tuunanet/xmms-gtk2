@@ -72,6 +72,8 @@ enum
 };
 
 static void playlistwin_sort_menu_callback(gpointer cb_data, guint action, GtkWidget * w);
+/* GtkItemFactory stores callbacks as void (*)(void). */
+#define playlistwin_sort_menu_callback ((GtkItemFactoryCallback) playlistwin_sort_menu_callback)
 static void playlistwin_sub_menu_callback(gpointer cb_data, guint action, GtkWidget * w);
 static void playlistwin_save_type_cb(gpointer cb_data, guint action, GtkWidget * w);
 static void playlistwin_set_hints(void);
@@ -119,6 +121,8 @@ GtkItemFactoryEntry playlistwin_sort_menu_entries[] =
 					PLAYLISTWIN_SORT_REVERSE, "<Item>"},
 };
 
+#undef playlistwin_sort_menu_callback
+
 static const int playlistwin_sort_menu_entries_num =
 	sizeof(playlistwin_sort_menu_entries) /
 	sizeof(playlistwin_sort_menu_entries[0]);
@@ -127,12 +131,15 @@ enum {
 	PLAYLISTWIN_SAVE_EXTENSION = 0, PLAYLISTWIN_SAVE_M3U, PLAYLISTWIN_SAVE_PLS
 };
 
+#define playlistwin_save_type_cb ((GtkItemFactoryCallback) playlistwin_save_type_cb)
 static GtkItemFactoryEntry playlistwin_playlist_filetypes[] = {
 	{N_("/By extension"), NULL, playlistwin_save_type_cb, PLAYLISTWIN_SAVE_EXTENSION, NULL},
 	{"/-", NULL, NULL, 0, "<Separator>"},
 	{"/m3u", NULL, playlistwin_save_type_cb, PLAYLISTWIN_SAVE_M3U, NULL},
 	{"/pls", NULL, playlistwin_save_type_cb, PLAYLISTWIN_SAVE_PLS, NULL},
 };
+
+#undef playlistwin_save_type_cb
 
 static const int playlistwin_playlist_filetypes_num =
 	sizeof(playlistwin_playlist_filetypes) /
@@ -143,16 +150,20 @@ enum
 	PLAYLISTWIN_REMOVE_DEAD_FILES, PLAYLISTWIN_PHYSICALLY_DELETE
 };
 
+#define playlistwin_sub_menu_callback ((GtkItemFactoryCallback) playlistwin_sub_menu_callback)
 GtkItemFactoryEntry playlistwin_sub_menu_entries[] =
 {
 	{N_("/Remove Dead Files"), NULL, playlistwin_sub_menu_callback, PLAYLISTWIN_REMOVE_DEAD_FILES, "<Item>"},
 	{N_("/Physically Delete Files"), NULL, playlistwin_sub_menu_callback, PLAYLISTWIN_PHYSICALLY_DELETE, "<Item>"},
 };
 
+#undef playlistwin_sub_menu_callback
+
 static const int playlistwin_sub_menu_entries_num =
 	sizeof(playlistwin_sub_menu_entries) /
 	sizeof(playlistwin_sub_menu_entries[0]);
 
+#define playlistwin_popup_menu_callback ((GtkItemFactoryCallback) playlistwin_popup_menu_callback)
 GtkItemFactoryEntry playlistwin_popup_menu_entries[] =
 {
 	{N_("/View File Info"), "<control>3", playlistwin_popup_menu_callback, MISC_FILEINFO, "<Item>"},
@@ -184,6 +195,8 @@ GtkItemFactoryEntry playlistwin_popup_menu_entries[] =
 	{N_("/Playlist/Save List"), NULL, playlistwin_popup_menu_callback, PLIST_SAVE, "<Item>"},
 	{N_("/Playlist/New List"), NULL, playlistwin_popup_menu_callback, PLIST_NEW, "<Item>"},
 };
+
+#undef playlistwin_popup_menu_callback
 
 static const int playlistwin_popup_menu_entries_num =
 	sizeof(playlistwin_popup_menu_entries) /
@@ -1285,7 +1298,7 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 	if (grab)
 		gdk_pointer_grab(playlistwin->window, FALSE,
 				 GDK_BUTTON_MOTION_MASK | GDK_BUTTON_RELEASE_MASK,
-				 GDK_NONE, GDK_NONE, GDK_CURRENT_TIME);
+				 NULL, NULL, GDK_CURRENT_TIME);
 
 }
 
@@ -1480,7 +1493,7 @@ static void playlistwin_physically_delete(void)
 
 	ok = gtk_button_new_with_label(_("OK"));
 	cancel = gtk_button_new_with_label(_("Cancel"));
-	gtk_signal_connect(GTK_OBJECT(ok), "clicked", playlistwin_physically_delete_cb, selected_list);
+	gtk_signal_connect(GTK_OBJECT(ok), "clicked", GTK_SIGNAL_FUNC(playlistwin_physically_delete_cb), selected_list);
 	gtk_signal_connect_object(GTK_OBJECT(ok), "clicked", GTK_SIGNAL_FUNC(gtk_widget_destroy), GTK_OBJECT(dialog));
 	gtk_signal_connect_object(GTK_OBJECT(cancel), "clicked", GTK_SIGNAL_FUNC(gtk_widget_destroy), GTK_OBJECT(dialog));
 	gtk_box_pack_start(GTK_BOX(bbox), ok, FALSE, FALSE, 0);
@@ -1619,7 +1632,7 @@ static gboolean playlistwin_keypress(GtkWidget * w, GdkEventKey * event, gpointe
 			break;
 		default:
 			/* TODO give a non-null quark? */
-			if (!gtk_accel_group_activate(playlistwin_accel, NULL, playlistwin, event->keyval, event->state))
+			if (!gtk_accel_group_activate(playlistwin_accel, 0, G_OBJECT(playlistwin), event->keyval, event->state))
 				gtk_widget_event(mainwin, (GdkEvent *) event);
 			refresh = FALSE;
 			break;
@@ -1921,7 +1934,7 @@ static void selection_received(GtkWidget *widget, GtkSelectionData *selection_da
 
 static void playlistwin_create_gtk(void)
 {
-	playlistwin = gtk_window_new(GDK_WINDOW_DIALOG);
+	playlistwin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	dock_add_window(dock_window_list, playlistwin);
 	gtk_widget_set_app_paintable(playlistwin, TRUE);
 	if (cfg.show_wm_decorations)

@@ -17,8 +17,10 @@
  */
 #include "xmms.h"
 
-void sbutton_button_press_cb(GtkWidget * widget, GdkEventButton * event, SButton * button)
+void sbutton_button_press_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	SButton *button = data;
+
 	if (event->button != 1)
 		return;
 	if (inside_widget(event->x, event->y, &button->sb_widget))
@@ -28,8 +30,10 @@ void sbutton_button_press_cb(GtkWidget * widget, GdkEventButton * event, SButton
 	}
 }
 
-void sbutton_button_release_cb(GtkWidget * widget, GdkEventButton * event, SButton * button)
+void sbutton_button_release_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	SButton *button = data;
+
 	if (event->button != 1)
 		return;
 	if (button->sb_inside && button->sb_pressed)
@@ -42,8 +46,9 @@ void sbutton_button_release_cb(GtkWidget * widget, GdkEventButton * event, SButt
 		button->sb_pressed = 0;
 }
 
-void sbutton_motion_cb(GtkWidget * widget, GdkEventMotion * event, SButton * button)
+void sbutton_motion_cb(GtkWidget * widget, GdkEventMotion * event, gpointer data)
 {
+	SButton *button = data;
 	int inside;
 
 	if (!button->sb_pressed)
@@ -67,9 +72,9 @@ SButton *create_sbutton(GList ** wlist, GdkPixmap * parent, GdkGC * gc, gint x, 
 	b->sb_widget.width = w;
 	b->sb_widget.height = h;
 	b->sb_widget.visible = 1;
-	b->sb_widget.button_press_cb = GTK_SIGNAL_FUNC(sbutton_button_press_cb);
-	b->sb_widget.button_release_cb = GTK_SIGNAL_FUNC(sbutton_button_release_cb);
-	b->sb_widget.motion_cb = GTK_SIGNAL_FUNC(sbutton_motion_cb);
+	b->sb_widget.button_press_cb = sbutton_button_press_cb;
+	b->sb_widget.button_release_cb = sbutton_button_release_cb;
+	b->sb_widget.motion_cb = sbutton_motion_cb;
 	b->sb_push_cb = cb;
 	add_widget(wlist, b);
 	return b;

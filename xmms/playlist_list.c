@@ -118,8 +118,10 @@ void playlist_list_move_down(PlayList_List *pl)
 		pl->pl_prev_max++;
 }
 
-void playlist_list_button_press_cb(GtkWidget * widget, GdkEventButton * event, PlayList_List * pl)
+void playlist_list_button_press_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	PlayList_List *pl = data;
+
 	if (event->button == 1 && pl->pl_fheight &&
 	    inside_widget(event->x, event->y, &pl->pl_widget))
 	{
@@ -195,8 +197,9 @@ int playlist_list_get_playlist_position(PlayList_List *pl, int x, int y)
 	return(MIN((iy / pl->pl_fheight) + pl->pl_first, length - 1));
 }
 
-void playlist_list_motion_cb(GtkWidget * widget, GdkEventMotion * event, PlayList_List * pl)
+void playlist_list_motion_cb(GtkWidget * widget, GdkEventMotion * event, gpointer data)
 {
+	PlayList_List *pl = data;
 	gint nr, y, off, i;
 
 	if (pl->pl_dragging)
@@ -244,8 +247,10 @@ void playlist_list_motion_cb(GtkWidget * widget, GdkEventMotion * event, PlayLis
 	}
 }
 
-void playlist_list_button_release_cb(GtkWidget * widget, GdkEventButton * event, PlayList_List * pl)
+void playlist_list_button_release_cb(GtkWidget * widget, GdkEventButton * event, gpointer data)
 {
+	PlayList_List *pl = data;
+
 	pl->pl_dragging = FALSE;
 	pl->pl_auto_drag_down = FALSE;
 	pl->pl_auto_drag_up = FALSE;
@@ -513,9 +518,9 @@ PlayList_List *create_playlist_list(GList ** wlist, GdkPixmap * parent, GdkGC * 
 	pl->pl_widget.width = w;
 	pl->pl_widget.height = h;
 	pl->pl_widget.visible = TRUE;
-	pl->pl_widget.button_press_cb = GTK_SIGNAL_FUNC(playlist_list_button_press_cb);
-	pl->pl_widget.button_release_cb = GTK_SIGNAL_FUNC(playlist_list_button_release_cb);
-	pl->pl_widget.motion_cb = GTK_SIGNAL_FUNC(playlist_list_motion_cb);
+	pl->pl_widget.button_press_cb = playlist_list_button_press_cb;
+	pl->pl_widget.button_release_cb = playlist_list_button_release_cb;
+	pl->pl_widget.motion_cb = playlist_list_motion_cb;
 	pl->pl_widget.draw = playlist_list_draw;
 	pl->pl_prev_selected = -1;
 	pl->pl_prev_min = -1;

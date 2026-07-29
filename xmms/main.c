@@ -36,6 +36,7 @@
 #include "libxmms/xmmsctrl.h"
 #include "libxmms/util.h"
 #include "libxmms/dirbrowser.h"
+#include "outputplugin.h"
 #include "xmms_mini.xpm"
 
 #define RANDTABLE_SIZE 128
@@ -110,6 +111,8 @@ const GtkTargetEntry _xmms_drop_types[] =
 };
 
 void mainwin_options_menu_callback(gpointer cb_data, guint action, GtkWidget * w);
+/* GtkItemFactory stores callbacks as void (*)(void). */
+#define mainwin_options_menu_callback ((GtkItemFactoryCallback) mainwin_options_menu_callback)
 void mainwin_volume_motioncb(gint pos);
 static void set_timer_mode_menu_cb(TimerMode mode);
 static void mainwin_queue_manager_queue_refresh(GtkWidget * widget, gpointer userdata);
@@ -146,11 +149,14 @@ GtkItemFactoryEntry mainwin_options_menu_entries[] =
 	{N_("/Easy Move"), "<control>E", mainwin_options_menu_callback, MAINWIN_OPT_EASY_MOVE, "<ToggleItem>"},
 };
 
+#undef mainwin_options_menu_callback
+
 static gint mainwin_options_menu_entries_num =
 	sizeof(mainwin_options_menu_entries) /
 	sizeof(mainwin_options_menu_entries[0]);
 
 void mainwin_songname_menu_callback(gpointer cb_data, guint action, GtkWidget * w);
+#define mainwin_songname_menu_callback ((GtkItemFactoryCallback) mainwin_songname_menu_callback)
 
 enum
 {
@@ -165,11 +171,14 @@ GtkItemFactoryEntry mainwin_songname_menu_entries[] =
 	{N_("/Autoscroll Song Name"), NULL, mainwin_songname_menu_callback, MAINWIN_SONGNAME_SCROLL, "<ToggleItem>"},
 };
 
+#undef mainwin_songname_menu_callback
+
 static gint mainwin_songname_menu_entries_num =
 	sizeof(mainwin_songname_menu_entries) /
 	sizeof(mainwin_songname_menu_entries[0]);
 
 void mainwin_vis_menu_callback(gpointer cb_data, guint action, GtkWidget * w);
+#define mainwin_vis_menu_callback ((GtkItemFactoryCallback) mainwin_vis_menu_callback)
 
 enum
 {
@@ -226,6 +235,8 @@ GtkItemFactoryEntry mainwin_vis_menu_entries[] =
 	{N_("/Visualization plugins"), "<control>V", mainwin_vis_menu_callback, MAINWIN_VIS_PLUGINS, "<Item>"}
 };
 
+#undef mainwin_vis_menu_callback
+
 static gint mainwin_vis_menu_entries_num =
 	sizeof(mainwin_vis_menu_entries) /
 	sizeof(mainwin_vis_menu_entries[0]);
@@ -266,6 +277,7 @@ enum
 };
 
 void mainwin_general_menu_callback(gpointer cb_data, guint action, GtkWidget * w);
+#define mainwin_general_menu_callback ((GtkItemFactoryCallback) mainwin_general_menu_callback)
 
 GtkItemFactoryEntry mainwin_general_menu_entries[] =
 {
@@ -302,6 +314,8 @@ GtkItemFactoryEntry mainwin_general_menu_entries[] =
 	{N_("/-"), NULL, NULL, 0, "<Separator>"},
 	{N_("/Exit"), "<control>Q", mainwin_general_menu_callback, MAINWIN_GENERAL_EXIT, "<Item>"}
 };
+
+#undef mainwin_general_menu_callback
 
 static const int mainwin_general_menu_entries_num =
 	sizeof(mainwin_general_menu_entries) /
@@ -493,12 +507,41 @@ static void read_config(void)
 		g_free(cfg.mainwin_font);
 		cfg.mainwin_font = NULL;
 	}
-	if (cfg.playlist_font == NULL)
-		cfg.playlist_font = g_strdup("-adobe-helvetica-bold-r-*-*-10-*");
-	if (cfg.mainwin_font == NULL)
-		cfg.mainwin_font = g_strdup("-adobe-helvetica-medium-r-*-*-8-*");
+	if (cfg.playlist_font == NULL ||
+	    !strcmp(cfg.playlist_font, XMMS_LEGACY_PLAYLIST_FONT) ||
+	    !strcmp(cfg.playlist_font, XMMS_INTERIM_PLAYLIST_FONT) ||
+	    !strcmp(cfg.playlist_font, XMMS_INTERIM_FIXED_PLAYLIST_FONT) ||
+	    !strcmp(cfg.playlist_font, XMMS_INTERIM_PROPORTIONAL_PLAYLIST_FONT) ||
+	    !strcmp(cfg.playlist_font, XMMS_INTERIM_CLASSIC_FONT))
+	{
+		g_free(cfg.playlist_font);
+		cfg.playlist_font = g_strdup(XMMS_DEFAULT_PLAYLIST_FONT);
+	}
+	if (cfg.mainwin_font == NULL ||
+	    !strcmp(cfg.mainwin_font, XMMS_LEGACY_MAINWIN_FONT) ||
+	    !strcmp(cfg.mainwin_font, XMMS_INTERIM_MAINWIN_FONT) ||
+	    !strcmp(cfg.mainwin_font, XMMS_INTERIM_FIXED_MAINWIN_FONT) ||
+	    !strcmp(cfg.mainwin_font, XMMS_INTERIM_PROPORTIONAL_MAINWIN_FONT) ||
+	    !strcmp(cfg.mainwin_font, XMMS_INTERIM_CLASSIC_FONT))
+	{
+		g_free(cfg.mainwin_font);
+		cfg.mainwin_font = g_strdup(XMMS_DEFAULT_MAINWIN_FONT);
+	}
 	if (cfg.gentitle_format == NULL)
 		cfg.gentitle_format = g_strdup("%p - %t");
+	/* Migrate the old automatic OSS default when this system has no OSS device. */
+	if (output_plugin_is_unavailable_oss(cfg.outputplugin))
+	{
+		gchar *alsa_plugin = output_plugin_find_alsa(plugin_dir_list[0]);
+
+		if (alsa_plugin)
+		{
+			g_free(cfg.outputplugin);
+			cfg.outputplugin = alsa_plugin;
+		}
+	}
+	if (cfg.outputplugin == NULL)
+		cfg.outputplugin = output_plugin_find_alsa(plugin_dir_list[0]);
 	if (cfg.outputplugin == NULL)
 	{
 #ifdef HAVE_OSS
@@ -1368,7 +1411,7 @@ void mainwin_press(GtkWidget * widget, GdkEventButton * event, gpointer callback
 		gdk_pointer_grab(mainwin->window, FALSE,
 				 GDK_BUTTON_MOTION_MASK |
 				 GDK_BUTTON_RELEASE_MASK,
-				 GDK_NONE, GDK_NONE, GDK_CURRENT_TIME);
+				 NULL, NULL, GDK_CURRENT_TIME);
 }
 
 void mainwin_focus_in(GtkWidget * widget, GdkEvent * event, gpointer callback_data)
@@ -1422,7 +1465,7 @@ gboolean mainwin_keypress(GtkWidget * w, GdkEventKey * event, gpointer data)
 			input_seek(CLAMP(input_get_time() + 5000, 0, playlist_get_current_length()) / 1000);
 		break;
 	default:
-	     break;
+		return FALSE;
 
 	}
 
@@ -1462,13 +1505,13 @@ void mainwin_jump_to_time(void)
 	if (!get_input_playing())
 		return;
 
-	mainwin_jtt = gtk_window_new(GDK_WINDOW_DIALOG);
+	mainwin_jtt = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(mainwin_jtt), _("Jump to time"));
 	gtk_window_set_policy(GTK_WINDOW(mainwin_jtt), FALSE, FALSE, FALSE);
 	gtk_window_set_transient_for(GTK_WINDOW(mainwin_jtt), GTK_WINDOW(mainwin));
 	gtk_signal_connect(GTK_OBJECT(mainwin_jtt), "destroy", GTK_SIGNAL_FUNC(gtk_widget_destroyed), &mainwin_jtt);
 	gtk_signal_connect(GTK_OBJECT(mainwin_jtt), "key_press_event",
-			   util_dialog_keypress_cb, NULL);
+			   GTK_SIGNAL_FUNC(util_dialog_keypress_cb), NULL);
 	gtk_container_border_width(GTK_CONTAINER(mainwin_jtt), 10);
 
 	vbox = gtk_vbox_new(FALSE, 5);
@@ -1876,7 +1919,7 @@ static void mainwin_jump_to_file(void)
 	 */
 	GtkWidget **edit_clist_qlist_and_queue = g_malloc(sizeof(GtkWidget *)*4);
 
-	mainwin_jtf = gtk_window_new(GDK_WINDOW_DIALOG);
+	mainwin_jtf = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(mainwin_jtf), _("Jump to file"));
 	gtk_window_set_transient_for(GTK_WINDOW(mainwin_jtf),
 				     GTK_WINDOW(mainwin));
@@ -2198,7 +2241,7 @@ void mainwin_queue_manager(void)
 	 */
 	GtkWidget **edit_clist_qlist_and_queue = g_malloc(sizeof(GtkWidget *)*4);
 
-	mainwin_qm = gtk_window_new(GDK_WINDOW_DIALOG);
+	mainwin_qm = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(mainwin_qm), _("Jump to file"));
 	gtk_window_set_transient_for(GTK_WINDOW(mainwin_qm),
 				     GTK_WINDOW(mainwin));
@@ -2446,7 +2489,7 @@ void mainwin_show_dirbrowser(void)
 		gtk_signal_connect(GTK_OBJECT(mainwin_dir_browser), "destroy", GTK_SIGNAL_FUNC(gtk_widget_destroyed), &mainwin_dir_browser);
 		gtk_signal_connect(GTK_OBJECT(mainwin_dir_browser),
 				   "key_press_event",
-				   util_dialog_keypress_cb, NULL);
+				   GTK_SIGNAL_FUNC(util_dialog_keypress_cb), NULL);
 		gtk_window_set_transient_for(GTK_WINDOW(mainwin_dir_browser), GTK_WINDOW(mainwin));
 	}
 	if (!GTK_WIDGET_VISIBLE(mainwin_dir_browser))
@@ -2492,15 +2535,15 @@ void mainwin_show_add_url_window(void)
 
 	mainwin_url_window =
 		util_create_add_url_window(_("Enter location to play:"),
-					   mainwin_url_ok_clicked,
-					   mainwin_url_enqueue_clicked);
+					   GTK_SIGNAL_FUNC(mainwin_url_ok_clicked),
+					   GTK_SIGNAL_FUNC(mainwin_url_enqueue_clicked));
 	gtk_window_set_transient_for(GTK_WINDOW(mainwin_url_window),
 				     GTK_WINDOW(mainwin));
 	gtk_signal_connect(GTK_OBJECT(mainwin_url_window), "destroy",
 			   GTK_SIGNAL_FUNC(gtk_widget_destroyed),
 			   &mainwin_url_window);
 	gtk_signal_connect(GTK_OBJECT(mainwin_url_window), "key_press_event",
-			   util_dialog_keypress_cb, NULL);
+			   GTK_SIGNAL_FUNC(util_dialog_keypress_cb), NULL);
 	gtk_widget_show(mainwin_url_window);
 }
 
@@ -2516,7 +2559,7 @@ void mainwin_eject_pushed(void)
 	gtk_signal_connect(GTK_OBJECT(filebrowser), "destroy",
 			   GTK_SIGNAL_FUNC(gtk_widget_destroyed), &filebrowser);
 	gtk_signal_connect(GTK_OBJECT(filebrowser), "key_press_event",
-			   util_dialog_keypress_cb,  NULL);
+			   GTK_SIGNAL_FUNC(util_dialog_keypress_cb),  NULL);
 }
 
 void mainwin_play_pushed(void)
@@ -3319,7 +3362,7 @@ static void mainwin_set_icon (GtkWidget *win)
 {
 	static GdkPixmap *icon;
 	static GdkBitmap *mask;
-	Atom icon_atom;
+	GdkAtom icon_atom;
 	glong data[2];
 
 	if (!icon)
@@ -3488,7 +3531,7 @@ void mainwin_create(void)
 
 void mainwin_recreate(void)
 {
-	gtk_signal_disconnect_by_func(GTK_OBJECT(mainwin), mainwin_destroy, NULL);
+	gtk_signal_disconnect_by_func(GTK_OBJECT(mainwin), GTK_SIGNAL_FUNC(mainwin_destroy), NULL);
 	dock_window_list = g_list_remove(dock_window_list, mainwin);
 	gtk_widget_destroy(mainwin);
 	mainwin_create_gtk();
@@ -3528,7 +3571,7 @@ static void output_failed(void)
 			  "No other program is blocking the soundcard"),
 			_("OK"), FALSE, NULL, NULL);
 		gtk_signal_connect(GTK_OBJECT(infobox), "destroy",
-				   gtk_widget_destroyed, &infobox);
+				   GTK_SIGNAL_FUNC(gtk_widget_destroyed), &infobox);
 	}
 	else
 		gdk_window_raise(infobox->window);
@@ -4060,13 +4103,19 @@ void segfault_handler(int sig)
 	exit(1);
 }
 
+static gboolean pposition_destroy(gpointer data)
+{
+	gtk_widget_destroy(GTK_WIDGET(data));
+	return FALSE;
+}
+
 static gboolean pposition_configure(GtkWidget *w, GdkEventConfigure *event, gpointer data)
 {
 	gint x,y;
 	gdk_window_get_deskrelative_origin(w->window, &x, &y);
 	if(x != 0 || y != 0)
 		pposition_broken = TRUE;
-	gtk_widget_destroy(w);
+	g_idle_add(pposition_destroy, w);
 
 	return FALSE;
 }

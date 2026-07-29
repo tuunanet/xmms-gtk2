@@ -11,6 +11,7 @@
 #include "mpg123.h"
 #include "id3.h"
 #include "id3_header.h"
+#include "stream-position.h"
 
 /* max = 1728 */
 #define MAXFRAMESIZE 1792
@@ -43,6 +44,7 @@ int mpg123_pcm_point = 0;
 
 static FILE *filept;
 static int filept_opened;
+static Mpg123StreamPosition stream_position;
 
 static int get_fileinfo(void);
 
@@ -147,10 +149,14 @@ static void stream_rewind(void)
 
 int mpg123_stream_jump_to_frame(struct frame *fr, int frame)
 {
+	glong stream_offset;
+
 	if (!filept)
 		return -1;
 	mpg123_read_frame_init();
-	fseek(filept, frame * (fr->framesize + 4), SEEK_SET);
+	stream_offset = (glong) frame * (fr->framesize + 4);
+	fseek(filept, mpg123_stream_position_file_offset(&stream_position,
+							 stream_offset), SEEK_SET);
 	mpg123_read_frame(fr);
 	return 0;
 }
@@ -159,7 +165,8 @@ int mpg123_stream_jump_to_byte(struct frame *fr, int byte)
 {
 	if (!filept)
 		return -1;
-	fseek(filept, byte, SEEK_SET);
+	fseek(filept, mpg123_stream_position_file_offset(&stream_position, byte),
+	      SEEK_SET);
 	mpg123_read_frame(fr);
 	return 0;
 }
@@ -349,7 +356,19 @@ int mpg123_read_frame(struct frame *fr)
 		while (!mpg123_head_check(newhead) ||
 		       !mpg123_decode_header(fr,newhead));
 
-		mpg123_info->filesize -= try;
+		if (stream_position.initialized &&
+		    mpg123_info->filesize >= (guint32) try)
+			mpg123_info->filesize -= try;
+	}
+	if (filept && !stream_position.initialized)
+	{
+		/* The reader is just past the first four-byte MPEG header. */
+		glong data_start = stream_tell() - 4;
+
+		mpg123_stream_position_set_data_start(&stream_position,
+						      data_start);
+		mpg123_info->filesize = mpg123_stream_position_data_size(
+			&stream_position, mpg123_info->filesize);
 	}
 	/* flip/init buffer for Layer 3 */
 	bsbufold = bsbuf;
@@ -448,6 +467,7 @@ int mpg123_decode_header(struct frame *fr, unsigned long newhead)
 
 void mpg123_open_stream(char *bs_filenam, int fd)
 {
+	mpg123_stream_position_init(&stream_position);
 	filept_opened = 1;
 	if (!strncasecmp(bs_filenam, "http://", 7))
 	{
@@ -506,5 +526,6 @@ double mpg123_relative_pos(void)
 {
 	if (!filept || !mpg123_info->filesize)
 		return 0;
-	return ((double) stream_tell()) / mpg123_info->filesize;
+	return mpg123_stream_position_relative(&stream_position, stream_tell(),
+					       mpg123_info->filesize);
 }
