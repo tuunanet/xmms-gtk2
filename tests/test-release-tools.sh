@@ -105,6 +105,13 @@ if ! make -C "$repo_root" -f tests/Makefile -n \
 fi
 echo "ok - preserves GTK test flags when CFLAGS is supplied by distcheck"
 
+if ! grep -Fq -- '-Wno-error=incompatible-pointer-types' \
+	"$repo_root/configure.in" || \
+	! grep -Fq -- '-Wno-error=incompatible-pointer-types' "$repo_root/configure"; then
+	fail "preserves legacy GTK callback compatibility with current GCC"
+fi
+echo "ok - preserves legacy GTK callback compatibility with current GCC"
+
 empty="$tmpdir/empty-changelog.md"
 cat > "$empty" <<EOF
 ## [1.3.0] - 2026-07-26
