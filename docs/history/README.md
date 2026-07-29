@@ -14,4 +14,4 @@ They are historical records, not current project guidance.
 
 For current information, use the main [`README.md`](../../README.md),
 [`CHANGELOG.md`](../../CHANGELOG.md), and
-[GitHub Issues](https://github.com/tuunanet/xmms-classic/issues).
+[GitHub Issues](https://github.com/tuunanet/xmms-gtk2/issues).

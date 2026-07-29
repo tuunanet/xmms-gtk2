@@ -79,7 +79,7 @@ continuation of XMMS 1.2.11 for current Linux and BSD systems.
 - Clarified repository lineage and attribution by distinguishing the original
   XMMS project, the 2015 import and GTK2 port, and current maintenance.
 - Adopted the toolkit-neutral **XMMS Classic** project name and renamed the
-  GitHub repository to `xmms-classic`, while retaining compatibility-sensitive
+  GitHub repository to `xmms-gtk2`, while retaining compatibility-sensitive
   `xmms` runtime and package identifiers.
 
 ### Fixed
@@ -97,14 +97,14 @@ continuation of XMMS 1.2.11 for current Linux and BSD systems.
 - Fixed MP3 seeks landing before the requested position and playing beyond the
   reported duration by preserving fractional Xing percentages, anchoring seek
   offsets at the first MPEG frame, and completing finite tracks at their known
-  length ([#16](https://github.com/tuunanet/xmms-classic/issues/16)).
+  length ([#16](https://github.com/tuunanet/xmms-gtk2/issues/16)).
 - Fixed GTK popup menus opening at the screen's upper-left corner instead of
   their requested pointer position
-  ([#12](https://github.com/tuunanet/xmms-classic/issues/12)).
+  ([#12](https://github.com/tuunanet/xmms-gtk2/issues/12)).
 - Fixed ALSA volume and balance controls when the configured hardware mixer is
   unavailable, as with PipeWire-backed default devices, by falling back to the
   plugin's software volume control
-  ([#10](https://github.com/tuunanet/xmms-classic/issues/10)).
+  ([#10](https://github.com/tuunanet/xmms-gtk2/issues/10)).
 - Fixed source-distribution (`make distcheck`) builds by correcting the bundled
   gettext implementation's obsolete `getcwd()` declaration and making
   `libxmms` resolve public headers from out-of-tree builds.

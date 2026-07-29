@@ -75,7 +75,7 @@ history for fuller attribution.
 > ℹ️ The original `http://www.xmms.org` website, its bug tracker
 > (`bugs.xmms.org`), and the historical `@xmms.org` contact addresses are no
 > longer active. For this fork, please use the
-> [GitHub issue tracker](https://github.com/tuunanet/xmms-classic/issues)
+> [GitHub issue tracker](https://github.com/tuunanet/xmms-gtk2/issues)
 > instead.
 
 ---
@@ -97,7 +97,7 @@ The complete feature list is in the [user manual](docs/manual.md#5-features).
 
 ## Installing a release package
 
-The [GitHub Releases](https://github.com/tuunanet/xmms-classic/releases)
+The [GitHub Releases](https://github.com/tuunanet/xmms-gtk2/releases)
 provide native x86-64 packages alongside the source archive:
 
 - DEB packages target Ubuntu 24.04 LTS (`amd64`).
@@ -235,7 +235,7 @@ behavior—are the priority.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the build, test, commit, and pull
 request workflow. Use the structured
-[GitHub issue forms](https://github.com/tuunanet/xmms-classic/issues/new/choose)
+[GitHub issue forms](https://github.com/tuunanet/xmms-gtk2/issues/new/choose)
 for bug reports and compatibility proposals.
 
 ---

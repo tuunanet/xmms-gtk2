@@ -1032,7 +1032,7 @@ Options:
 
 > ℹ️ The original `Report bugs to http://bugs.xmms.org` line is no longer valid.
 > For this fork, please report bugs at
-> <https://github.com/tuunanet/xmms-classic/issues>.
+> <https://github.com/tuunanet/xmms-gtk2/issues>.
 
 You can specify files on the command line, e.g:
 
@@ -1106,7 +1106,7 @@ Others:
 
 > ℹ️ The original `http://www.xmms.org/download.php` page and its FTP mirrors
 > are no longer available. This fork is distributed exclusively via its GitHub
-> repository: **<https://github.com/tuunanet/xmms-classic>**.
+> repository: **<https://github.com/tuunanet/xmms-gtk2>**.
 
 Original distribution channels (now defunct):
 
@@ -1170,7 +1170,7 @@ There are no known bugs at this time, but if you do find one, please report it.
 
 > ℹ️ The original `http://bugs.xmms.org` tracker is no longer online. For this
 > fork, please report bugs at
-> **<https://github.com/tuunanet/xmms-classic/issues>**.
+> **<https://github.com/tuunanet/xmms-gtk2/issues>**.
 
 ---
 
@@ -1178,7 +1178,7 @@ There are no known bugs at this time, but if you do find one, please report it.
 
 > ℹ️ The original `@xmms.org` contact addresses below are no longer active. The
 > original XMMS developers have long since moved on. For this fork, please use
-> the [GitHub issue tracker](https://github.com/tuunanet/xmms-classic/issues). The
+> the [GitHub issue tracker](https://github.com/tuunanet/xmms-gtk2/issues). The
 > historical contacts are preserved here to credit the original team:
 
 | Name | Role | Historical address |
