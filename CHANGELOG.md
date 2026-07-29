@@ -19,6 +19,9 @@ for XMMS GTK2.
 - Added a manually dispatched Linux Mint 22.3 package workflow that builds and
   install-tests correctly named runtime and development DEBs in a pinned Mint
   image, then uploads source, checksum, and package provenance artifacts.
+- Extended package automation with a pinned Ubuntu 26.04 build and a gated,
+  least-privilege final job that assembles both verified package sets into a
+  draft GitHub Release for a matching annotated tag.
 
 ## [1.2.12] - 2026-07-29
 

@@ -117,41 +117,46 @@ A release tag must:
 - match `configure.in` and `configure`; and
 - have exactly one non-empty `CHANGELOG.md` release entry.
 
-The tag workflow rebuilds and retests the tagged source with read-only
-permissions. Only after those checks succeed does a separate least-privilege
-job receive `contents: write` permission and create the draft GitHub Release.
-The draft receives the distchecked source archive, `SHA256SUMS`, and release
-notes extracted from the matching changelog entry.
+Pushing the tag does not publish automatically. Manually dispatch **Linux
+packages and release** on that tag and provide the matching version. Its first
+job rejects a branch, lightweight or mismatched tag, a tag outside `main`, or
+an existing published Release before package work begins.
 
-## 4. Build Linux Mint packages
+## 4. Build packages and assemble the draft Release
 
-Manually run **Linux Mint package** on the tag or branch to package, and enter
-the matching SemVer version. The workflow has only a
-`workflow_dispatch` trigger and read-only repository permissions. It runs in a
-pinned Linux Mint 22.3 Zena container image, verifies the target identity and
-amd64 architecture, and rejects a version that disagrees with `configure.in`,
-`configure`, or `CHANGELOG.md`.
+The workflow has only a `workflow_dispatch` trigger. After release validation,
+a two-target build matrix runs in digest-pinned Linux Mint 22.3 Zena and
+Ubuntu 26.04 Resolute amd64 container images. Build jobs retain read-only
+repository permissions and independently verify their target identity.
 
-The workflow then:
+Each target then:
 
-- creates the matching source archive;
-- builds `xmms` and `libxmms-dev` with Debian distribution `zena` and revision
-  `1~linuxmint22.3`;
-- runs the full Xvfb-backed package tests through `make deb`;
-- names downloadable DEBs with `.linuxmint22.3_amd64.deb`;
-- checks package identity, version, and architecture;
-- installs both packages inside the Linux Mint build environment and checks
-  `xmms --version` and the development headers;
-- generates `PACKAGES-SHA256SUMS`, `SHA256SUMS`, and
-  `PACKAGE-METADATA.txt`; and
-- uploads both DEBs, the source archive, checksums, and metadata as a 30-day
-  GitHub Actions artifact named `xmms-VERSION-linuxmint22.3-amd64`.
+- creates the matching source archive for `make deb`;
+- builds `xmms` and `libxmms-dev` with revision `1~linuxmint22.3` or
+  `1~ubuntu26.04`;
+- runs the Xvfb-backed package tests and linkage checks through `make deb`;
+- checks package identity, control version, and architecture;
+- installs both packages in the build environment and checks `xmms --version`
+  plus the development headers; and
+- uploads target-specific DEBs, checksums, and package metadata as a 30-day
+  Actions artifact.
 
-The workflow intentionally does not alter or upload to a GitHub Release.
-Review and test its output before publishing it through a future immutable
-release. Never replace the existing v1.2.12 assets with different bytes.
-These packages target Linux Mint 22.3 on amd64; LMDE and other Linux Mint
-bases require separate builds and testing.
+Downloadable package names use `.linuxmint22.3_amd64.deb` or
+`.ubuntu26.04_amd64.deb`. The Mint artifact also carries the canonical source
+archive.
+
+Only after release validation and both matrix variants succeed does the final
+job receive `actions: read` and `contents: write`. It downloads artifacts from
+the same run, re-verifies both `PACKAGES-SHA256SUMS` and `SHA256SUMS` files,
+and assembles four DEBs, one source archive, release notes, target metadata,
+package checksum manifests, `RELEASE-METADATA.txt`, and a complete
+`SHA256SUMS`. It then creates a draft GitHub Release for the existing tag.
+
+A rerun may replace assets only while that Release remains a draft. The
+workflow fails rather than modify a published release, and it never publishes
+a draft automatically. Never replace the existing v1.2.12 assets with
+different bytes; use a new patch version. LMDE, other Ubuntu/Mint releases,
+and non-amd64 architectures require separate builds and testing.
 
 ## 5. Review and publish
 
@@ -160,11 +165,12 @@ Before publishing the draft in GitHub:
 1. confirm the tag and displayed version;
 2. inspect the extracted release notes;
 3. download the source archive and verify `SHA256SUMS`;
-4. download the Linux Mint package workflow artifact and verify both checksum
-   files;
-5. confirm the release checks and Linux Mint package workflow succeeded for the
-   tagged commit and packaging recipes on `main`; and
-6. perform any final smoke test required for the release.
+4. verify the release-level `SHA256SUMS` and both target package checksum
+   manifests;
+5. confirm release validation and both Linux Mint and Ubuntu package jobs
+   succeeded for the tagged commit on `main`;
+6. install and smoke-test each package pair on its named distribution; and
+7. perform any other final manual checks required for the release.
 
 Then publish the complete draft manually. With immutable releases enabled,
 publication permanently locks its tag, notes, and all source and package
@@ -172,9 +178,8 @@ assets. Delete the short-lived release branch after publication. Never move,
 delete, or recreate a published version tag; prepare a new patch release
 instead.
 
-Rerunning a failed tag workflow may update an existing draft and replace its
-source assets. The Linux Mint package workflow only uploads a new Actions
-artifact and does not replace GitHub Release assets.
+Rerunning the manual workflow may repair an existing draft and replace its
+assets. It fails closed once the Release is published.
 
 ## Rollback and hotfixes
 
@@ -196,9 +201,11 @@ The workflows follow GitHub's documented mechanisms for
 least-privilege
 [`GITHUB_TOKEN` permissions](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token),
 and [container jobs](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/run-jobs-in-a-container).
-The Linux Mint package workflow uses the same
+The package workflow pins the
 [`linuxmintd/mint22.3-amd64`](https://hub.docker.com/r/linuxmintd/mint22.3-amd64)
-image family used by Linux Mint's own CI and pins its manifest digest. Package
-recipes follow
+image family used by Linux Mint's own CI and the official
+[`ubuntu:26.04`](https://hub.docker.com/_/ubuntu) amd64 image by manifest
+digest. Draft assembly uses the pinned GitHub artifact actions and the GitHub
+CLI's `release create --verify-tag --draft` boundary. Package recipes follow
 the official [Debian maintainer
 reference](https://www.debian.org/doc/manuals/debmake-doc/).

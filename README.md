@@ -100,29 +100,41 @@ The complete feature list is in the [user manual](docs/manual.md#5-features).
 
 ## Installing a release package
 
-The manual **Linux Mint package** GitHub Actions workflow builds native
-x86-64 packages in the Linux Mint 22.3 Zena userspace. Each successful run
-uploads a 30-day workflow artifact containing:
+The manual **Linux packages and release** GitHub Actions workflow builds native
+x86-64 packages in independently pinned Linux Mint 22.3 Zena and Ubuntu 26.04
+Resolute userspaces. It requires a matching annotated `vVERSION` tag on `main`.
+After both target builds install and smoke-test their packages, the workflow
+creates a draft GitHub Release containing:
 
-- `xmms_VERSION-1.linuxmint22.3_amd64.deb`;
-- `libxmms-dev_VERSION-1.linuxmint22.3_amd64.deb`;
-- the matching source archive;
-- `PACKAGES-SHA256SUMS` and `SHA256SUMS`; and
-- `PACKAGE-METADATA.txt` with source, image, distribution, and package details.
+- `xmms_VERSION-1.linuxmint22.3_amd64.deb` and
+  `libxmms-dev_VERSION-1.linuxmint22.3_amd64.deb`;
+- `xmms_VERSION-1.ubuntu26.04_amd64.deb` and
+  `libxmms-dev_VERSION-1.ubuntu26.04_amd64.deb`;
+- the matching source archive and `release-notes.md`;
+- target-specific package checksum and metadata files;
+- `RELEASE-METADATA.txt`; and
+- `SHA256SUMS` covering every release asset except itself.
 
-After downloading and extracting the workflow artifact, verify its contents
-and install both packages with the distribution package manager:
+Download the draft assets, verify them, and install the package pair matching
+your distribution:
 
 ```sh
-sha256sum -c SHA256SUMS
+sha256sum --check SHA256SUMS
+
+# Linux Mint 22.3
 sudo apt install \
   ./xmms_1.2.12-1.linuxmint22.3_amd64.deb \
   ./libxmms-dev_1.2.12-1.linuxmint22.3_amd64.deb
+
+# Ubuntu 26.04
+sudo apt install \
+  ./xmms_1.2.12-1.ubuntu26.04_amd64.deb \
+  ./libxmms-dev_1.2.12-1.ubuntu26.04_amd64.deb
 ```
 
 The optional `libxmms-dev` package contains headers and linker files for plugin
-development. These packages target Linux Mint 22.3 (`amd64`); packages for
-other distribution bases should be built and tested separately.
+development. Review and test the draft before a maintainer publishes it. Do
+not install a package labelled for a different distribution target.
 
 ---
 

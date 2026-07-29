@@ -1,4 +1,4 @@
-name: Linux package artifacts
+name: Linux packages and release
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: linux-package-artifacts-${{ github.ref }}
+  group: linux-package-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
