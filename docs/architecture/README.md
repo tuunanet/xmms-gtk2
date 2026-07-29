@@ -1,6 +1,6 @@
-# XMMS Classic — Architecture
+# XMMS GTK2 — Architecture
 
-This directory documents the internal architecture of XMMS Classic: UI, audio
+This directory documents the internal architecture of XMMS GTK2: UI, audio
 pipeline, plugins, external control, playlist/streaming side paths, and
 build/test layout.
 

@@ -1,6 +1,6 @@
 # UI interaction architecture
 
-This document is a **medium-to-high-level map** of how the XMMS Classic user
+This document is a **medium-to-high-level map** of how the XMMS GTK2 user
 interface talks to the rest of the program. It is aimed at someone opening the
 tree for the first time and wanting to know:
 

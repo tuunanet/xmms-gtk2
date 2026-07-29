@@ -1,6 +1,6 @@
 # Plugin system
 
-XMMS Classic’s processing pipeline is entirely plugin-driven. This document
+XMMS GTK2’s processing pipeline is entirely plugin-driven. This document
 covers how plugins are discovered, classified, wired into the core, and
 lifecycle-managed. For the PCM path itself, see
 [processing-pipeline.md](processing-pipeline.md).

@@ -94,7 +94,7 @@ require_text docs/architecture/build-and-test.md 'Cppcheck' \
 	'documents the C lint architecture'
 require_text docs/architecture/build-and-test.md 'tools/cppcheck-suppressions.txt' \
 	'documents the lint baseline path'
-require_text packaging/xmms.desktop 'Name=XMMS Classic' \
+require_text packaging/xmms.desktop 'Name=XMMS GTK2' \
 	'uses current branding in the desktop entry'
 require_text packaging/xmms.desktop 'Exec=xmms %U' \
 	'preserves the xmms executable name'

@@ -78,8 +78,8 @@ static void assert_default_matches_classic_fixed(const gchar *name)
 	g_assert_nonnull(classic);
 	g_assert_cmpint(font->ascent, ==, classic->ascent);
 	g_assert_cmpint(font->descent, ==, classic->descent);
-	g_assert_cmpint(gdk_text_width(font, "XMMS Classic", 12), ==,
-	                gdk_text_width(classic, "XMMS Classic", 12));
+	g_assert_cmpint(gdk_text_width(font, "XMMS GTK2", 9), ==,
+	                gdk_text_width(classic, "XMMS GTK2", 9));
 	gdk_font_unref(classic);
 	gdk_font_unref(font);
 }

@@ -9,7 +9,7 @@ publishing tagged releases.
 
 The detailed upstream history (1997–2007) is preserved under
 [`docs/history/`](docs/history/README.md). This file is the canonical changelog
-for XMMS Classic.
+for XMMS GTK2.
 
 ---
 
@@ -17,8 +17,8 @@ for XMMS Classic.
 
 ## [1.2.12] - 2026-07-29
 
-XMMS Classic 1.2.12 replaces the unpublished 1.3.1 and 1.3.2 draft versions
-and is intended to be the first published XMMS Classic release. It continues
+XMMS GTK2 1.2.12 replaces the unpublished 1.3.1 and 1.3.2 draft versions
+and is intended to be the first published XMMS GTK2 release. It continues
 the original XMMS 1.2 release line and includes the draft changes listed below.
 
 ### Added
@@ -78,8 +78,8 @@ continuation of XMMS 1.2.11 for current Linux and BSD systems.
   `make check` target.
 - Clarified repository lineage and attribution by distinguishing the original
   XMMS project, the 2015 import and GTK2 port, and current maintenance.
-- Adopted the toolkit-neutral **XMMS Classic** project name and renamed the
-  GitHub repository to `xmms-gtk2`, while retaining compatibility-sensitive
+- Adopted the **XMMS GTK2** project name and renamed the GitHub repository to
+  `xmms-gtk2`, while retaining compatibility-sensitive
   `xmms` runtime and package identifiers.
 
 ### Fixed

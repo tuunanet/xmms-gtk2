@@ -1,4 +1,4 @@
-# Reviewed XMMS Classic legacy diagnostics.
+# Reviewed XMMS GTK2 legacy diagnostics.
 # Generated against the supported Cppcheck profile; CI on Ubuntu 24.04 is authoritative.
 # Format: diagnostic-id:relative/path.c:line
 # Keep suppressions narrow; new diagnostics must fail the lint gate.

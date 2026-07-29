@@ -1,6 +1,6 @@
 # Build layout, tests, and CI
 
-This document orients newcomers to **how XMMS Classic is built and checked**,
+This document orients newcomers to **how XMMS GTK2 is built and checked**,
 not how to develop plugins. For day-to-day contributor commands see
 [CONTRIBUTING.md](../../CONTRIBUTING.md); for release tagging see
 [docs/releases.md](../releases.md).

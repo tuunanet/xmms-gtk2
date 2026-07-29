@@ -1,6 +1,6 @@
 # Release process
 
-XMMS Classic uses deliberate, manually tested releases. Merging a pull request
+XMMS GTK2 uses deliberate, manually tested releases. Merging a pull request
 to `main` runs CI but does not publish a release. Short-lived `release/*`
 branches produce release candidates, while immutable annotated `v*` tags are
 the only source of official GitHub Releases.
@@ -105,7 +105,7 @@ commit:
 ```sh
 git switch main
 git pull --ff-only
-git tag -a v1.2.12 -m "XMMS Classic 1.2.12"
+git tag -a v1.2.12 -m "XMMS GTK2 1.2.12"
 git push origin v1.2.12
 ```
 

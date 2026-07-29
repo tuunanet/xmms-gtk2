@@ -1,4 +1,4 @@
-# XMMS Classic Conventions
+# XMMS GTK2 Conventions
 
 These rules apply to every human and AI-authored change.
 Project compatibility outranks opportunistic modernization.
