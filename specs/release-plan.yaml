@@ -1,9 +1,17 @@
 target: Unreleased
-status: complete
+status: active
 epics:
+  - id: e02
+    slug: multi-distro-package-release
+    title: Multi-distribution package release workflow
+    stories:
+      - e02s01
+      - e02s02
+    wsjf: 12
   - id: e01
     slug: linux-mint-package
     title: Linux Mint package workflow
     stories:
       - e01s01
     wsjf: 10
+    status: complete

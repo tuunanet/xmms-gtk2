@@ -1,40 +1,55 @@
 core_value: >-
-  Produce trustworthy XMMS packages whose Linux Mint compatibility and provenance
-  match their published names.
+  Produce and publish trustworthy XMMS Linux packages whose compatibility,
+  provenance, and release identity match their names.
 summary: >-
-  Add an explicitly manual package-build path for the current Linux Mint 22.3
-  release. A maintainer can request a versioned build and receive installable
-  runtime and development packages plus the metadata needed to verify and
-  redistribute them.
+  Extend the manually dispatched package workflow so one validated release tag
+  builds amd64 runtime and development packages in both Linux Mint 22.3 and
+  Ubuntu 26.04. Release assembly occurs only after both target builds pass their
+  package, install, smoke-test, and checksum gates.
+
+  The combined outputs become assets on a draft GitHub Release tied to the
+  selected annotated version tag. A maintainer still reviews and publishes the
+  draft manually.
 in_scope:
-  - id: e01s01
-    outcome: Build packages in the Linux Mint 22.3 amd64 userspace on manual request.
-  - id: e01s01
-    outcome: Name package assets and Debian revisions for Linux Mint 22.3.
-  - id: e01s01
-    outcome: Publish source, checksums, package metadata, and DEBs as a workflow artifact.
-  - id: e01s01
-    outcome: Install and smoke-test the generated packages before upload.
+  - id: e02s01
+    outcome: Build, install, and upload Ubuntu 26.04 amd64 runtime and development DEBs.
+  - id: e02s01
+    outcome: Preserve the existing Linux Mint 22.3 package artifact contract.
+  - id: e02s02
+    outcome: Gate release assembly on successful Ubuntu and Linux Mint build artifacts.
+  - id: e02s02
+    outcome: Create or safely resume a draft GitHub Release with packages, source, notes, checksums, and provenance metadata.
+  - id: e02s02
+    outcome: Require a matching annotated version tag whose commit is contained in main.
 out_of_scope:
-  - item: Replace or mutate the immutable v1.2.12 GitHub Release.
-    reason: Published release assets must not be silently replaced.
-  - item: Build packages for LMDE, Linux Mint 21, or non-amd64 architectures.
-    reason: Those targets require separate compatibility decisions and testing.
-  - item: Automatically publish a GitHub Release.
-    reason: The requested workflow is manual and should produce reviewable artifacts first.
+  - item: Automatically publish a draft GitHub Release.
+    reason: Maintainer review remains the final release-quality gate.
+  - item: Replace assets on an already published GitHub Release.
+    reason: Published releases are immutable project history.
+  - item: Sign packages or release assets.
+    reason: No package or artifact signing infrastructure is currently available.
+  - item: Build non-amd64, LMDE, older Mint, or older Ubuntu packages.
+    reason: Each additional target requires an independently verified userspace and compatibility contract.
+  - item: Create or move a version tag from the workflow.
+    reason: Maintainers must create the reviewed annotated tag before dispatch.
 constraints:
-  target: Linux Mint 22.3 Zena amd64
+  mint_target: Linux Mint 22.3 Zena amd64
+  ubuntu_target: Ubuntu 26.04 LTS Resolute amd64
   package_format: Debian binary packages
   trigger: GitHub Actions workflow_dispatch only
-  security: Pin the target container image and third-party actions by digest or commit.
+  release_state: draft
+  security: Pin container images and actions; grant contents write only to release assembly.
 success_criteria:
-  - A manual workflow validates the requested version against project metadata.
-  - Packages are built and installed inside Linux Mint 22.3.
-  - Runtime and development asset names contain linuxmint22.3 and amd64.
-  - Uploaded output includes both DEBs, source tarball, SHA-256 checksums, and package metadata.
-  - Packaging contract tests protect the workflow wiring.
+  - A matching annotated vVERSION tag on main is validated before package builds.
+  - Both targets build and install xmms and libxmms-dev packages in their claimed userspaces.
+  - Downloadable DEB names identify linuxmint22.3 or ubuntu26.04 and amd64.
+  - The release job runs only after both target variants succeed.
+  - Downloaded artifact checksums are re-verified before release creation.
+  - The draft Release contains four DEBs, one source archive, release notes, target metadata, and complete SHA-256 checksums.
+  - A rerun may repair the same draft but cannot modify a published release.
 references:
   - specs/IMPACT_LATEST.md
   - specs/tech-architecture/tech-stack.md
-  - https://hub.docker.com/r/linuxmintd/mint22.3-amd64
-  - https://github.com/linuxmint/github-actions/blob/master/.github/workflows/do-builds.yml
+  - https://canonical.com/blog/canonical-releases-ubuntu-26-04-lts-resolute-raccoon
+  - https://hub.docker.com/_/ubuntu
+  - https://cli.github.com/manual/gh_release_create

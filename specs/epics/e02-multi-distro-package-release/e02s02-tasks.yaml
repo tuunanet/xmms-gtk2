@@ -1,0 +1,39 @@
+story_id: e02s02
+title: Assemble package artifacts into a draft GitHub Release
+status: failing
+bcps: 5
+tasks:
+  - id: 1
+    description: Guard tag validation, least privilege, artifact fan-in, and draft release behavior
+    verify: tests/test-package-recipes.sh . && grep -q 'No new security findings in affected paths' specs/security/REVIEW.md
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories:
+        - release
+        - supply-chain
+        - Security Review
+  - id: 2
+    description: Re-verify both artifact sets and create or resume only a draft Release
+    verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))" && actionlint .github/workflows/package-linux-mint.yml && grep -q 'No new security findings in affected paths' specs/security/REVIEW.md
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories:
+        - release
+        - integrity
+        - Security Review
+  - id: 3
+    description: Synchronize release policy and maintainer verification instructions
+    verify: "grep -q 'draft GitHub Release' docs/releases.md && grep -q 'SHA256SUMS' README.md && grep -q 'contents: write' docs/architecture/build-and-test.md"
+    risk: P2
+    security: low
+    status: failing
+    allure:
+      severity: normal
+      categories:
+        - documentation
