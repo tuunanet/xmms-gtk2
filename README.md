@@ -1,7 +1,12 @@
 # XMMS GTK2
 
-> A community-maintained preservation fork of XMMS 1.2.11, keeping the classic
-> player usable on modern Linux systems.
+> A preservation fork of XMMS 1.2.11 for modern Linux systems.
+
+> [!IMPORTANT]
+> This project is **not actively maintained**. Issues and pull requests may not
+> be reviewed. If you want to continue developing XMMS GTK2, please fork this
+> repository and maintain your own open-source fork under the terms of the
+> [GPL-2.0-or-later license](COPYING).
 
 ![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)
 ![Language](https://img.shields.io/badge/language-C-555555)
@@ -36,17 +41,18 @@ interfaces retain their historical identifiers for compatibility.
 
 This is **not** the original XMMS project. Upstream development ended with the
 1.2.11 release in 2007, and the original `xmms.org` website is no longer
-online. The current fork maintainers resumed active maintenance in 2026.
+online. This fork received a compatibility and preservation update in 2026,
+but it is no longer actively maintained.
 
 Repository history falls into three periods:
 
 1. The original XMMS authors and contributors developed XMMS from 1997 to 2007.
 2. Oleg Pudeyev imported XMMS 1.2.11 into Git in 2015 and created the initial
    GTK2 / GLib2 port preserved in this repository's history.
-3. Current fork maintenance continues from 2026, focusing on compatibility and
-   preservation alongside other independent XMMS forks and related projects.
+3. Maintenance work in 2026 focused on compatibility and preservation alongside
+   other independent XMMS forks and related projects.
 
-Current maintenance priorities include:
+The 2026 maintenance work included:
 
 - Completing and hardening GTK2 compatibility while preserving classic UI
   behavior
@@ -67,16 +73,13 @@ multimedia history usable on today's systems.
 - Olle Hällnäs — documentation & support
 
 Many additional contributors shaped XMMS over the years. The full credited
-list is preserved in [CONTRIBUTORS.md](CONTRIBUTORS.md). If you are (or
-represent) one of those contributors and would like a correction or additional
-credit, please open an issue. See also the [changelog](CHANGELOG.md) and git
-history for fuller attribution.
+list is preserved in [CONTRIBUTORS.md](CONTRIBUTORS.md). See also the
+[changelog](CHANGELOG.md) and git history for fuller attribution.
 
 > ℹ️ The original `http://www.xmms.org` website, its bug tracker
 > (`bugs.xmms.org`), and the historical `@xmms.org` contact addresses are no
-> longer active. For this fork, please use the
-> [GitHub issue tracker](https://github.com/tuunanet/xmms-gtk2/issues)
-> instead.
+> longer active. This repository is preserved as a historical and technical
+> resource, not as an active support channel.
 
 ---
 
@@ -203,8 +206,8 @@ Run `./configure --help` for the full list.
   maintenance attribution.
 - **[Upstream history](docs/history/README.md)** — archived release notes,
   detailed changelog, GTK1-era FAQ, and developer TODO list from 1997–2007.
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — development workflow, tests, and
-  pull-request expectations.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — archived development workflow and
+  technical guidance for downstream forks.
 - **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** — participation and enforcement
   standards.
 - **[SECURITY.md](SECURITY.md)** — supported versions and vulnerability
@@ -227,16 +230,16 @@ repository and have different compatibility goals.
 
 ---
 
-## Contributing
+## Continuing the project
 
-Contributions are welcome. This is a preservation-focused fork, so changes that
-keep XMMS building and running on modern systems—without altering its classic
-behavior—are the priority.
+This repository is not actively maintained and is not currently accepting
+contributions through its issue and pull-request workflow.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for the build, test, commit, and pull
-request workflow. Use the structured
-[GitHub issue forms](https://github.com/tuunanet/xmms-gtk2/issues/new/choose)
-for bug reports and compatibility proposals.
+If you want to continue the work, use GitHub's **Fork** action (or clone and
+republish the repository), maintain your own open-source fork, and clearly
+identify it as an independent project. The existing
+[contribution guide](CONTRIBUTING.md) is retained as a reference for building,
+testing, and developing the codebase.
 
 ---
 

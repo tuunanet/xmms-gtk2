@@ -1,11 +1,12 @@
 # Contributors
 
 XMMS was created in 1997, and upstream development ended with version 1.2.11
-in 2007. This community-maintained fork preserves and modernizes that work.
+in 2007. This repository preserves the original work and later modernization
+efforts, but it is not actively maintained.
 
-Historical `@xmms.org` addresses are no longer active. Use the
-[GitHub issue tracker](https://github.com/tuunanet/xmms-gtk2/issues) for this
-fork.
+Historical `@xmms.org` addresses are no longer active. Issues and pull requests
+in this repository may not be reviewed. Anyone interested in continuing the
+project is encouraged to create and maintain an independent open-source fork.
 
 ## Repository import and GTK2 port (2015)
 
@@ -13,11 +14,11 @@ fork.
   compatibility patches, and created the initial GTK2 / GLib2 port preserved
   in this repository's history.
 
-## Current maintainer (2026–present)
+## Repository maintenance (2026)
 
-- **[Tuomo Tuunanen](https://github.com/tuunanet)** — completes and maintains
-  GTK2 compatibility; fixes modern compiler, build, plugin, and ALSA runtime
-  issues; and maintains the regression suite, source distributions,
+- **[Tuomo Tuunanen](https://github.com/tuunanet)** — completed GTK2
+  compatibility work; fixed modern compiler, build, plugin, and ALSA runtime
+  issues; and maintained the regression suite, source distributions,
   documentation, and GitHub project infrastructure.
 
 ### July 2026 contributions
@@ -64,8 +65,8 @@ Tuomo Tuunanen:
 - Restored adding files through the GTK2 file browser and replaced the removed
   GTK1 joystick layout container with its GTK2 equivalent.
 
-The GitHub fork relationship records repository hosting lineage. Current
-maintenance, historical GTK2 porting, and original XMMS authorship are
+The GitHub fork relationship records repository hosting lineage. The 2026
+maintenance work, historical GTK2 porting, and original XMMS authorship are
 separate contributions, all preserved here and in the git history.
 
 ## Original XMMS authors and contributors (1997–2007)

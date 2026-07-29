@@ -1,14 +1,22 @@
-# Contributing to XMMS GTK2
+# Developing XMMS GTK2
 
-Thank you for helping preserve XMMS. Changes should keep the classic XMMS
-experience intact while improving compatibility, reliability, security, or
-maintainability on current systems.
+> [!IMPORTANT]
+> This project is **not actively maintained** and is not currently accepting
+> contributions through its issue and pull-request workflow. Issues and pull
+> requests may not be reviewed.
 
-## Before starting
+If you want to continue developing XMMS GTK2, fork this repository and maintain
+an independent open-source fork under the terms of the
+[GPL-2.0-or-later license](COPYING). This guide is retained as a technical
+reference for downstream maintainers.
 
-- Search [existing issues](https://github.com/tuunanet/xmms-gtk2/issues).
-- For a substantial behavior change, open an issue before writing code.
-- Keep pull requests focused; avoid mixing formatting, refactoring, and behavior
+Changes should keep the classic XMMS experience intact while improving
+compatibility, reliability, security, or maintainability on current systems.
+
+## Before starting in your fork
+
+- Establish an issue and review process appropriate for your fork.
+- Keep changes focused; avoid mixing formatting, refactoring, and behavior
   changes.
 
 ## Build and test
