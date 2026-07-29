@@ -100,23 +100,29 @@ The complete feature list is in the [user manual](docs/manual.md#5-features).
 
 ## Installing a release package
 
-The [GitHub Releases](https://github.com/tuunanet/xmms-gtk2/releases)
-provide native x86-64 packages alongside the source archive:
+The manual **Linux Mint package** GitHub Actions workflow builds native
+x86-64 packages in the Linux Mint 22.3 Zena userspace. Each successful run
+uploads a 30-day workflow artifact containing:
 
-- DEB packages target Ubuntu 24.04 LTS (`amd64`).
+- `xmms_VERSION-1.linuxmint22.3_amd64.deb`;
+- `libxmms-dev_VERSION-1.linuxmint22.3_amd64.deb`;
+- the matching source archive;
+- `PACKAGES-SHA256SUMS` and `SHA256SUMS`; and
+- `PACKAGE-METADATA.txt` with source, image, distribution, and package details.
 
-Download the runtime package and its `PACKAGES-SHA256SUMS` file from the
-release, verify the checksum, then install it with the distribution package
-manager:
+After downloading and extracting the workflow artifact, verify its contents
+and install both packages with the distribution package manager:
 
 ```sh
-# Ubuntu 24.04 LTS
-sudo apt install ./xmms_1.2.12-1.ubuntu24.04_amd64.deb
+sha256sum -c SHA256SUMS
+sudo apt install \
+  ./xmms_1.2.12-1.linuxmint22.3_amd64.deb \
+  ./libxmms-dev_1.2.12-1.linuxmint22.3_amd64.deb
 ```
 
-The optional `libxmms-dev` DEB contains headers and linker files for plugin
-development. Packages for other distributions should be built from source
-rather than forced onto an incompatible system.
+The optional `libxmms-dev` package contains headers and linker files for plugin
+development. These packages target Linux Mint 22.3 (`amd64`); packages for
+other distribution bases should be built and tested separately.
 
 ---
 
@@ -163,8 +169,8 @@ sudo make install
 This installs the `xmms` binary to `<prefix>/bin` and plugins to
 `<prefix>/lib/xmms/`.
 
-On Ubuntu 24.04, after installing the Debian package build dependencies, build
-and verify binary packages from the current source with:
+After installing the Debian package build dependencies, build and verify
+binary packages from the current source with:
 
 ```sh
 make deb

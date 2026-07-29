@@ -1,0 +1,173 @@
+name: Linux Mint package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SemVer release version from configure.in and CHANGELOG.md
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-mint-package-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DEB_DISTRIBUTION: zena
+  DEB_REVISION: 1~linuxmint22.3
+  MINT_IMAGE: linuxmintd/mint22.3-amd64@sha256:f71f1a261ef2957022ae74ad2b89ebbc8fcb2f25e40d8d7cdb599aa9e2748a8e
+  MINT_RELEASE: "22.3"
+  MINT_CODENAME: zena
+
+jobs:
+  build-package:
+    name: Linux Mint 22.3 amd64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: linuxmintd/mint22.3-amd64@sha256:f71f1a261ef2957022ae74ad2b89ebbc8fcb2f25e40d8d7cdb599aa9e2748a8e
+      options: --security-opt seccomp=unconfined
+
+    steps:
+      - name: Check out selected ref
+        # actions/checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Verify Linux Mint target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -r /etc/linuxmint/info
+          grep -Fx "RELEASE=${MINT_RELEASE}" /etc/linuxmint/info
+          grep -Fx "CODENAME=${MINT_CODENAME}" /etc/linuxmint/info
+          test "$(dpkg --print-architecture)" = amd64
+
+      - name: Install package build dependencies
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            binutils \
+            build-essential \
+            ca-certificates \
+            cppcheck \
+            debhelper-compat \
+            dpkg-dev \
+            file \
+            gettext \
+            libasound2-dev \
+            libgl-dev \
+            libgtk2.0-dev \
+            libmikmod-dev \
+            libsm-dev \
+            libvorbis-dev \
+            libxxf86vm-dev \
+            lintian \
+            pkg-config \
+            xauth \
+            xvfb \
+            zlib1g-dev
+          dpkg-query -W -f='${Version}\n' libc6 | grep -E '^2\.39-'
+
+      - name: Validate requested release version
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          tools/check-release-version.sh "${VERSION}"
+
+      - name: Build Linux Mint packages
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          touch aclocal.m4 configure config.h.in Makefile.in
+          touch libxmms/aclocal.m4 libxmms/configure \
+            libxmms/config.h.in libxmms/Makefile.in
+          ./configure --disable-esd
+          make dist-gzip
+          mkdir -p release-artifacts/raw
+          make \
+            DEB_SOURCE_ARCHIVE="${GITHUB_WORKSPACE}/xmms-${VERSION}.tar.gz" \
+            DEB_OUTPUT_DIR="${GITHUB_WORKSPACE}/release-artifacts/raw" \
+            deb
+          cp "xmms-${VERSION}.tar.gz" release-artifacts/
+
+      - name: Name and inspect release artifacts
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          for package in release-artifacts/raw/*.deb; do
+            filename=$(basename "${package}")
+            filename=$(printf '%s\n' "${filename}" | \
+              sed 's/~linuxmint22\.3/.linuxmint22.3/')
+            cp "${package}" "release-artifacts/${filename}"
+          done
+          rm -rf release-artifacts/raw
+
+          runtime="release-artifacts/xmms_${VERSION}-1.linuxmint22.3_amd64.deb"
+          development="release-artifacts/libxmms-dev_${VERSION}-1.linuxmint22.3_amd64.deb"
+          test -f "${runtime}"
+          test -f "${development}"
+          test "$(dpkg-deb --field "${runtime}" Package)" = xmms
+          test "$(dpkg-deb --field "${development}" Package)" = libxmms-dev
+          test "$(dpkg-deb --field "${runtime}" Version)" = \
+            "1:${VERSION}-1~linuxmint22.3"
+          test "$(dpkg-deb --field "${runtime}" Architecture)" = amd64
+
+          {
+            printf 'XMMS version: %s\n' "${VERSION}"
+            printf 'Source commit: %s\n' "${GITHUB_SHA}"
+            printf 'Build image: %s\n' "${MINT_IMAGE}"
+            printf 'Linux Mint release: %s (%s)\n' \
+              "${MINT_RELEASE}" "${MINT_CODENAME}"
+            printf 'Build architecture: %s\n\n' "$(dpkg --print-architecture)"
+            for package in "${runtime}" "${development}"; do
+              printf '[%s]\n' "$(basename "${package}")"
+              dpkg-deb --field "${package}" \
+                Package Version Architecture Depends Recommends
+              printf '\n'
+            done
+          } > release-artifacts/PACKAGE-METADATA.txt
+
+      - name: Install and smoke-test packages
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          apt-get install -y \
+            "./release-artifacts/xmms_${VERSION}-1.linuxmint22.3_amd64.deb" \
+            "./release-artifacts/libxmms-dev_${VERSION}-1.linuxmint22.3_amd64.deb"
+          test "$(xmms --version)" = "xmms ${VERSION}"
+          test -f /usr/include/xmms/plugin.h
+
+      - name: Generate checksums
+        shell: bash
+        working-directory: release-artifacts
+        run: |
+          set -euo pipefail
+          sha256sum ./*.deb > PACKAGES-SHA256SUMS
+          sha256sum ./*.deb ./*.tar.gz PACKAGE-METADATA.txt > SHA256SUMS
+          sha256sum --check PACKAGES-SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Upload Linux Mint release artifacts
+        # actions/upload-artifact v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: xmms-${{ inputs.version }}-linuxmint22.3-amd64
+          path: release-artifacts/*
+          if-no-files-found: error
+          retention-days: 30

@@ -197,51 +197,38 @@ flowchart LR
 | `packaging/debian/` | `control`, `rules`, `.install` files for `xmms` and `libxmms-dev` |
 | `tools/build-deb.sh` | Helper invoked via `make deb` |
 | `packaging/xmms.desktop` | Desktop entry metadata |
+| `.github/workflows/package-linux-mint.yml` | Manual Linux Mint 22.3 package build and artifact verification |
 
 Debian packages are a **distribution** concern; runtime architecture does not
 change when installed from deb vs `make install`.
 
 ---
 
-## 5. CI pipeline (GitHub Actions)
+## 5. Package automation (GitHub Actions)
 
-[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) on `ubuntu-24.04`:
+[`.github/workflows/package-linux-mint.yml`](../../.github/workflows/package-linux-mint.yml)
+is manually dispatched and runs inside a digest-pinned Linux Mint 22.3 Zena
+container on an Ubuntu-hosted GitHub runner:
 
 ```mermaid
 flowchart TB
-    P["push / pull_request"] --> CL[Classify changes]
-    CL -->|docs or meta only| SKIP["Skip full build<br/>build-and-test still green"]
-    CL -->|build-affecting paths or manual| FULL[Full CI job]
-    FULL --> DEP[apt build deps + ccache]
-    DEP --> CFG["./configure --disable-esd"]
-    CFG --> LINT["make lint"]
-    LINT --> BLD[make -j]
-    BLD --> TST["xvfb-run make check"]
-    TST --> DC[make distcheck]
-    DC --> DEB[make deb]
+    M["workflow_dispatch + SemVer"] --> ID[Verify Mint 22.3 / Zena / amd64]
+    ID --> DEP[Install package build dependencies]
+    DEP --> VER[Validate project release version]
+    VER --> DIST[Create source archive]
+    DIST --> DEB["make deb with Mint revision"]
+    DEB --> INSPECT[Inspect package control metadata]
+    INSPECT --> INSTALL[Install runtime + development packages]
+    INSTALL --> SMOKE["xmms --version + header check"]
+    SMOKE --> SUM[Generate checksums and provenance]
+    SUM --> ART[Upload 30-day workflow artifact]
 ```
 
-| Behavior | Detail |
-| --- | --- |
-| **Path filter** | Full CI runs only if some changed path is “source”. Excluded: `docs/**`, top-level prose/legal markdown, `.gitignore` / `.gitattributes` / `.editorconfig`, and `.github` issue/PR templates. Workflow YAML and all code/build paths still trigger full CI. The classify job logs matching paths. |
-| **Required check** | Aggregate `build-and-test` job always runs and reflects skip vs full result |
-| **Concurrency** | `cancel-in-progress` on the same ref; a superseded run fails its gate with `cancelled`—use the latest commit’s checks |
-| **Display** | `xvfb-run` for GTK tests |
-| **C lint** | Full CI installs Cppcheck and runs `make lint` with a five-minute step timeout; C and lint-control paths remain build-affecting. |
-| **Cache** | ccache via [`.github/actions/setup-ccache`](../../.github/actions/setup-ccache) |
-
-### Why this PR series exercised full CI
-
-Architecture documentation under `docs/` would normally skip `full-ci`. PR #44
-also touched `.gitignore` (ignore `.repomix/`). Under the older filter that only
-excluded `README.md` and `docs/**`, that single meta file forced a full
-configure/build/test/distcheck/deb cycle (~5 minutes) on every push, and each
-fix commit cancelled the previous run mid-build. Expanding the exclusion list
-avoids that cost for docs+metadata pull requests without weakening checks for
-real code or workflow changes.
-
-Other workflows (`release-candidate.yml`, `release.yml`, `package-release.yml`)
-handle versioned releases; see [releases.md](../releases.md).
+The workflow uses read-only repository permissions and immutable pins for the
+container image and GitHub actions. `make deb` remains the only package build
+entry point, so local and hosted package builds share recipes and tests. The
+workflow does not publish or replace GitHub Release assets; see
+[releases.md](../releases.md) for review and publication policy.
 
 ---
 

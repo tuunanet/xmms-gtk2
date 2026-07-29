@@ -1,0 +1,34 @@
+story_id: e01s01
+title: Produce Linux Mint 22.3 release artifacts
+status: passing
+bcps: 4
+tasks:
+  - id: 1
+    description: Guard the manual Linux Mint packaging contract
+    verify: tests/test-package-recipes.sh .
+    risk: P1
+    status: passing
+    allure:
+      severity: high
+      categories:
+        - packaging
+        - CI
+  - id: 2
+    description: Build, validate, and upload Linux Mint release artifacts
+    verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))"
+    risk: P1
+    status: passing
+    allure:
+      severity: high
+      categories:
+        - packaging
+        - release
+  - id: 3
+    description: Synchronize package and release documentation
+    verify: grep -q 'Linux Mint 22.3' README.md && grep -q 'Linux Mint package' docs/releases.md
+    risk: P2
+    status: passing
+    allure:
+      severity: normal
+      categories:
+        - documentation

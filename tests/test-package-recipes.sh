@@ -59,7 +59,8 @@ for file in \
 	packaging/debian/rules \
 	packaging/debian/source/format \
 	packaging/debian/xmms.install \
-	tools/build-deb.sh
+	tools/build-deb.sh \
+	.github/workflows/package-linux-mint.yml
 do
 	require_file "$file"
 done
@@ -84,6 +85,10 @@ require_text Makefile.am 'docs/architecture/build-and-test.md' \
 	'distributes the C lint architecture guide'
 require_text Makefile.am 'tools/build-deb.sh' \
 	'builds Debian packages through the shared helper'
+require_text Makefile.am '.github/workflows/package-linux-mint.yml' \
+	'distributes the Linux Mint package workflow'
+require_text Makefile.in '.github/workflows/package-linux-mint.yml' \
+	'ships the generated Linux Mint workflow distribution rule'
 require_text packaging/debian/control ' cppcheck,' \
 	'declares the C analyzer as a Debian build dependency'
 require_text CONTRIBUTING.md 'make lint' \
@@ -108,6 +113,29 @@ require_text tools/build-deb.sh 'lintian --fail-on error' \
 	'runs Debian package policy checks from make deb'
 require_absent_text tools/build-deb.sh 'sudo' \
 	'never elevates privileges from make deb'
+require_text .github/workflows/package-linux-mint.yml 'workflow_dispatch:' \
+	'builds Linux Mint packages only on manual dispatch'
+require_absent_text .github/workflows/package-linux-mint.yml 'pull_request:' \
+	'does not build release artifacts for pull requests'
+require_absent_text .github/workflows/package-linux-mint.yml 'push:' \
+	'does not build release artifacts on push'
+require_text .github/workflows/package-linux-mint.yml \
+	'linuxmintd/mint22.3-amd64@sha256:f71f1a261ef2957022ae74ad2b89ebbc8fcb2f25e40d8d7cdb599aa9e2748a8e' \
+	'pins the Linux Mint 22.3 build image'
+require_text .github/workflows/package-linux-mint.yml 'DEB_DISTRIBUTION: zena' \
+	'marks package metadata for Linux Mint Zena'
+require_text .github/workflows/package-linux-mint.yml \
+	'DEB_REVISION: 1~linuxmint22.3' \
+	'uses a Linux Mint package revision'
+require_text .github/workflows/package-linux-mint.yml \
+	'PACKAGES-SHA256SUMS' \
+	'publishes package checksums'
+require_text .github/workflows/package-linux-mint.yml \
+	'PACKAGE-METADATA.txt' \
+	'publishes package provenance and control metadata'
+require_text .github/workflows/package-linux-mint.yml \
+	'actions/upload-artifact' \
+	'uploads Linux Mint release artifacts'
 require_text packaging/debian/control 'Package: xmms' \
 	'defines the Debian runtime package'
 require_text packaging/debian/control 'Package: libxmms-dev' \
