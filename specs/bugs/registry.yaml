@@ -1,0 +1,9 @@
+bugs:
+  - bug_id: BUG-2026-07-29T213800-distcheck-cflags
+    date: 2026-07-29
+    status: resolved
+    severity: medium
+    priority: P1
+    scope: build
+    summary: distcheck dropped GTK test compiler flags when CFLAGS was supplied.
+    file: specs/bugs/BUG-2026-07-29T213800-distcheck-cflags.md
