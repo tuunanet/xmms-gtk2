@@ -8,7 +8,7 @@ tasks:
     verify: tests/test-package-recipes.sh .
     risk: P1
     security: low
-    status: failing
+    status: passing
     allure:
       severity: high
       categories:

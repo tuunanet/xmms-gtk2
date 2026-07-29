@@ -114,7 +114,7 @@ require_text tools/build-deb.sh 'lintian --fail-on error' \
 require_absent_text tools/build-deb.sh 'sudo' \
 	'never elevates privileges from make deb'
 require_text .github/workflows/package-linux-mint.yml 'workflow_dispatch:' \
-	'builds Linux Mint packages only on manual dispatch'
+	'builds distribution packages only on manual dispatch'
 require_absent_text .github/workflows/package-linux-mint.yml 'pull_request:' \
 	'does not build release artifacts for pull requests'
 require_absent_text .github/workflows/package-linux-mint.yml 'push:' \
@@ -135,24 +135,24 @@ require_text .github/workflows/package-linux-mint.yml \
 	'deb_revision: 1~ubuntu26.04' \
 	'uses an Ubuntu 26.04 package revision'
 require_text .github/workflows/package-linux-mint.yml \
-	'.ubuntu26.04_amd64.deb' \
-	'checks Ubuntu 26.04 downloadable package names'
+	'${ASSET_SUFFIX}_amd64.deb' \
+	'checks target-specific downloadable package names'
 require_text .github/workflows/package-linux-mint.yml \
-	'ubuntu26.04-amd64' \
-	'uploads a distinct Ubuntu 26.04 artifact'
+	'xmms-${{ inputs.version }}-${{ matrix.asset_suffix }}-amd64' \
+	'uploads distinct target artifacts'
 require_text .github/workflows/package-linux-mint.yml \
 	'official-package-repositories.list' \
 	'verifies the Linux Mint package repository configured by the image'
 require_text .github/workflows/package-linux-mint.yml \
-	'codename="${MINT_CODENAME}"' \
+	'codename="${TARGET_CODENAME}"' \
 	'verifies the Linux Mint image codename'
 require_absent_text .github/workflows/package-linux-mint.yml \
 	'/etc/linuxmint/info' \
 	'does not require desktop-only Linux Mint identity metadata'
-require_text .github/workflows/package-linux-mint.yml 'DEB_DISTRIBUTION: zena' \
+require_text .github/workflows/package-linux-mint.yml 'deb_distribution: zena' \
 	'marks package metadata for Linux Mint Zena'
 require_text .github/workflows/package-linux-mint.yml \
-	'DEB_REVISION: 1~linuxmint22.3' \
+	'deb_revision: 1~linuxmint22.3' \
 	'uses a Linux Mint package revision'
 require_text .github/workflows/package-linux-mint.yml \
 	'PACKAGES-SHA256SUMS' \
