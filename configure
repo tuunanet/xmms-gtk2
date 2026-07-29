@@ -3368,7 +3368,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=xmms
- VERSION=1.2.12
+ VERSION=1.2.13
 
 
 cat >>confdefs.h <<_ACEOF
@@ -26425,7 +26425,7 @@ _ACEOF
 
 if test -n "$GCC"
 then
-  CFLAGS="$CFLAGS -Wall -Wpointer-arith -finline-functions"
+  CFLAGS="$CFLAGS -Wall -Wpointer-arith -finline-functions -Wno-error=incompatible-pointer-types"
   case "$CFLAGS" in
     -g*) ;;
     *\ -g*) ;;
