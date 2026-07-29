@@ -1,0 +1,5 @@
+usr/bin/xmms-config
+usr/include/xmms/
+usr/lib/*/libxmms.a
+usr/lib/*/libxmms.so
+usr/share/aclocal/xmms.m4

@@ -1,0 +1,63 @@
+# Editor backup files
+*~
+
+# Autotools configuration output
+/Makefile
+**/Makefile
+/config.h
+/libxmms/config.h
+/config.log
+**/config.log
+/config.status
+**/config.status
+/libtool
+**/libtool
+/stamp-h[0-9]*
+**/stamp-h[0-9]*
+/autom4te.cache/
+/config.cache
+
+# Generated localization and configuration headers
+/po/Makefile.in
+/po/POTFILES
+/po/remove-potcdate.sed
+/xmms/i18n.h
+
+# Compiler and libtool artifacts
+*.o
+*.lo
+*.la
+*.a
+*.so
+*.lai
+*.exp
+*.ver
+.deps/
+.libs/
+
+# Built programs and generated scripts/manual pages
+/xmms/xmms
+/wmxmms/wmxmms
+/xmms-config
+/xmms.1
+/wmxmms.1
+/tests/test-xentry
+/tests/test-filebrowser
+/tests/test-font-load
+/tests/test-keyboard-shortcuts
+/tests/test-mpg123-file-duration
+/tests/test-mpg123-stream-position
+/tests/test-popup-position
+/tests/test-pluginenum
+/tests/test-outputplugin
+/tests/test-alsa-pcm-state
+/tests/test-alsa-volume
+
+# Source distribution and package artifacts
+/xmms-[0-9]*/
+/xmms-[0-9]*.tar.*
+/deb-artifacts/
+
+# Agent / Repomix generated contents (do not commit)
+/.pi/npm/
+.repomix/

@@ -1,0 +1,95 @@
+# Reviewed XMMS Classic legacy diagnostics.
+# Generated against the supported Cppcheck profile; CI on Ubuntu 24.04 is authoritative.
+# Format: diagnostic-id:relative/path.c:line
+# Keep suppressions narrow; new diagnostics must fail the lint gate.
+
+leakNoVarFunctionCall:General/ir/configure.c:294 # legacy error
+preprocessorErrorDirective:Input/cdaudio/cdaudio.c:33 # legacy error
+deallocuse:Input/cdaudio/cdaudio.c:253 # legacy error
+nullPointer:Input/cdaudio/cddb.c:63 # legacy warning
+sprintfOverlappingData:Input/cdaudio/cddb.c:114 # legacy error
+readdirCalled:Input/cdaudio/cddb.c:476 # legacy portability (Cppcheck 2.13)
+readdirCalled:Input/cdaudio/cddb.c:511 # legacy portability (Cppcheck 2.13)
+resourceLeak:Input/cdaudio/http.c:71 # legacy error
+uninitvar:Input/cdaudio/http.c:80 # legacy warning
+memleak:Input/cdaudio/http.c:188 # legacy error
+invalidPointerCast:Input/mpg123/decode_i386.c:205 # legacy portability
+invalidPointerCast:Input/mpg123/decode_i386.c:219 # legacy portability
+invalidPointerCast:Input/mpg123/decode_i386.c:245 # legacy portability
+invalidPrintfArgType_uint:Input/mpg123/getbits.c:69 # legacy warning
+memleak:Input/mpg123/id3_frame.c:325 # legacy error
+shiftNegativeLHS:Input/mpg123/layer1.c:96 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer1.c:100 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer1.c:108 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer1.c:131 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:754 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:770 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:780 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:796 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:806 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:825 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:868 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:956 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:973 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:983 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:999 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:1009 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:1030 # legacy portability
+shiftNegativeLHS:Input/mpg123/layer3.c:1065 # legacy portability
+signConversion:Input/mpg123/mpg123.c:601 # legacy warning
+nullPointerOutOfMemory:Input/mpg123/mpg123.c:813 # legacy warning
+nullPointerOutOfMemory:Input/mpg123/mpg123.c:814 # legacy warning
+nullPointerOutOfMemory:Input/mpg123/mpg123.c:815 # legacy warning
+nullPointerOutOfMemory:Input/mpg123/mpg123.c:816 # legacy warning
+nullPointerOutOfMemory:Input/mpg123/mpg123.c:854 # legacy warning
+shiftNegativeLHS:Input/mpg123/tabinit.c:149 # legacy portability
+memleak:Input/tonegen/tonegen.c:132 # legacy error
+doubleFree:Input/vorbis/fileinfo.c:387 # legacy error (Cppcheck 2.13)
+shiftNegativeLHS:Input/vorbis/vorbis.c:681 # legacy portability
+shiftNegativeLHS:Input/vorbis/vorbis.c:682 # legacy portability
+memleak:Output/OSS/mixer.c:106 # legacy error
+allocaCalled:Output/alsa/audio.c:828 # legacy warning
+allocaCalled:Output/alsa/audio.c:829 # legacy warning
+leakReturnValNotUsed:Output/alsa/init.c:66 # legacy error
+invalidFunctionArg:Output/solaris/audio.c:765 # legacy warning
+selfAssignment:Output/sun/audio.c:197 # legacy warning (Cppcheck 2.13)
+uninitvar:Output/sun/configure.c:149 # legacy error
+sprintfOverlappingData:Output/sun/configure.c:425 # legacy error
+sprintfOverlappingData:Output/sun/configure.c:509 # legacy error
+sprintfOverlappingData:Output/sun/configure.c:512 # legacy error
+uninitvar:Output/sun/mixer.c:51 # legacy error
+ctunullpointer:libxmms/charset.c:118 # legacy error
+nullPointer:libxmms/charset.c:118 # legacy warning
+readdirCalled:libxmms/dirbrowser.c:132 # legacy portability (Cppcheck 2.13)
+memleak:libxmms/dirbrowser.c:188 # legacy error
+readdirCalled:libxmms/dirbrowser.c:208 # legacy portability (Cppcheck 2.13)
+memleak:libxmms/dirbrowser.c:404 # legacy error
+invalidFunctionArg:libxmms/xmmsctrl.c:305 # legacy warning
+invalidPointerCast:libxmms/xmmsctrl.c:854 # legacy portability
+assertWithSideEffect:tests/test-filebrowser.c:73 # legacy warning
+assertWithSideEffect:tests/test-filebrowser.c:113 # legacy warning
+assertWithSideEffect:tests/test-filebrowser.c:114 # legacy warning
+invalidPrintfArgType_sint:xmms/bmp.c:176 # legacy warning
+invalidPrintfArgType_sint:xmms/bmp.c:231 # legacy warning
+invalidPrintfArgType_sint:xmms/bmp.c:240 # legacy warning
+invalidPointerCast:xmms/controlsocket.c:594 # legacy portability
+memleak:xmms/dock.c:552 # legacy error
+negativeIndex:xmms/eq_slider.c:70 # legacy warning
+resourceLeak:xmms/equalizer.c:1201 # legacy error
+signConversion:xmms/fft.c:196 # legacy warning
+signConversion:xmms/fft.c:197 # legacy warning
+invalidPrintfArgType_sint:xmms/fft.c:201 # legacy warning
+invalidPrintfArgType_sint:xmms/fft.c:245 # legacy warning
+invalidPrintfArgType_sint:xmms/fft.c:246 # legacy warning
+readdirCalled:xmms/playlist.c:439 # legacy portability (Cppcheck 2.13)
+readdirCalled:xmms/pluginenum.c:402 # legacy portability (Cppcheck 2.13)
+readdirCalled:xmms/pluginenum.c:424 # legacy portability (Cppcheck 2.13)
+invalidPrintfArgType_uint:xmms/prefswin.c:1389 # legacy warning
+memleak:xmms/skin.c:626 # legacy error
+memleak:xmms/skin.c:628 # legacy error
+readdirCalled:xmms/skinwin.c:139 # legacy portability (Cppcheck 2.13)
+invalidScanfArgType_int:xmms/urldecode.c:46 # legacy warning
+readdirCalled:xmms/util.c:52 # legacy portability (Cppcheck 2.13)
+readdirCalled:xmms/util.c:89 # legacy portability (Cppcheck 2.13)
+readdirCalled:xmms/util.c:152 # legacy portability (Cppcheck 2.13)
+memleak:xmms/util.c:527 # legacy error

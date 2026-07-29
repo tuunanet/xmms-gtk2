@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=XMMS Classic
+GenericName=Audio Player
+Comment=Play music with the classic XMMS interface
+Exec=xmms %U
+Icon=xmms
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Player;
+MimeType=audio/mpeg;audio/x-mpeg;audio/x-mp3;audio/x-wav;audio/x-scpls;audio/x-mpegurl;audio/mpegurl;application/ogg;audio/ogg;
+StartupNotify=false

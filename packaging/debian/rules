@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all optimize=-lto
+export DEB_CFLAGS_MAINT_APPEND = -Wno-error -Wno-error=incompatible-pointer-types
+
+%:
+	dh $@
+
+override_dh_autoreconf:
+	@echo "Using the shipped Autotools files"
+
+override_dh_autoreconf_clean:
+	@echo "Keeping the shipped Autotools files"
+
+override_dh_auto_configure:
+	./configure \
+		--build=$$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
+		--host=$$(dpkg-architecture -qDEB_HOST_GNU_TYPE) \
+		--prefix=/usr \
+		--libdir=/usr/lib/$$(dpkg-architecture -qDEB_HOST_MULTIARCH) \
+		--disable-esd
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	xvfb-run --auto-servernum $(MAKE) check
+endif
+
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+	find $(CURDIR)/debian/tmp -name '*.la' -delete
+	install -D -m 0644 packaging/xmms.desktop \
+		$(CURDIR)/debian/tmp/usr/share/applications/xmms.desktop
+	install -D -m 0644 xmms/xmms_mini.xpm \
+		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/16x16/apps/xmms.xpm
+
+override_dh_missing:
+	dh_missing --fail-missing
