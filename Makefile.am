@@ -13,6 +13,7 @@ EXTRA_DIST = \
 	.github/ISSUE_TEMPLATE/config.yml \
 	.github/ISSUE_TEMPLATE/feature_request.yml \
 	.github/pull_request_template.md \
+	.github/workflows/package-linux-mint.yml \
 	CHANGELOG.md \
 	CODE_OF_CONDUCT.md \
 	CONTRIBUTING.md \

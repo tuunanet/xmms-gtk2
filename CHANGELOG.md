@@ -15,6 +15,11 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+### Added
+- Added a manually dispatched Linux Mint 22.3 package workflow that builds and
+  install-tests correctly named runtime and development DEBs in a pinned Mint
+  image, then uploads source, checksum, and package provenance artifacts.
+
 ## [1.2.12] - 2026-07-29
 
 XMMS GTK2 1.2.12 replaces the unpublished 1.3.1 and 1.3.2 draft versions

@@ -1,0 +1,40 @@
+core_value: >-
+  Produce trustworthy XMMS packages whose Linux Mint compatibility and provenance
+  match their published names.
+summary: >-
+  Add an explicitly manual package-build path for the current Linux Mint 22.3
+  release. A maintainer can request a versioned build and receive installable
+  runtime and development packages plus the metadata needed to verify and
+  redistribute them.
+in_scope:
+  - id: e01s01
+    outcome: Build packages in the Linux Mint 22.3 amd64 userspace on manual request.
+  - id: e01s01
+    outcome: Name package assets and Debian revisions for Linux Mint 22.3.
+  - id: e01s01
+    outcome: Publish source, checksums, package metadata, and DEBs as a workflow artifact.
+  - id: e01s01
+    outcome: Install and smoke-test the generated packages before upload.
+out_of_scope:
+  - item: Replace or mutate the immutable v1.2.12 GitHub Release.
+    reason: Published release assets must not be silently replaced.
+  - item: Build packages for LMDE, Linux Mint 21, or non-amd64 architectures.
+    reason: Those targets require separate compatibility decisions and testing.
+  - item: Automatically publish a GitHub Release.
+    reason: The requested workflow is manual and should produce reviewable artifacts first.
+constraints:
+  target: Linux Mint 22.3 Zena amd64
+  package_format: Debian binary packages
+  trigger: GitHub Actions workflow_dispatch only
+  security: Pin the target container image and third-party actions by digest or commit.
+success_criteria:
+  - A manual workflow validates the requested version against project metadata.
+  - Packages are built and installed inside Linux Mint 22.3.
+  - Runtime and development asset names contain linuxmint22.3 and amd64.
+  - Uploaded output includes both DEBs, source tarball, SHA-256 checksums, and package metadata.
+  - Packaging contract tests protect the workflow wiring.
+references:
+  - specs/IMPACT_LATEST.md
+  - specs/tech-architecture/tech-stack.md
+  - https://hub.docker.com/r/linuxmintd/mint22.3-amd64
+  - https://github.com/linuxmint/github-actions/blob/master/.github/workflows/do-builds.yml
