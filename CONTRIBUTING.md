@@ -1,4 +1,4 @@
-# Contributing to XMMS Classic
+# Contributing to XMMS GTK2
 
 Thank you for helping preserve XMMS. Changes should keep the classic XMMS
 experience intact while improving compatibility, reliability, security, or

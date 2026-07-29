@@ -1,6 +1,6 @@
 # Processing pipeline architecture
 
-This document explains how audio moves through XMMS Classic: from a playlist
+This document explains how audio moves through XMMS GTK2: from a playlist
 entry to PCM samples, through effects, out to the selected output backend,
 and sideways into visualization.
 

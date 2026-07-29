@@ -1,4 +1,4 @@
-# XMMS Classic
+# XMMS GTK2
 
 > A community-maintained preservation fork of XMMS 1.2.11, keeping the classic
 > player usable on modern Linux systems.
@@ -24,7 +24,7 @@ plugin architecture for input, output, effect, general, and visualization
 plugins. It supports MP3, Ogg Vorbis, WAV, module formats (MOD, XM, S3M, IT and
 others via libmikmod), CD audio, and HTTP/Icecast/Shoutcast streaming.
 
-XMMS Classic is based on the last upstream release, **XMMS 1.2.11**, and
+XMMS GTK2 is based on the last upstream release, **XMMS 1.2.11**, and
 currently uses the **GTK2 / GLib2** port of the original GTK1 codebase so that
 it continues to compile and run on contemporary Linux distributions.
 The `xmms` executable, source-package name, configuration paths, and plugin

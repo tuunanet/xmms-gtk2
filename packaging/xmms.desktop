@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=XMMS Classic
+Name=XMMS GTK2
 GenericName=Audio Player
 Comment=Play music with the classic XMMS interface
 Exec=xmms %U

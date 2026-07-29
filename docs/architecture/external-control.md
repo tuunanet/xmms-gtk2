@@ -1,6 +1,6 @@
 # External control: libxmms, wmxmms, and General plugins
 
-XMMS Classic is not only the three skinned windows. A second process model sits
+XMMS GTK2 is not only the three skinned windows. A second process model sits
 beside the UI: **clients talk to a running `xmms` over a Unix-domain control
 socket**, using APIs in **`libxmms`**. Dock apps, scripts, IR remotes, and
 in-process General plugins all share that path.

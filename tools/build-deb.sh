@@ -40,7 +40,7 @@ output_dir=$(cd "$output_dir" && pwd)
 source_date_epoch=${SOURCE_DATE_EPOCH:-$(stat -c %Y "$source_archive")}
 distribution=${DEB_DISTRIBUTION:-noble}
 revision=${DEB_REVISION:-1~ubuntu24.04}
-maintainer=${DEB_MAINTAINER:-XMMS Classic contributors <47913151+tuunanet@users.noreply.github.com>}
+maintainer=${DEB_MAINTAINER:-XMMS GTK2 contributors <47913151+tuunanet@users.noreply.github.com>}
 
 build_root=$(mktemp -d "${TMPDIR:-/tmp}/xmms-deb.XXXXXX")
 trap 'rm -rf "$build_root"' EXIT HUP INT TERM
@@ -58,7 +58,7 @@ release_date=$(date --date="@$source_date_epoch" --rfc-email)
 cat > "$source_dir/debian/changelog" <<EOF
 xmms (1:$version-$revision) $distribution; urgency=medium
 
-  * Package XMMS Classic $version.
+  * Package XMMS GTK2 $version.
 
  -- $maintainer  $release_date
 EOF
