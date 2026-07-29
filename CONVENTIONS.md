@@ -33,6 +33,9 @@ MUST treat remote `main` as protected.
 MUST use the `team-pr` mode recorded in `specs/state.yaml`.
 MUST merge every change through a pull request.
 MUST run release gates before landing changes.
+MUST assemble GitHub Releases as drafts only.
+NEVER publish GitHub Releases automatically.
+NEVER delete or move release tags.
 MUST use `commit-message` before creating a commit.
 MUST use `release-branch` for integration decisions.
 NEVER force-push or run destructive Git commands without explicit human approval.
@@ -61,7 +64,7 @@ Fixing defects during development costs less than fixing them after release.
 Run local Preflight:
 
 ```sh
-make -j"$(nproc)" && xvfb-run --auto-servernum make check
+make -j"$(nproc)" && xvfb-run --auto-servernum make check && make lint
 ```
 
 Run the stricter distribution gate when release risk warrants it:
@@ -104,6 +107,7 @@ MUST preserve `xmms/plugin.h` vtable layouts unless scope approves an ABI break.
 MUST preserve exported `get_*plugin_info` symbols.
 MUST preserve `libxmms` public APIs unless scope approves a break.
 MUST preserve existing control-socket command values and packet framing.
+MUST preserve published GitHub Releases as immutable history.
 MUST preserve `~/.xmms/` paths and established configuration keys.
 MUST preserve WinAmp 2 and XMMS skin behavior.
 MUST preserve source-tarball, plugin-loading, and Debian packaging workflows.

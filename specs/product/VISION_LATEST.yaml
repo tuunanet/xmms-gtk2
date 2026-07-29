@@ -1,0 +1,9 @@
+product: XMMS GTK2
+vision: >-
+  Maintain a trustworthy Linux multimedia audio player that preserves classic
+  XMMS and WinAmp compatibility while remaining buildable and releasable on
+  supported Linux distributions.
+principles:
+  - Preserve historical runtime and plugin contracts.
+  - Keep the GTK2 player, classic skins, playlists, equalizer, and plugins usable.
+  - Produce release artifacts whose provenance and target identity are explicit.
