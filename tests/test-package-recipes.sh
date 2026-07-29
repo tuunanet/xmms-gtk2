@@ -162,7 +162,48 @@ require_text .github/workflows/package-linux-mint.yml \
 	'publishes package provenance and control metadata'
 require_text .github/workflows/package-linux-mint.yml \
 	'actions/upload-artifact' \
-	'uploads Linux Mint release artifacts'
+	'uploads target release artifacts'
+require_text .github/workflows/package-linux-mint.yml 'validate-release:' \
+	'validates the selected release before package builds'
+require_text .github/workflows/package-linux-mint.yml \
+	'refs/tags/v${VERSION}' \
+	'requires the matching version tag'
+require_text .github/workflows/package-linux-mint.yml \
+	'git cat-file -t "refs/tags/${GITHUB_REF_NAME}"' \
+	'requires an annotated release tag'
+require_text .github/workflows/package-linux-mint.yml \
+	'git merge-base --is-ancestor "${GITHUB_SHA}" origin/main' \
+	'requires the tagged commit on main'
+require_text .github/workflows/package-linux-mint.yml \
+	'needs: [validate-release]' \
+	'gates package builds on release validation'
+require_text .github/workflows/package-linux-mint.yml 'create-release:' \
+	'adds final release assembly'
+require_text .github/workflows/package-linux-mint.yml \
+	'needs: [validate-release, build-package]' \
+	'gates release assembly on both package variants'
+require_text .github/workflows/package-linux-mint.yml 'contents: write' \
+	'grants release write permission explicitly'
+require_text .github/workflows/package-linux-mint.yml \
+	'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c' \
+	'pins artifact downloads'
+require_text .github/workflows/package-linux-mint.yml \
+	'sha256sum --check SHA256SUMS' \
+	're-verifies downloaded package artifacts'
+require_text .github/workflows/package-linux-mint.yml 'RELEASE-METADATA.txt' \
+	'publishes combined release provenance'
+require_text .github/workflows/package-linux-mint.yml 'gh release create' \
+	'creates a GitHub Release'
+require_text .github/workflows/package-linux-mint.yml '--verify-tag' \
+	'prevents implicit release tag creation'
+require_text .github/workflows/package-linux-mint.yml '--draft' \
+	'leaves release publication to a maintainer'
+require_text .github/workflows/package-linux-mint.yml \
+	'--json isDraft' \
+	'checks existing release mutability'
+require_text .github/workflows/package-linux-mint.yml \
+	'gh release upload "${RELEASE_TAG}" --clobber' \
+	'allows safe draft repair on rerun'
 require_text packaging/debian/control 'Package: xmms' \
 	'defines the Debian runtime package'
 require_text packaging/debian/control 'Package: libxmms-dev' \
