@@ -123,6 +123,24 @@ require_text .github/workflows/package-linux-mint.yml \
 	'linuxmintd/mint22.3-amd64@sha256:f71f1a261ef2957022ae74ad2b89ebbc8fcb2f25e40d8d7cdb599aa9e2748a8e' \
 	'pins the Linux Mint 22.3 build image'
 require_text .github/workflows/package-linux-mint.yml \
+	'ubuntu@sha256:7c2884fd32770fc6c173b78e0dc2278a2851d89f5447919edbc45475ac55dd6a' \
+	'pins the Ubuntu 26.04 amd64 build image'
+require_text .github/workflows/package-linux-mint.yml 'target_id: ubuntu' \
+	'adds an Ubuntu package target'
+require_text .github/workflows/package-linux-mint.yml 'target_release: "26.04"' \
+	'identifies Ubuntu 26.04'
+require_text .github/workflows/package-linux-mint.yml 'target_codename: resolute' \
+	'identifies Ubuntu Resolute'
+require_text .github/workflows/package-linux-mint.yml \
+	'deb_revision: 1~ubuntu26.04' \
+	'uses an Ubuntu 26.04 package revision'
+require_text .github/workflows/package-linux-mint.yml \
+	'.ubuntu26.04_amd64.deb' \
+	'checks Ubuntu 26.04 downloadable package names'
+require_text .github/workflows/package-linux-mint.yml \
+	'ubuntu26.04-amd64' \
+	'uploads a distinct Ubuntu 26.04 artifact'
+require_text .github/workflows/package-linux-mint.yml \
 	'official-package-repositories.list' \
 	'verifies the Linux Mint package repository configured by the image'
 require_text .github/workflows/package-linux-mint.yml \
