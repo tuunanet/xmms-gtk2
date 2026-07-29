@@ -202,6 +202,9 @@ require_text .github/workflows/package-linux-mint.yml \
 	'--json isDraft' \
 	'checks existing release mutability'
 require_text .github/workflows/package-linux-mint.yml \
+	'GH_REPO: ${{ github.repository }}' \
+	'selects the release repository without a checkout'
+require_text .github/workflows/package-linux-mint.yml \
 	'gh release upload "${RELEASE_TAG}" --clobber' \
 	'allows safe draft repair on rerun'
 require_text packaging/debian/control 'Package: xmms' \
