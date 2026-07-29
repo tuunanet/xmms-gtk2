@@ -1,4 +1,12 @@
 bugs:
+  - bug_id: BUG-2026-07-29T215100-gcc15-callbacks
+    date: 2026-07-29
+    status: resolved
+    severity: medium
+    priority: P1
+    scope: build
+    summary: clean GCC 15 builds rejected legacy GTK callback types.
+    file: specs/bugs/BUG-2026-07-29T215100-gcc15-callbacks.md
   - bug_id: BUG-2026-07-29T213800-distcheck-cflags
     date: 2026-07-29
     status: resolved

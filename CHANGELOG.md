@@ -25,6 +25,12 @@ for XMMS GTK2.
   least-privilege final job that assembles both verified package sets into a
   draft GitHub Release for a matching annotated tag.
 
+### Fixed
+- Preserved source-tree test compiler flags when release validation supplies
+  `CFLAGS`, allowing `make distcheck` to verify the complete distribution.
+- Treated legacy GTK callback type diagnostics as non-fatal on current GCC so
+  clean source-tree builds remain usable.
+
 ## [1.2.12] - 2026-07-29
 
 XMMS GTK2 1.2.12 replaces the unpublished 1.3.1 and 1.3.2 draft versions
