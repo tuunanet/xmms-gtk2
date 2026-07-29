@@ -8,6 +8,7 @@ epics:
       - e02s01
       - e02s02
     wsjf: 12
+    status: implemented
   - id: e01
     slug: linux-mint-package
     title: Linux Mint package workflow

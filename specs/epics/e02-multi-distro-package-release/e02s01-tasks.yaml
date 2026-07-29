@@ -1,6 +1,6 @@
 story_id: e02s01
 title: Produce Ubuntu 26.04 and Linux Mint 22.3 package artifacts
-status: failing
+status: passing
 bcps: 4
 tasks:
   - id: 1
@@ -19,7 +19,7 @@ tasks:
     verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))" && actionlint .github/workflows/package-linux-mint.yml && grep -q 'No new security findings in affected paths' specs/security/REVIEW.md
     risk: P0
     security: medium
-    status: failing
+    status: passing
     allure:
       severity: critical
       categories:
@@ -31,7 +31,7 @@ tasks:
     verify: grep -q 'Ubuntu 26.04' README.md && grep -q 'Ubuntu 26.04' docs/releases.md && grep -q 'Ubuntu 26.04' docs/architecture/build-and-test.md
     risk: P2
     security: none
-    status: failing
+    status: passing
     allure:
       severity: normal
       categories:

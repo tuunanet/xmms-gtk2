@@ -1,7 +1,7 @@
 id: e02
 slug: multi-distro-package-release
 title: Multi-distribution package release workflow
-status: planned
+status: implemented
 stories:
   - id: e02s01
     title: Produce Ubuntu 26.04 and Linux Mint 22.3 package artifacts

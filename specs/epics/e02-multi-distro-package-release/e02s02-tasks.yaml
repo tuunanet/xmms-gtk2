@@ -1,6 +1,6 @@
 story_id: e02s02
 title: Assemble package artifacts into a draft GitHub Release
-status: failing
+status: passing
 bcps: 5
 tasks:
   - id: 1
@@ -8,7 +8,7 @@ tasks:
     verify: tests/test-package-recipes.sh . && grep -q 'No new security findings in affected paths' specs/security/REVIEW.md
     risk: P0
     security: high
-    status: failing
+    status: passing
     allure:
       severity: critical
       categories:
@@ -20,7 +20,7 @@ tasks:
     verify: tests/test-package-recipes.sh . && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))" && actionlint .github/workflows/package-linux-mint.yml && grep -q 'No new security findings in affected paths' specs/security/REVIEW.md
     risk: P0
     security: high
-    status: failing
+    status: passing
     allure:
       severity: critical
       categories:
@@ -32,7 +32,7 @@ tasks:
     verify: "grep -q 'draft GitHub Release' docs/releases.md && grep -q 'SHA256SUMS' README.md && grep -q 'contents: write' docs/architecture/build-and-test.md"
     risk: P2
     security: low
-    status: failing
+    status: passing
     allure:
       severity: normal
       categories:

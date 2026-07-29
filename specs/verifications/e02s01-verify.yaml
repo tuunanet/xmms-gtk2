@@ -1,0 +1,35 @@
+story_id: e02s01
+verified_at: "2026-07-29T18:15:00Z"
+verifier: verify-work
+phases:
+  build:
+    passed: true
+    command: "xvfb-run --auto-servernum make check"
+  lint:
+    passed: true
+    command: "make lint"
+  workflow_contract:
+    passed: true
+    command: "export PATH=/tmp/actionlint:$PATH; tests/test-package-recipes.sh . && python3 -c \"import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))\" && actionlint .github/workflows/package-linux-mint.yml"
+  ubuntu_26_04_package:
+    passed: true
+    environment: "unprivileged bubblewrap rootfs from ubuntu@sha256:7c2884fd32770fc6c173b78e0dc2278a2851d89f5447919edbc45475ac55dd6a"
+    verified:
+      - "Ubuntu 26.04 Resolute amd64 identity"
+      - "libc6 2.43 target family"
+      - "make deb with 1~ubuntu26.04"
+      - "runtime and development control metadata"
+      - "package installation and xmms --version smoke test"
+  terminal_verdict:
+    command: "tests/test-package-recipes.sh ."
+    exit_code: 0
+    captured_at: "2026-07-29T18:15:00Z"
+    note: "Single final static contract run; full application tests and the Ubuntu target build passed separately."
+  manual:
+    steps:
+      - step: "Dispatch on a new annotated vVERSION tag contained in main."
+        expected: "Mint and Ubuntu jobs complete before draft assembly starts."
+        actual: "Pending the next release tag; v1.2.12 is immutable and intentionally rejected."
+        passed: pending
+  gaps:
+    closed: true
