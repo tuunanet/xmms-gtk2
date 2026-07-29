@@ -98,6 +98,13 @@ if grep -Fq 'Historical entry.' "$notes"; then
 fi
 echo "ok - extracts only the selected changelog section"
 
+if ! make -C "$repo_root" -f tests/Makefile -n \
+	srcdir=tests top_srcdir=. top_builddir=. CFLAGS='-g -O2' test-xentry | \
+	grep -F -- "$(pkg-config --cflags gtk+-2.0)" >/dev/null; then
+	fail "preserves GTK test flags when CFLAGS is supplied by distcheck"
+fi
+echo "ok - preserves GTK test flags when CFLAGS is supplied by distcheck"
+
 empty="$tmpdir/empty-changelog.md"
 cat > "$empty" <<EOF
 ## [1.3.0] - 2026-07-26
