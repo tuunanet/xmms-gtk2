@@ -15,6 +15,8 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+## [1.2.13] - 2026-07-29
+
 ### Added
 - Added a manually dispatched Linux Mint 22.3 package workflow that builds and
   install-tests correctly named runtime and development DEBs in a pinned Mint
