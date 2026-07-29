@@ -17,7 +17,7 @@ Build-Depends:
  xvfb,
  zlib1g-dev
 Standards-Version: 4.7.2
-Homepage: https://github.com/tuunanet/xmms-classic
+Homepage: https://github.com/tuunanet/xmms-gtk2
 Rules-Requires-Root: no
 
 Package: xmms

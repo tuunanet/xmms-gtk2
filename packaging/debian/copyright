@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: XMMS Classic
-Source: https://github.com/tuunanet/xmms-classic
+Source: https://github.com/tuunanet/xmms-gtk2
 
 Files: *
 Copyright: 1997-2007 XMMS authors and contributors

@@ -4,7 +4,7 @@ XMMS was created in 1997, and upstream development ended with version 1.2.11
 in 2007. This community-maintained fork preserves and modernizes that work.
 
 Historical `@xmms.org` addresses are no longer active. Use the
-[GitHub issue tracker](https://github.com/tuunanet/xmms-classic/issues) for this
+[GitHub issue tracker](https://github.com/tuunanet/xmms-gtk2/issues) for this
 fork.
 
 ## Repository import and GTK2 port (2015)

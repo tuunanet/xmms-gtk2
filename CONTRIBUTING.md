@@ -6,7 +6,7 @@ maintainability on current systems.
 
 ## Before starting
 
-- Search [existing issues](https://github.com/tuunanet/xmms-classic/issues).
+- Search [existing issues](https://github.com/tuunanet/xmms-gtk2/issues).
 - For a substantial behavior change, open an issue before writing code.
 - Keep pull requests focused; avoid mixing formatting, refactoring, and behavior
   changes.
