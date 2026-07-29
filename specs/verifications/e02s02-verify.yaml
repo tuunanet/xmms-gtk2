@@ -1,0 +1,34 @@
+story_id: e02s02
+verified_at: "2026-07-29T18:15:00Z"
+verifier: verify-work
+phases:
+  workflow_contract:
+    passed: true
+    command: "export PATH=/tmp/actionlint:$PATH; tests/test-package-recipes.sh . && python3 -c \"import yaml; yaml.safe_load(open('.github/workflows/package-linux-mint.yml'))\" && actionlint .github/workflows/package-linux-mint.yml"
+  release_assembly:
+    passed: true
+    environment: "local staging assembled from the successful Linux Mint artifact and locally built Ubuntu 26.04 packages"
+    verified:
+      - "both target checksum manifests are re-verified"
+      - "four DEBs, source archive, notes, target metadata, package manifests, and RELEASE-METADATA.txt are collected"
+      - "final SHA256SUMS verifies every assembled release asset"
+  security_review:
+    passed: true
+    report: specs/security/REVIEW.md
+  terminal_verdict:
+    command: "tests/test-package-recipes.sh ."
+    exit_code: 0
+    captured_at: "2026-07-29T18:15:00Z"
+    note: "Single final static contract run; hosted draft creation is intentionally deferred until a new matching annotated tag exists."
+  hosted_negative_path:
+    passed: true
+    run: "https://github.com/tuunanet/xmms-gtk2/actions/runs/30455493302"
+    verified: "A branch dispatch for 1.2.12 stopped in tag validation, so neither package nor release-write job ran."
+  manual:
+    steps:
+      - step: "Dispatch on a new annotated vVERSION tag contained in main."
+        expected: "A draft GitHub Release contains all assembled assets and remains unpublished."
+        actual: "Pending the next release tag; no new release was created during implementation."
+        passed: pending
+  gaps:
+    closed: true

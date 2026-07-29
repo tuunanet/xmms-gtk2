@@ -22,6 +22,6 @@ Runtime code is organized around the XMMS executable, `libxmms`, and dynamically
 
 ## Signals / Active Considerations
 
-- Release documentation refers to workflow files that are absent from the repository.
-- The published Ubuntu-labelled v1.2.12 package was built against libraries newer than its stated target.
+- The published Ubuntu-labelled v1.2.12 package was built against libraries newer than its stated target and remains immutable.
 - Distribution packages must be built inside the claimed target userspace and smoke-tested there.
+- Manual release automation validates an annotated version tag, builds in pinned Linux Mint 22.3 and Ubuntu 26.04 amd64 containers, and grants `contents: write` only to draft Release assembly.

@@ -197,7 +197,7 @@ flowchart LR
 | `packaging/debian/` | `control`, `rules`, `.install` files for `xmms` and `libxmms-dev` |
 | `tools/build-deb.sh` | Helper invoked via `make deb` |
 | `packaging/xmms.desktop` | Desktop entry metadata |
-| `.github/workflows/package-linux-mint.yml` | Manual Linux Mint 22.3 package build and artifact verification |
+| `.github/workflows/package-linux-mint.yml` | Manual Linux Mint 22.3 + Ubuntu 26.04 package builds and draft Release assembly |
 
 Debian packages are a **distribution** concern; runtime architecture does not
 change when installed from deb vs `make install`.
@@ -207,28 +207,29 @@ change when installed from deb vs `make install`.
 ## 5. Package automation (GitHub Actions)
 
 [`.github/workflows/package-linux-mint.yml`](../../.github/workflows/package-linux-mint.yml)
-is manually dispatched and runs inside a digest-pinned Linux Mint 22.3 Zena
-container on an Ubuntu-hosted GitHub runner:
+is manually dispatched on a matching annotated version tag. It validates that
+tag before running a two-target matrix in digest-pinned Linux Mint 22.3 Zena
+and Ubuntu 26.04 Resolute amd64 containers:
 
 ```mermaid
 flowchart TB
-    M["workflow_dispatch + SemVer"] --> ID[Verify Mint 22.3 / Zena / amd64]
-    ID --> DEP[Install package build dependencies]
-    DEP --> VER[Validate project release version]
-    VER --> DIST[Create source archive]
-    DIST --> DEB["make deb with Mint revision"]
-    DEB --> INSPECT[Inspect package control metadata]
-    INSPECT --> INSTALL[Install runtime + development packages]
-    INSTALL --> SMOKE["xmms --version + header check"]
-    SMOKE --> SUM[Generate checksums and provenance]
-    SUM --> ART[Upload 30-day workflow artifact]
+    M["workflow_dispatch + SemVer tag"] --> TAG[Validate annotated tag on main]
+    TAG --> MINT[Build / install-test Mint packages]
+    TAG --> UBUNTU[Build / install-test Ubuntu packages]
+    MINT --> MINTART[Upload Mint artifact]
+    UBUNTU --> UBUNTUART[Upload Ubuntu artifact]
+    MINTART --> FANIN[Download and re-verify checksums]
+    UBUNTUART --> FANIN
+    FANIN --> ASSEMBLE[Assemble packages, source, notes, and metadata]
+    ASSEMBLE --> DRAFT[Create or resume draft GitHub Release]
 ```
 
-The workflow uses read-only repository permissions and immutable pins for the
-container image and GitHub actions. `make deb` remains the only package build
-entry point, so local and hosted package builds share recipes and tests. The
-workflow does not publish or replace GitHub Release assets; see
-[releases.md](../releases.md) for review and publication policy.
+Build and validation jobs use read-only repository permissions and immutable
+pins for both container images and GitHub actions. `make deb` remains the only
+package build entry point, so local and hosted builds share recipes and tests.
+Only the final fan-in job receives `actions: read` and `contents: write`; it
+cannot alter a published Release and never publishes a draft automatically.
+See [releases.md](../releases.md) for review and publication policy.
 
 ---
 
