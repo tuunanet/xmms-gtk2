@@ -1,0 +1,15 @@
+terms:
+  - term: Input plugin
+    definition: A dynamically loaded module that recognizes media and decodes it into PCM.
+  - term: Output plugin
+    definition: A dynamically loaded module that receives PCM and writes it to an audio device or file.
+  - term: Effect plugin
+    definition: A dynamically loaded module that transforms PCM in the output processing path.
+  - term: Visualization plugin
+    definition: A dynamically loaded module that renders time-aligned PCM or frequency data.
+  - term: General plugin
+    definition: A dynamically loaded integration module outside the PCM path.
+  - term: Control socket
+    definition: The Unix-domain protocol used by libxmms clients and remote controls.
+  - term: Preflight
+    definition: The local build, headless test, and lint command required before forward work.

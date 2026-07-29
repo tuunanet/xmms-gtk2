@@ -1,3 +1,4 @@
+workflow_mode: team-pr
 active_flow: review
 active_epic_id: e02
 active_story_id: null
@@ -24,8 +25,8 @@ bug_cycle:
   current_step: null
   completed_steps: []
 git:
-  branch: feat/ubuntu-mint-github-release
-  hash: null
+  branch: heal-bigpowers-initialization
+  hash: a483765c538db173e708be1bb379cabe1e767c8b
 metrics:
   story_start: 2026-07-29T17:23:00Z
 handoff:
