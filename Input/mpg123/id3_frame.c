@@ -294,9 +294,21 @@ int id3_read_frame(struct id3_tag *id3)
 	frame = g_malloc0(sizeof(*frame));
 
 	frame->fr_owner = id3;
-	/* FIXME v2.4.0 */
-	frame->fr_raw_size = buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
-	if (frame->fr_raw_size < 0 || frame->fr_raw_size > 1000000)
+	if (id3->id3_version == 4)
+	{
+		if ((buf[4] | buf[5] | buf[6] | buf[7]) & 0x80)
+		{
+			g_free(frame);
+			return -1;
+		}
+		frame->fr_raw_size = ID3_GET_SIZE28(buf[4], buf[5],
+						       buf[6], buf[7]);
+	}
+	else
+		frame->fr_raw_size = (guint32) buf[4] << 24 |
+				     (guint32) buf[5] << 16 |
+				     (guint32) buf[6] << 8 | buf[7];
+	if (frame->fr_raw_size > 1000000)
 	{
 		g_free(frame);
 		return -1;
@@ -322,6 +334,7 @@ int id3_read_frame(struct id3_tag *id3)
 			g_free(frame);
 			return -1;
 		}
+		g_free(frame);
 		return 0;
 	}
 

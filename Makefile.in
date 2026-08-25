@@ -346,6 +346,7 @@ EXTRA_DIST = \
 	tests/test-intl-generated-sources.sh \
 	tests/test-keyboard-shortcuts.c \
 	tests/test-mpg123-file-duration.c \
+	tests/test-mpg123-fileinfo.c \
 	tests/test-mpg123-stream-position.c \
 	tests/test-outputplugin.c \
 	tests/test-package-recipes.sh \

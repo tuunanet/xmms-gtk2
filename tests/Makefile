@@ -8,7 +8,7 @@ LDLIBS += $(shell pkg-config --libs gtk+-2.0)
 
 .PHONY: check clean test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 
-check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-stream-position test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
+check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 	./test-xentry
 	./test-filebrowser
 	./test-font-load
@@ -19,6 +19,7 @@ check: test-xentry test-filebrowser test-font-load test-popup-position test-keyb
 	./test-alsa-pcm-state
 	./test-alsa-volume
 	./test-mpg123-file-duration
+	./test-mpg123-fileinfo
 	./test-mpg123-stream-position
 
 test-xentry: $(srcdir)/test-xentry.c $(top_srcdir)/libxmms/xentry.c $(top_srcdir)/libxmms/xentry.h
@@ -77,6 +78,11 @@ test-mpg123-file-duration: LDFLAGS += -Wl,--gc-sections
 test-mpg123-file-duration: $(srcdir)/test-mpg123-file-duration.c $(top_srcdir)/Input/mpg123/mpg123.c $(top_srcdir)/Input/mpg123/mpg123.h $(top_srcdir)/Input/mpg123/common.c $(top_srcdir)/Input/mpg123/dxhead.c $(top_srcdir)/Input/mpg123/dxhead.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-mpg123-file-duration.c $(top_srcdir)/Input/mpg123/mpg123.c $(top_srcdir)/Input/mpg123/common.c $(top_srcdir)/Input/mpg123/dxhead.c $(LDLIBS) -lm -lpthread
 
+test-mpg123-fileinfo: override CFLAGS += -ffunction-sections -fdata-sections
+test-mpg123-fileinfo: LDFLAGS += -Wl,--gc-sections
+test-mpg123-fileinfo: $(srcdir)/test-mpg123-fileinfo.c $(top_srcdir)/Input/mpg123/fileinfo.c $(top_srcdir)/Input/mpg123/id3v24-write.c $(top_srcdir)/Input/mpg123/id3v24-write.h $(top_srcdir)/Input/mpg123/mpg123.c $(top_srcdir)/Input/mpg123/mpg123.h $(top_srcdir)/Input/mpg123/id3.c $(top_srcdir)/Input/mpg123/id3.h $(top_srcdir)/Input/mpg123/id3_frame.c $(top_srcdir)/Input/mpg123/id3_frame_content.c $(top_srcdir)/Input/mpg123/id3_frame_text.c $(top_srcdir)/Input/mpg123/id3_frame_url.c $(top_srcdir)/Input/mpg123/id3_tag.c $(top_srcdir)/Input/mpg123/unicode.c $(top_srcdir)/libxmms/charset.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-mpg123-fileinfo.c $(top_srcdir)/Input/mpg123/id3v24-write.c $(top_srcdir)/Input/mpg123/mpg123.c $(top_srcdir)/Input/mpg123/id3.c $(top_srcdir)/Input/mpg123/id3_frame.c $(top_srcdir)/Input/mpg123/id3_frame_content.c $(top_srcdir)/Input/mpg123/id3_frame_text.c $(top_srcdir)/Input/mpg123/id3_frame_url.c $(top_srcdir)/Input/mpg123/id3_tag.c $(top_srcdir)/Input/mpg123/unicode.c $(top_srcdir)/libxmms/charset.c $(LDLIBS) -lz -lm -lpthread
+
 test-mpg123-stream-position: $(srcdir)/test-mpg123-stream-position.c $(top_srcdir)/Input/mpg123/stream-position.c $(top_srcdir)/Input/mpg123/stream-position.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-mpg123-stream-position.c $(top_srcdir)/Input/mpg123/stream-position.c $(LDLIBS)
 
@@ -96,4 +102,4 @@ test-release-tools:
 	$(srcdir)/test-release-tools.sh $(top_srcdir)
 
 clean:
-	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-stream-position test-plugins test-outputplugin-plugins
+	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-plugins test-outputplugin-plugins

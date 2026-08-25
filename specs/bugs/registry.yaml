@@ -1,4 +1,12 @@
 bugs:
+  - bug_id: BUG-2026-08-25T083007-mpg123-file-info
+    date: 2026-08-25
+    status: resolved
+    severity: medium
+    priority: P1
+    scope: mpg123-file-info
+    summary: File Info consumes cursor keys and hides long ID3v2 titles.
+    file: specs/bugs/BUG-2026-08-25T083007-mpg123-file-info.md
   - bug_id: BUG-2026-07-29T191610-release-job-repository
     date: 2026-07-29
     status: resolved

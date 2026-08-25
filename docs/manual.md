@@ -733,9 +733,12 @@ information.
 
 ID3V2 allows for a lot of extra data to be stored in the mp3 file, and doesn't
 suffer from the limitations of ID3V1. XMMS supports the same data that are
-available in ID3V1 but not the extra data. If an mp3 file contains both ID3V1
-and ID3V2 tags, you might see something different than the 'file info' editor
-displays. If this happens, you might want to turn on **Disable ID3V2 tags**.
+available in ID3V1 but not the extra data. The 'file info' editor displays
+and saves an ID3V2.4 title when one is available, so it matches the playlist
+for long titles. XMMS preserves all other ID3V2.4 frames and audio data while
+updating that title. For an ID3V2.4 file, this dialog updates only the title;
+use a dedicated tag editor for other ID3V2 fields. Turn on **Disable ID3V2
+tags** to view and edit legacy ID3V1 metadata instead.
 
 **Override generic titles** is used if you do not want to use the generic titles
 defined in the preferences. See section 3.5.7.
