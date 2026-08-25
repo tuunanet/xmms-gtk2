@@ -7,7 +7,7 @@ COMMON_SRC = \
 mpg123.c mpg123.h \
 common.c stream-position.c stream-position.h \
 tabinit.c l2tables.h \
-configure.c fileinfo.c \
+configure.c fileinfo.c id3v24-write.c id3v24-write.h \
 decode_2to1.c decode_4to1.c \
 layer1.c layer2.c layer3.c \
 equalizer.c http.c \

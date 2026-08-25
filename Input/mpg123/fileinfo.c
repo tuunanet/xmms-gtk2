@@ -26,6 +26,7 @@
 #include <libxmms/xentry.h>
 #include <gdk/gdkkeysyms.h>
 #include "mpg123.h"
+#include "id3v24-write.h"
 
 static GtkWidget *window = NULL;
 static GtkWidget *filename_entry, *id3_frame;
@@ -63,6 +64,39 @@ static void get_entry_tag(GtkEntry * entry, char * tag, int length)
 	strncpy(tag, gtk_entry_get_text(entry), length);
 }
 
+static gboolean mpg123_file_info_text_fits_id3v1(const char *text, size_t length)
+{
+	return strlen(text) <= length;
+}
+
+static char *mpg123_file_info_get_id3v2_title(FILE *file)
+{
+	struct id3_tag *id3;
+	struct id3v2tag_t *tag;
+	char *title = NULL;
+
+	if (!file)
+		return NULL;
+
+	fseek(file, 0, SEEK_SET);
+	id3 = id3_open_fp(file, 0);
+	if (!id3)
+		return NULL;
+
+	tag = mpg123_id3v2_get(id3);
+	if (tag->title)
+		title = g_strdup(tag->title);
+	mpg123_id3v2_destroy(tag);
+	id3_close(id3);
+
+	return title;
+}
+
+static gboolean mpg123_file_info_handles_keypress(guint keyval)
+{
+	return keyval == GDK_Escape;
+}
+
 static int genre_find_index(GList *genre_list, int id)
 {
 	int idx = 0;
@@ -85,53 +119,79 @@ static int genre_comp_func(gconstpointer a, gconstpointer b)
 
 static void save_cb(GtkWidget * w, gpointer data)
 {
-	int fd;
+	int fd, tracknum;
 	struct id3v1tag_t tag;
 	char *msg = NULL;
+	gboolean id3v2_found = FALSE;
 
 	if (!strncasecmp(current_filename, "http://", 7))
 		return;
 
-	if ((fd = open(current_filename, O_RDWR)) != -1)
+	if (!mpg123_cfg.disable_id3v2 &&
+	    !mpg123_id3v24_write_title(current_filename,
+		gtk_entry_get_text(GTK_ENTRY(title_entry)), &id3v2_found, &msg) &&
+	    !msg)
+		msg = g_strdup(_("Couldn't write tag!"));
+
+	if (!msg && !id3v2_found)
 	{
-		int tracknum;
-
-		lseek(fd, -128, SEEK_END);
-		read(fd, &tag, sizeof (struct id3v1tag_t));
-
-		if (!strncmp(tag.tag, "TAG", 3))
-			lseek(fd, -128, SEEK_END);
-		else
-			lseek(fd, 0, SEEK_END);
-		tag.tag[0] = 'T';
-		tag.tag[1] = 'A';
-		tag.tag[2] = 'G';
-		get_entry_tag(GTK_ENTRY(title_entry), tag.title, 30);
-		get_entry_tag(GTK_ENTRY(artist_entry), tag.artist, 30);
-		get_entry_tag(GTK_ENTRY(album_entry), tag.album, 30);
-		get_entry_tag(GTK_ENTRY(year_entry), tag.year, 4);
 		tracknum = atoi(gtk_entry_get_text(GTK_ENTRY(tracknum_entry)));
-		if (tracknum > 0)
+		if (!mpg123_file_info_text_fits_id3v1(
+			gtk_entry_get_text(GTK_ENTRY(title_entry)),
+			sizeof (tag.title)) ||
+		    !mpg123_file_info_text_fits_id3v1(
+			gtk_entry_get_text(GTK_ENTRY(artist_entry)),
+			sizeof (tag.artist)) ||
+		    !mpg123_file_info_text_fits_id3v1(
+			gtk_entry_get_text(GTK_ENTRY(album_entry)),
+			sizeof (tag.album)) ||
+		    !mpg123_file_info_text_fits_id3v1(
+			gtk_entry_get_text(GTK_ENTRY(year_entry)),
+			sizeof (tag.year)) ||
+		    !mpg123_file_info_text_fits_id3v1(
+			gtk_entry_get_text(GTK_ENTRY(comment_entry)),
+			tracknum > 0 ? sizeof (tag.u.v1_1.comment) :
+			sizeof (tag.u.v1_0.comment)))
+			msg = g_strdup_printf(_("%s\nOne or more fields are too long for an ID3v1 tag."),
+					      _("Couldn't write tag!"));
+		else if ((fd = open(current_filename, O_RDWR)) != -1)
 		{
-			get_entry_tag(GTK_ENTRY(comment_entry),
-				      tag.u.v1_1.comment, 28);
-			tag.u.v1_1.__zero = 0;
-			tag.u.v1_1.track_number = MIN(tracknum, 255);
+			lseek(fd, -128, SEEK_END);
+			read(fd, &tag, sizeof (struct id3v1tag_t));
+
+			if (!strncmp(tag.tag, "TAG", 3))
+				lseek(fd, -128, SEEK_END);
+			else
+				lseek(fd, 0, SEEK_END);
+			tag.tag[0] = 'T';
+			tag.tag[1] = 'A';
+			tag.tag[2] = 'G';
+			get_entry_tag(GTK_ENTRY(title_entry), tag.title, 30);
+			get_entry_tag(GTK_ENTRY(artist_entry), tag.artist, 30);
+			get_entry_tag(GTK_ENTRY(album_entry), tag.album, 30);
+			get_entry_tag(GTK_ENTRY(year_entry), tag.year, 4);
+			if (tracknum > 0)
+			{
+				get_entry_tag(GTK_ENTRY(comment_entry),
+					      tag.u.v1_1.comment, 28);
+				tag.u.v1_1.__zero = 0;
+				tag.u.v1_1.track_number = MIN(tracknum, 255);
+			}
+			else
+				get_entry_tag(GTK_ENTRY(comment_entry),
+					      tag.u.v1_0.comment, 30);
+			tag.genre = current_genre;
+			if (write(fd, &tag, sizeof (tag)) != sizeof (tag))
+				msg = g_strdup_printf(_("%s\nUnable to write to file: %s"),
+						      _("Couldn't write tag!"),
+						      strerror(errno));
+			close(fd);
 		}
 		else
-			get_entry_tag(GTK_ENTRY(comment_entry),
-				      tag.u.v1_0.comment, 30);
-		tag.genre = current_genre;
-		if (write(fd, &tag, sizeof (tag)) != sizeof (tag))
-			msg = g_strdup_printf(_("%s\nUnable to write to file: %s"),
+			msg = g_strdup_printf(_("%s\nUnable to open file: %s"),
 					      _("Couldn't write tag!"),
 					      strerror(errno));
-		close(fd);
 	}
-	else
-		msg = g_strdup_printf(_("%s\nUnable to open file: %s"),
-				      _("Couldn't write tag!"),
-				      strerror(errno));
 	if (msg)
 	{
 		GtkWidget *mwin = xmms_show_message(_("File Info"), msg,
@@ -260,10 +320,16 @@ static void genre_set_popdown(GtkWidget *combo, GList *genres)
 	}
 }
 
-static void file_info_box_keypress_cb(GtkWidget *w, GdkEventKey *event, gpointer data)
+static gboolean file_info_box_keypress_cb(GtkWidget *w, GdkEventKey *event,
+					  gpointer data)
 {
-	if (event && event->keyval == GDK_Escape)
+	if (event && mpg123_file_info_handles_keypress(event->keyval))
+	{
 		gtk_widget_destroy(w);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 void mpg123_file_info_box(char *filename)
@@ -331,7 +397,7 @@ void mpg123_file_info_box(char *filename)
 		gtk_table_attach(GTK_TABLE(table), label, 0, 1, 0, 1,
 				 GTK_FILL, GTK_FILL, 5, 5);
 
-		title_entry = gtk_entry_new_with_max_length(30);
+		title_entry = gtk_entry_new();
 		gtk_table_attach(GTK_TABLE(table), title_entry, 1, 4, 0, 1,
 				 GTK_FILL | GTK_EXPAND | GTK_SHRINK,
 				 GTK_FILL | GTK_EXPAND | GTK_SHRINK, 0, 5);
@@ -528,11 +594,23 @@ void mpg123_file_info_box(char *filename)
 	{
 		struct frame frm;
 		gboolean id3_found = FALSE;
+		gboolean id3v2_title_found = FALSE;
 		guint8 *buf;
 		double tpf;
 		int pos;
 		xing_header_t xing_header;
 		guint32 num_frames;
+
+		if (!mpg123_cfg.disable_id3v2)
+		{
+			tmp = mpg123_file_info_get_id3v2_title(fh);
+			if (tmp)
+			{
+				gtk_entry_set_text(GTK_ENTRY(title_entry), tmp);
+				g_free(tmp);
+				id3v2_title_found = TRUE;
+			}
+		}
 
 		fseek(fh, -sizeof (tag), SEEK_END);
 		if (fread(&tag, 1, sizeof (tag), fh) == sizeof (tag))
@@ -540,8 +618,9 @@ void mpg123_file_info_box(char *filename)
 			if (!strncmp(tag.tag, "TAG", 3))
 			{
 				id3_found = TRUE;
-				set_entry_tag(GTK_ENTRY(title_entry),
-					      tag.title, 30);
+				if (!id3v2_title_found)
+					set_entry_tag(GTK_ENTRY(title_entry),
+						      tag.title, 30);
 				set_entry_tag(GTK_ENTRY(artist_entry),
 					      tag.artist, 30);
 				set_entry_tag(GTK_ENTRY(album_entry),
