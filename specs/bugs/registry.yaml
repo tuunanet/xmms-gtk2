@@ -1,4 +1,12 @@
 bugs:
+  - bug_id: BUG-2026-08-25T100657-mpg123-id3v23-title-write
+    status: resolved
+    severity: medium
+    priority: P1
+    scope: mpg123-file-info
+    spec: specs/bugs/BUG-2026-08-25T100657-mpg123-id3v23-title-write.md
+    title: File Info rejects safe ID3v2.3 title edits
+    source: screenshot
   - bug_id: BUG-2026-08-25T083007-mpg123-file-info
     date: 2026-08-25
     status: resolved

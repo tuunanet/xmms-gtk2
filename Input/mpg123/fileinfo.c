@@ -26,7 +26,7 @@
 #include <libxmms/xentry.h>
 #include <gdk/gdkkeysyms.h>
 #include "mpg123.h"
-#include "id3v24-write.h"
+#include "id3v2-write.h"
 
 static GtkWidget *window = NULL;
 static GtkWidget *filename_entry, *id3_frame;
@@ -128,7 +128,7 @@ static void save_cb(GtkWidget * w, gpointer data)
 		return;
 
 	if (!mpg123_cfg.disable_id3v2 &&
-	    !mpg123_id3v24_write_title(current_filename,
+	    !mpg123_id3v2_write_title(current_filename,
 		gtk_entry_get_text(GTK_ENTRY(title_entry)), &id3v2_found, &msg) &&
 	    !msg)
 		msg = g_strdup(_("Couldn't write tag!"));

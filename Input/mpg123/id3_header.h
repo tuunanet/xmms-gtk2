@@ -42,9 +42,9 @@ struct id3_taghdr {
 
 #define ID3_SET_SIZE28(size, a, b, c, d)	\
 do {						\
-	a = (size >> (24 + 3)) & 0x7f;		\
-	b = (size >> (16 + 2)) & 0x7f;		\
-	c = (size >> ( 8 + 1)) & 0x7f;		\
+	a = (size >> 21) & 0x7f;			\
+	b = (size >> 14) & 0x7f;			\
+	c = (size >> 7) & 0x7f;			\
 	d = size & 0x7f;			\
 } while (0)
 
