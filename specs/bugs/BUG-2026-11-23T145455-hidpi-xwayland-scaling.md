@@ -184,6 +184,20 @@ Fix: apply the shape mask after the window resize in all four paths —
 Verified by the user watching a scripted Ctrl+D cycle on the affected
 GNOME/Wayland session: both directions render complete, uncropped windows.
 
+## Playlist Interactive-Resize Follow-up (found in UAT)
+
+Dragging the playlist window larger clipped the newly grown strip (right
+side when widening, bottom when heightening) until a Ctrl+D cycle forced a
+full re-mask.  `playlistwin_motion()` resized the window *after*
+`playlistwin_resize()` had already created the shape mask, so the XWayland
+compositor kept the pre-resize shape region — the same rule as the
+compositor follow-up above.
+
+Fix: after the drag resize applies (`gdk_window_resize()` /
+`gtk_widget_set_usize()`), re-create the mask and re-set the back pixmap in
+`playlistwin_motion()`.  The WM-driven configure path already resizes
+first and masks afterwards.
+
 ## Verification Evidence
 
 - `tests/test-hidpi-scale` — 9/9 pass (parsing, RDB lookup, thresholds;
