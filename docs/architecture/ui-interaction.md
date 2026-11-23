@@ -159,6 +159,33 @@ The three skinned windows are registered with **`dock.c`** so they can snap
 together and move as a group — that is UI chrome only; it does not affect
 audio.
 
+### HiDPI / DoubleSize scaling model
+
+The skinned windows are fixed-size bitmaps (main 275×116, playlist 275 wide),
+so on HiDPI screens where the compositor does not scale X11/XWayland clients
+(GNOME/mutter by default; KWin does) they would render unscaled. XMMS reads
+`Xft.dpi` at startup ([`util.c`](../../xmms/util.c),
+`util_get_xft_dpi()`): at 144 DPI or more it starts with
+`cfg.doublesize = TRUE`, unless `skin_autoscale=FALSE` in `~/.xmms/config`.
+`Ctrl+d` toggles the same state at runtime for all three windows.
+
+The scaling model (see `set_doublesize()` in
+[`main.c`](../../xmms/main.c), `draw_playlist_window()` /
+`playlistwin_set_doublesize()` in
+[`playlistwin.c`](../../xmms/playlistwin.c)):
+
+- Widget geometry, the per-window background pixmap, and the event
+  coordinates after dispatch always stay in **skin space** (1x).
+- On the way out, the background pixmap is pixel-doubled with
+  `create_dblsize_image()` into a second pixmap that becomes the window's
+  back pixmap; the real `GdkWindow` is sized 2x.
+- Button-press/release/motion handlers divide event `x`/`y` by 2 on entry,
+  which makes the widget hit-testing "transparent" to the scale factor
+  (root coordinates are left alone because docking and WM hints work in
+  real pixels).
+- The vis widgets draw directly to the real window and therefore render
+  their own doubled content (`vis.c`, `svis.c`).
+
 ---
 
 ## 3. Skinned UI stack (how a click is handled)

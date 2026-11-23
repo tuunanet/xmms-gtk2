@@ -20,43 +20,44 @@
 3. [Documentation](#3-documentation)
    - [3.1 Controlling XMMS](#31-controlling-xmms)
      - [3.1.1 Key bindings](#311-key-bindings)
-   - [3.2 Playlist Editor](#32-playlist-editor)
-   - [3.3 Equalizer](#33-equalizer)
-   - [3.4 Menu](#34-menu)
-   - [3.5 Preferences](#35-preferences)
-     - [3.5.1 Audio I/O Plugins](#351-audio-io-plugins)
-     - [3.5.2 Effect Plugins](#352-effect-plugins)
-     - [3.5.3 General Plugins](#353-general-plugins)
-     - [3.5.4 Visualization Plugins](#354-visualization-plugins)
-     - [3.5.5 Options](#355-options)
-     - [3.5.6 Fonts](#356-fonts)
-     - [3.5.7 Title](#357-title)
-   - [3.6 Plugins](#36-plugins)
-     - [3.6.1 Input plugins](#361-input-plugins)
-       - [3.6.1.1 Cd Audio Player](#3611-cd-audio-player)
-       - [3.6.1.2 Mikmod player](#3612-mikmod-player)
-       - [3.6.1.3 MPEG Layer 1/2/3 player](#3613-mpeg-layer-123-player)
-       - [3.6.1.4 Tone Generator](#3614-tone-generator)
-       - [3.6.1.5 Ogg Vorbis player](#3615-ogg-vorbis-player)
-       - [3.6.1.6 Wave player](#3616-wave-player)
-     - [3.6.2 Output plugins](#362-output-plugins)
-       - [3.6.2.1 OSS Driver](#3621-oss-driver)
-       - [3.6.2.2 Disk Writer](#3622-disk-writer)
-       - [3.6.2.3 eSound Output](#3623-esound-output)
-       - [3.6.2.4 BSD Sun Output](#3624-bsd-sun-output)
-       - [3.6.2.5 ALSA Output](#3625-alsa-output)
-     - [3.6.3 Effect plugins](#363-effect-plugins)
-       - [3.6.3.1 Echo](#3631-echo)
-       - [3.6.3.2 Extra Stereo](#3632-extra-stereo)
-       - [3.6.3.3 Voice removal](#3633-voice-removal)
-     - [3.6.4 General plugins](#364-general-plugins)
-       - [3.6.4.1 IRman Control](#3641-irman-control)
-       - [3.6.4.2 Joystick Control](#3642-joystick-control)
-       - [3.6.4.3 Song Change](#3643-song-change)
-     - [3.6.5 Visualization plugins](#365-visualization-plugins)
-       - [3.6.5.1 Blur scope](#3651-blur-scope)
-       - [3.6.5.2 OpenGL Spectrum analyzer](#3652-opengl-spectrum-analyzer)
-       - [3.6.5.3 Simple Spectrum analyzer](#3653-simple-spectrum-analyzer)
+   - [3.2 HiDPI displays](#32-hidpi-displays)
+   - [3.3 Playlist Editor](#33-playlist-editor)
+   - [3.4. Equalizer](#34-equalizer)
+   - [3.5 Menu](#35-menu)
+   - [3.6 Preferences](#36-preferences)
+     - [3.6.1 Audio I/O Plugins](#361-audio-io-plugins)
+     - [3.6.2 Effect Plugins](#362-effect-plugins)
+     - [3.6.3 General Plugins](#363-general-plugins)
+     - [3.6.4 Visualization Plugins](#364-visualization-plugins)
+     - [3.6.5 Options](#365-options)
+     - [3.6.6 Fonts](#366-fonts)
+     - [3.6.7 Title](#367-title)
+   - [3.7 Plugins](#37-plugins)
+     - [3.7.1 Input plugins](#371-input-plugins)
+       - [3.7.1.1 Cd Audio Player](#3711-cd-audio-player)
+       - [3.7.1.2 Mikmod player](#3712-mikmod-player)
+       - [3.7.1.3 MPEG Layer 1/2/3 player](#3713-mpeg-layer-123-player)
+       - [3.7.1.4 Tone Generator](#3714-tone-generator)
+       - [3.7.1.5 Ogg Vorbis player](#3715-ogg-vorbis-player)
+       - [3.7.1.6 Wave player](#3716-wave-player)
+     - [3.7.2 Output plugins](#372-output-plugins)
+       - [3.7.2.1 OSS Driver](#3721-oss-driver)
+       - [3.7.2.2 Disk Writer](#3722-disk-writer)
+       - [3.7.2.3 eSound Output](#3723-esound-output)
+       - [3.7.2.4 BSD Sun Output](#3724-bsd-sun-output)
+       - [3.7.2.5 ALSA Output](#3725-alsa-output)
+     - [3.7.3 Effect plugins](#373-effect-plugins)
+       - [3.7.3.1 Echo](#3731-echo)
+       - [3.7.3.2 Extra Stereo](#3732-extra-stereo)
+       - [3.7.3.3 Voice removal](#3733-voice-removal)
+     - [3.7.4 General plugins](#374-general-plugins)
+       - [3.7.4.1 IRman Control](#3741-irman-control)
+       - [3.7.4.2 Joystick Control](#3742-joystick-control)
+       - [3.7.4.3 Song Change](#3743-song-change)
+     - [3.7.5 Visualization plugins](#375-visualization-plugins)
+       - [3.7.5.1 Blur scope](#3751-blur-scope)
+       - [3.7.5.2 OpenGL Spectrum analyzer](#3752-opengl-spectrum-analyzer)
+       - [3.7.5.3 Simple Spectrum analyzer](#3753-simple-spectrum-analyzer)
 4. [Command Line Options](#4-command-line-options)
 5. [Features](#5-features)
    - [5.1 Supported File formats](#51-supported-file-formats)
@@ -336,7 +337,27 @@ When you start up XMMS, you will get a console very similar to that of WinAmp.
 | `Arrow right` | Balance 4% to right |
 | `Arrow left` | Balance 4% to left |
 
-### 3.2 Playlist editor
+### 3.2 HiDPI displays
+
+The skinned windows are drawn from fixed-size skin bitmaps. On very dense
+screens some desktops do not scale legacy X11 applications (GNOME on Wayland
+does not by default; KDE scales XWayland clients for you). XMMS would
+otherwise open at its raw skin size — 275 pixels wide — and look tiny.
+
+XMMS therefore reads the `Xft.dpi` X resource at startup. When it is 144 DPI
+or more (that is, a 1.5× or higher desktop scale), the main window, equalizer,
+and playlist window all start in **Doublesize** mode and render at twice the
+skin size, matching the compositor scaling on KDE.
+
+- `Ctrl+d` still toggles Doublesize at any time, for all three windows at
+  once. The state is remembered across restarts.
+- To keep the historical always-1x startup regardless of the display DPI, set
+  `skin_autoscale=FALSE` in the `[xmms]` section of `~/.xmms/config`.
+- On GNOME it also works to let the compositor scale every X11 app instead:
+  `gsettings set org.gnome.mutter experimental-features "['scale-monitor-framebuffer']"`,
+  then re-login.
+
+### 3.3 Playlist editor
 
 To access the Playlist editor, select the button labeled "PL" on the right side
 of the XMMS console.
@@ -372,7 +393,7 @@ playlist using the cursor keys and `Enter` to select a song. Pressing the delete
 button will remove the song from the playlist. If your mouse is equipped with a
 mouse wheel, you can use this to scroll up and down.
 
-### 3.3. Equalizer
+### 3.4. Equalizer
 
 To access the Equalizer, select the button labeled "EQ" on the right side of the
 XMMS console.
@@ -428,14 +449,14 @@ The **preset** button will open up a menu with the following options:
 **Configure Equalizer** : Change the default names of directory based preset
 files.
 
-### 3.4 Menu
+### 3.5 Menu
 
 There are several menu hot spots on the XMMS window. One place is at the left
 hand side of the visual window described in section 3.1. If you click the right
 mouse button in the main window, the menus will also pop up (same as clicking
 the button on the top left corner).
 
-### 3.5 Preferences
+### 3.6 Preferences
 
 Use the menu to open **Options / Preferences** or press `Ctrl+P` to bring the
 preferences dialog up.
@@ -443,7 +464,7 @@ preferences dialog up.
 The first three tabs are for different types of plugins; the plugins' specific
 configuration and usage will be explained in the plugins section of this manual.
 
-#### 3.5.1 Audio I/O Plugins
+#### 3.6.1 Audio I/O Plugins
 
 In the **Audio I/O** tab you control the heart of XMMS, which would be the Input
 and Output plugins.
@@ -457,21 +478,21 @@ Today you can only have one Output Plugin active at a time. So you can't both
 listen to the music through the OSS Driver and save the music to disk with Disk
 Writer.
 
-#### 3.5.2 Effect Plugins
+#### 3.6.2 Effect Plugins
 
 Effect plugins can alter the sound in different ways.
 
-#### 3.5.3 General Plugins
+#### 3.6.3 General Plugins
 
 General plugins are mostly for controlling XMMS.
 
-#### 3.5.4 Visualization Plugins
+#### 3.6.4 Visualization Plugins
 
 The **Visualization** tab controls which visual effects you want to see when
 XMMS is playing your music. See section [3.6.5](#365-visualization-plugins) for
 the plugins shipped with XMMS.
 
-#### 3.5.5 Options
+#### 3.6.5 Options
 
 Here you change most of XMMS's behavior and settings.
 
@@ -510,7 +531,8 @@ Here you change most of XMMS's behavior and settings.
 - **Show numbers in playlist** — Enables the display of the internal track
   number in the playlist.
 - **Equalizer doublesize linked** — Will display the Equalizer in doublesize if
-  you make XMMS doublesize.
+  you make XMMS doublesize. (The Playlist window always follows Doublesize as
+  well; see [HiDPI displays](#32-hidpi-displays).)
 - **Smooth title scroll** — Makes the title scroll go smoother.
 - **Snap window at [ ] pixels** — Tells XMMS how close you can position the
   three windows until they dock / snap together with each other.
@@ -520,7 +542,7 @@ Here you change most of XMMS's behavior and settings.
   with the configured 'Title' string for quick loading of information when you
   load a playlist.
 
-#### 3.5.6 Fonts
+#### 3.6.6 Fonts
 
 Here you can change the fonts XMMS uses.
 
@@ -529,7 +551,7 @@ Here you can change the fonts XMMS uses.
 - **Use X font** — Makes XMMS use a font for the scrolling title in the main
   window.
 
-#### 3.5.7 Title
+#### 3.6.7 Title
 
 The **Title format:** box allows you to alter in which order the information
 about the current song is displayed.
@@ -562,7 +584,7 @@ Examples:
 - `%-30` — Same as previous, but suffix instead.
 - `%-30.30p` — Suffix-pad to 30 chars and "cut" to 30 too.
 
-### 3.6 Plugins
+### 3.7 Plugins
 
 Plugins are what makes XMMS work. By moving most of the code out of XMMS and
 into a plugin architecture it's possible to change almost everything in XMMS.
@@ -570,7 +592,7 @@ There are today 5 different types of plugins. Only a few plugins are distributed
 with XMMS; you used to be able to find a lot more on `http://www.xmms.org/`
 *(no longer online)*.
 
-#### 3.6.1 Input plugins
+#### 3.7.1 Input plugins
 
 The input plugins are what you use to play mp3, mod, wav and even movies with.
 
@@ -787,7 +809,7 @@ information.
 This plugin plays, as suggested, wave files. It supports 16-bit and 8-bit PCM
 wave files.
 
-#### 3.6.2 Output plugins
+#### 3.7.2 Output plugins
 
 This type of plugin is what is used to send the audio data to your soundcard or
 alternative devices.
@@ -869,7 +891,7 @@ playback status.
 
 Undocumented.
 
-#### 3.6.3 Effect plugins
+#### 3.7.3 Effect plugins
 
 Effect plugins can alter the sound of the music you are listening to.
 
@@ -890,7 +912,7 @@ In the configuration screen you can choose intensity.
 
 A simple voice removal plugin, no configuration.
 
-#### 3.6.4 General plugins
+#### 3.7.4 General plugins
 
 Mostly used for controlling XMMS and passing data to other programs.
 
@@ -973,7 +995,7 @@ Available information you might want to pass to the program:
 Example: `echo "%n" >>~/xmms_log` will fill your `~/xmms_log` file with all the
 songs you have listened to.
 
-#### 3.6.5 Visualization plugins
+#### 3.7.5 Visualization plugins
 
 Eye candy plugins.
 

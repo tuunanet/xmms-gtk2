@@ -120,6 +120,9 @@ Control + a	Always on top
 Control + w	Winshade mode
 .br
 Control + d	Doublesize mode
+.B
+(see
+.BR "HiDPI DISPLAYS" " below)"
 .br
 Control + e	Easy move
 .br
@@ -235,6 +238,20 @@ unpacking gzip and bzip2 compressed skins.  Default is \fItar\fP.
 .TP
 .B UNZIPCMD
 Command for decompressing zip files (skins).  Default is \fIunzip\fP.
+.SH HIDPI DISPLAYS
+The skinned windows are drawn from fixed-size skin bitmaps, so on very
+dense displays XMMS would normally appear tiny when the desktop does not
+scale legacy X11 applications (for example GNOME on Wayland; KDE scales
+XWayland clients by default).  XMMS therefore reads the
+.B Xft.dpi
+X resource at startup: when it is at least 144 DPI, the player, equalizer,
+and playlist windows start in Doublesize mode so they render at twice
+their skin size.  Set
+.B skin_autoscale=FALSE
+in the
+.I [xmms]
+section of ~/.xmms/config to keep the historical always-1x startup, or
+toggle the mode at any time with Control + d.
 .SH OTHER INFO
 The webpage for XMMS is at http://www.xmms.org.  Here you can find
 info about XMMS, download the latest version, plugins, and skins.

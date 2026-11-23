@@ -15,6 +15,23 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+### Added
+
+- HiDPI auto-scaling: XMMS reads `Xft.dpi` at startup and starts the player,
+  equalizer, and playlist windows in Doublesize when the display advertises
+  144 DPI or more, so the skinned windows are usable on desktops that do not
+  scale X11/XWayland applications (for example GNOME on Wayland). A new
+  `skin_autoscale` config key (default `TRUE`) restores the historical
+  always-1x startup when set to `FALSE`.
+
+### Changed
+
+- DoubleSize (`Ctrl+d`) now also scales the playlist window, which
+  previously only supported 1x. At 1x, rendering, geometry, and behavior are
+  unchanged from previous releases.
+
+### Fixed
+
 ## [1.2.13] - 2026-07-29
 
 ### Added
