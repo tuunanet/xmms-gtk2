@@ -29,6 +29,11 @@ for XMMS GTK2.
 - DoubleSize (`Ctrl+d`) now also scales the playlist window, which
   previously only supported 1x. At 1x, rendering, geometry, and behavior are
   unchanged from previous releases.
+- DoubleSize rendering is now bilinearly smoothed instead of
+  nearest-neighbour pixel-doubled. This matches the appearance of a
+  compositor upscaling the 1x window on Wayland, which is the look HiDPI
+  auto-scaling replicates on desktops that do not scale X11 clients
+  themselves.
 
 ## [1.2.13] - 2026-07-29
 

@@ -225,8 +225,6 @@ void equalizerwin_auto_pushed(gboolean toggled)
 void draw_equalizer_window(gboolean force)
 {
 	GdkImage *img, *img2;
-	GList *wl;
-	Widget *w;
 	gboolean redraw;
 
 	lock_widget_list(equalizerwin_wlist);
@@ -260,37 +258,16 @@ void draw_equalizer_window(gboolean force)
 
 	if (force || redraw)
 	{
+		/* Re-double the whole background (see draw_main_window()). */
 		if (cfg.doublesize && cfg.eq_doublesize_linked)
 		{
-			if (force)
-			{
-				img = gdk_image_get(equalizerwin_bg, 0, 0, 275, 116);
-				img2 = create_dblsize_image(img);
-				gdk_draw_image(equalizerwin_bg_dblsize, equalizerwin_gc, img2, 0, 0, 0, 0, 550, 232);
-				gdk_image_destroy(img2);
-				gdk_image_destroy(img);
-			}
-			else
-			{
-				wl = equalizerwin_wlist;
-				while (wl)
-				{
-					w = (Widget *) wl->data;
-					if (w->redraw && w->visible)
-					{
-						img = gdk_image_get(equalizerwin_bg, w->x, w->y, w->width, w->height);
-						img2 = create_dblsize_image(img);
-						gdk_draw_image(equalizerwin_bg_dblsize, equalizerwin_gc, img2, 0, 0, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
-						gdk_image_destroy(img2);
-						gdk_image_destroy(img);
-						w->redraw = FALSE;
-					}
-					wl = wl->next;
-				}
-			}
+			img = gdk_image_get(equalizerwin_bg, 0, 0, 275, 116);
+			img2 = create_dblsize_image(img);
+			gdk_draw_image(equalizerwin_bg_dblsize, equalizerwin_gc, img2, 0, 0, 0, 0, 550, 232);
+			gdk_image_destroy(img2);
+			gdk_image_destroy(img);
 		}
-		else
-			clear_widget_list_redraw(equalizerwin_wlist);
+		clear_widget_list_redraw(equalizerwin_wlist);
 		gdk_window_clear(equalizerwin->window);
 		gdk_flush();
 	}

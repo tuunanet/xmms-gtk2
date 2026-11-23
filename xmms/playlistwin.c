@@ -1839,12 +1839,12 @@ void draw_playlist_window(gboolean force)
 	}
 	if (redraw || force)
 	{
+		/* Re-double the whole background (see draw_main_window()). */
+		if (cfg.doublesize)
+			playlistwin_update_dblsize_bg(cfg.playlist_width, cfg.playlist_shaded ? 14 : cfg.playlist_height);
+
 		if (force)
-		{
-			if (cfg.doublesize)
-				playlistwin_update_dblsize_bg(cfg.playlist_width, cfg.playlist_shaded ? 14 : cfg.playlist_height);
 			gdk_window_clear(playlistwin->window);
-		}
 		else
 		{
 			wl = playlistwin_wlist;
@@ -1854,10 +1854,7 @@ void draw_playlist_window(gboolean force)
 				if (w->redraw && w->visible)
 				{
 					if (cfg.doublesize)
-					{
-						playlistwin_double_bg_rect(w->x, w->y, w->width, w->height);
 						gdk_window_clear_area(playlistwin->window, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
-					}
 					else
 						gdk_window_clear_area(playlistwin->window, w->x, w->y, w->width, w->height);
 					w->redraw = FALSE;

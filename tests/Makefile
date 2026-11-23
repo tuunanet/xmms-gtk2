@@ -8,7 +8,7 @@ LDLIBS += $(shell pkg-config --libs gtk+-2.0)
 
 .PHONY: check clean test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 
-check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
+check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dblsize-scale test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 	./test-xentry
 	./test-filebrowser
 	./test-font-load
@@ -23,6 +23,7 @@ check: test-xentry test-filebrowser test-font-load test-popup-position test-keyb
 	./test-mpg123-stream-position
 	./test-hidpi-scale
 	./test-hidpi-startup
+	./test-dblsize-scale
 
 test-xentry: $(srcdir)/test-xentry.c $(top_srcdir)/libxmms/xentry.c $(top_srcdir)/libxmms/xentry.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-xentry.c $(top_srcdir)/libxmms/xentry.c $(LDLIBS)
@@ -97,6 +98,11 @@ test-hidpi-startup: override CFLAGS += -DXMMS_BINARY=\"$(top_builddir)/xmms/xmms
 test-hidpi-startup: $(srcdir)/test-hidpi-startup.c $(top_builddir)/xmms/xmms
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-hidpi-startup.c $(LDLIBS) -lX11
 
+test-dblsize-scale: override CFLAGS += -ffunction-sections -fdata-sections
+test-dblsize-scale: LDFLAGS += -Wl,--gc-sections
+test-dblsize-scale: $(srcdir)/test-dblsize-scale.c $(top_srcdir)/xmms/util.c $(top_srcdir)/xmms/util.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-dblsize-scale.c $(top_srcdir)/xmms/util.c $(LDLIBS) -lX11
+
 test-c-lint:
 	$(srcdir)/test-c-lint.sh $(top_srcdir)
 
@@ -113,4 +119,4 @@ test-release-tools:
 	$(srcdir)/test-release-tools.sh $(top_srcdir)
 
 clean:
-	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-plugins test-outputplugin-plugins
+	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dblsize-scale test-plugins test-outputplugin-plugins

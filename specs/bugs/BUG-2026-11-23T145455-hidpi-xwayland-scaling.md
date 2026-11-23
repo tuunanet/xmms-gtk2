@@ -198,6 +198,18 @@ Fix: after the drag resize applies (`gdk_window_resize()` /
 `playlistwin_motion()`.  The WM-driven configure path already resizes
 first and masks afterwards.
 
+## Smooth-Scaling Follow-up (UAT decision)
+
+The first HiDPI builds used nearest-neighbour pixel doubling, which UAT
+found noticeably chunkier than the pre-PR Kubuntu appearance (KWin
+upgraded the 1x window).  The user chose bilinear smoothing: `create_dblsize_image()`
+now scales 24/32-bit images bilinearly (destination n samples n/2 - 0.25,
+so 1/4–3/4 weights with clamped edges); legacy 8/16-bit visuals keep the
+old nearest-neighbour path.  Every redraw re-scales the whole background,
+which avoids seams from blending widget rectangles against stale
+neighbours.  Unit tests (`tests/test-dblsize-scale.c`) pin the blend
+weights, clamping and flat-colour preservation.
+
 ## Verification Evidence
 
 - `tests/test-hidpi-scale` — 9/9 pass (parsing, RDB lookup, thresholds;

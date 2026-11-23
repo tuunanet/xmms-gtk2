@@ -49,6 +49,7 @@ EXTRA_DIST = \
 	tests/test-font-load.c \
 	tests/test-hidpi-scale.c \
 	tests/test-hidpi-startup.c \
+	tests/test-dblsize-scale.c \
 	tests/test-c-lint.sh \
 	tests/test-intl-generated-sources.sh \
 	tests/test-keyboard-shortcuts.c \

@@ -1093,18 +1093,20 @@ void draw_main_window(gboolean force)
 
 	if (redraw || force)
 	{
+		/* Re-double the whole background on every redraw.  Scaling
+		 * per-widget rectangles would blend against stale
+		 * neighbours and leave seams at their edges. */
+		if (cfg.doublesize)
+		{
+			img = gdk_image_get(mainwin_bg, 0, 0, 275, cfg.player_shaded ? 14 : 116);
+			img2 = create_dblsize_image(img);
+			gdk_draw_image(mainwin_bg_dblsize, mainwin_gc, img2, 0, 0, 0, 0, 550, cfg.player_shaded ? 28 : 232);
+			gdk_image_destroy(img2);
+			gdk_image_destroy(img);
+		}
 
 		if (force)
-		{
-			if (cfg.doublesize)
-			{
-				img = gdk_image_get(mainwin_bg, 0, 0, 275, cfg.player_shaded ? 14 : 116);
-				img2 = create_dblsize_image(img);
-				gdk_draw_image(mainwin_bg_dblsize, mainwin_gc, img2, 0, 0, 0, 0, 550, cfg.player_shaded ? 28 : 232);
-				gdk_image_destroy(img2);
-				gdk_image_destroy(img);
-			}
-		}
+			gdk_window_clear(mainwin->window);
 		else
 		{
 			wl = mainwin_wlist;
@@ -1114,14 +1116,7 @@ void draw_main_window(gboolean force)
 				if (w->redraw && w->visible)
 				{
 					if (cfg.doublesize)
-					{
-						img = gdk_image_get(mainwin_bg, w->x, w->y, w->width, w->height);
-						img2 = create_dblsize_image(img);
-						gdk_draw_image(mainwin_bg_dblsize, mainwin_gc, img2, 0, 0, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
-						gdk_image_destroy(img2);
-						gdk_image_destroy(img);
 						gdk_window_clear_area(mainwin->window, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
-					}
 					else
 						gdk_window_clear_area(mainwin->window, w->x, w->y, w->width, w->height);
 					w->redraw = FALSE;
@@ -1130,8 +1125,6 @@ void draw_main_window(gboolean force)
 				wl = wl->next;
 			}
 		}
-		if (force)
-			gdk_window_clear(mainwin->window);
 		gdk_flush();
 	}
 	unlock_widget_list(mainwin_wlist);

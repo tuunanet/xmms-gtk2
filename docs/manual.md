@@ -347,7 +347,9 @@ otherwise open at its raw skin size — 275 pixels wide — and look tiny.
 XMMS therefore reads the `Xft.dpi` X resource at startup. When it is 144 DPI
 or more (that is, a 1.5× or higher desktop scale), the main window, equalizer,
 and playlist window all start in **Doublesize** mode and render at twice the
-skin size, matching the compositor scaling on KDE.
+skin size, matching the compositor scaling on KDE. DoubleSize scaling is
+smoothed (bilinear), so it looks like a compositor upscaling the window
+rather than blocky pixel doubling.
 
 - `Ctrl+d` still toggles Doublesize at any time, for all three windows at
   once. The state is remembered across restarts.

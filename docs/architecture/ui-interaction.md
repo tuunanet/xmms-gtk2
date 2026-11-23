@@ -176,9 +176,12 @@ The scaling model (see `set_doublesize()` in
 
 - Widget geometry, the per-window background pixmap, and the event
   coordinates after dispatch always stay in **skin space** (1x).
-- On the way out, the background pixmap is pixel-doubled with
+- On the way out, the background pixmap is scaled 2× with
   `create_dblsize_image()` into a second pixmap that becomes the window's
-  back pixmap; the real `GdkWindow` is sized 2x.
+  back pixmap; the real `GdkWindow` is sized 2x.  The scale is bilinear
+  (1/4–3/4 weights, clamped at the edges), matching how a compositor
+  upscales a 1x window; the whole background is re-scaled on every redraw
+  so widget rectangles never blend against stale neighbours.
 - Button-press/release/motion handlers divide event `x`/`y` by 2 on entry,
   which makes the widget hit-testing "transparent" to the scale factor
   (root coordinates are left alone because docking and WM hints work in

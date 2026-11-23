@@ -167,16 +167,84 @@ void del_directory(const char *dirname)
 #endif /* !HAVE_FTS_H */
 }
 
+/*
+ * Bilinear 2x scale of 24/32-bit images.  Destination pixel n samples the
+ * source at n/2 - 0.25, so even destinations blend 1/4 of the previous
+ * source pixel with 3/4 of the current one, and odd destinations blend 3/4
+ * of the current with 1/4 of the next.  Edges clamp.  This matches how a
+ * compositor upscales the window on Wayland, which is the look the HiDPI
+ * mode aims for.
+ */
+static void scale2x_bilinear(GdkImage *src, GdkImage *dst, gint bpp)
+{
+	XImage *src_x = GDK_IMAGE_XIMAGE(src);
+	XImage *dst_x = GDK_IMAGE_XIMAGE(dst);
+	gint sw = src->width, sh = src->height;
+	gint sbpl = src_x->bytes_per_line, dbpl = dst_x->bytes_per_line;
+	guint8 *row_even, *row_odd;
+	gint x, y, k;
+
+	row_even = g_malloc(sw * bpp);
+	row_odd = g_malloc(sw * bpp);
+
+	for (y = 0; y < sh; y++)
+	{
+		guint8 *prev = (guint8 *)src_x->data +
+			(size_t)(y > 0 ? y - 1 : 0) * sbpl;
+		guint8 *cur = (guint8 *)src_x->data + (size_t)y * sbpl;
+		guint8 *next = (guint8 *)src_x->data +
+			(size_t)(y < sh - 1 ? y + 1 : sh - 1) * sbpl;
+		guint8 *d_even = (guint8 *)dst_x->data + (size_t)(2 * y) * dbpl;
+		guint8 *d_odd = (guint8 *)dst_x->data + (size_t)(2 * y + 1) * dbpl;
+
+		/* Vertical blend for the two destination rows. */
+		for (x = 0; x < sw * bpp; x++)
+		{
+			row_even[x] = (guint8)((prev[x] + 3 * cur[x]) >> 2);
+			row_odd[x] = (guint8)((3 * cur[x] + next[x]) >> 2);
+		}
+
+		/* Horizontal blend while writing both destination rows. */
+		for (x = 0; x < sw; x++)
+		{
+			gint x0 = (x > 0 ? x - 1 : 0) * bpp;
+			gint x1 = (x < sw - 1 ? x + 1 : sw - 1) * bpp;
+			gint xc = x * bpp;
+			for (k = 0; k < bpp; k++)
+			{
+				d_even[(2 * x) * bpp + k] =
+					(guint8)((row_even[x0 + k] +
+						  3 * row_even[xc + k]) >> 2);
+				d_even[(2 * x + 1) * bpp + k] =
+					(guint8)((3 * row_even[xc + k] +
+						  row_even[x1 + k]) >> 2);
+				d_odd[(2 * x) * bpp + k] =
+					(guint8)((row_odd[x0 + k] +
+						  3 * row_odd[xc + k]) >> 2);
+				d_odd[(2 * x + 1) * bpp + k] =
+					(guint8)((3 * row_odd[xc + k] +
+						  row_odd[x1 + k]) >> 2);
+			}
+		}
+	}
+
+	g_free(row_even);
+	g_free(row_odd);
+}
+
 GdkImage *create_dblsize_image(GdkImage * img)
 {
 	GdkImage *dblimg;
 	register guint x, y;
 
-	/*
-	 * This needs to be optimized
-	 */
-
 	dblimg = gdk_image_new(GDK_IMAGE_NORMAL, gdk_visual_get_best_with_depth(img->depth), img->width << 1, img->height << 1);
+
+	if (dblimg->bpp == 3 || dblimg->bpp == 4)
+	{
+		scale2x_bilinear(img, dblimg, dblimg->bpp);
+		return dblimg;
+	}
+
 	if (dblimg->bpp == 1)
 	{
 		char *srcptr, *ptr, *ptr2;
