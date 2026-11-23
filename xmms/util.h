@@ -41,6 +41,7 @@
 	"-misc-fixed-bold-r-semicondensed--13-120-75-75-c-60-iso8859-1"
 #define XMMS_DEFAULT_MAINWIN_FONT \
 	"-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-1"
+#define XMMS_HIDPI_DOUBLE_DPI 144
 
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);
@@ -58,6 +59,10 @@ GtkWidget *util_create_add_url_window(gchar *caption, GtkSignalFunc ok_func, Gtk
 GtkWidget *util_create_filebrowser(gboolean clear_pl_on_ok);
 gboolean util_filebrowser_is_dir(GtkFileSelection * filesel);
 GdkFont *util_font_load(gchar *name);
+gint util_xft_dpi_parse(const gchar *value);
+gint util_xft_dpi_from_rdb(const gchar *rdb);
+gint util_get_xft_dpi(void);
+gint util_skin_scale_for_dpi(gint dpi);
 void util_set_cursor(GtkWidget *window);
 void util_dump_menu_rc(void);
 void util_read_menu_rc(void);

@@ -358,6 +358,7 @@ static void read_config(void)
 	cfg.get_info_on_load = FALSE;
 	cfg.get_info_on_demand = TRUE;
 	cfg.eq_doublesize_linked = TRUE;
+	cfg.skin_autoscale = TRUE;
 	cfg.player_visible = TRUE;
 	cfg.no_playlist_advance = FALSE;
 	cfg.smooth_title_scroll = TRUE;
@@ -423,6 +424,7 @@ static void read_config(void)
 		xmms_cfg_read_boolean(cfgfile, "xmms", "shuffle", &cfg.shuffle);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "repeat", &cfg.repeat);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "doublesize", &cfg.doublesize);
+		xmms_cfg_read_boolean(cfgfile, "xmms", "skin_autoscale", &cfg.skin_autoscale);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "autoscroll_songname", &cfg.autoscroll);
 		xmms_cfg_read_int(cfgfile, "xmms", "timer_mode", &cfg.timer_mode);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "timer_minutes_only", &cfg.timer_minutes_only);
@@ -618,6 +620,7 @@ void save_config(void)
 	xmms_cfg_write_boolean(cfgfile, "xmms", "shuffle", mainwin_shuffle->tb_selected);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "repeat", mainwin_repeat->tb_selected);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "doublesize", cfg.doublesize);
+	xmms_cfg_write_boolean(cfgfile, "xmms", "skin_autoscale", cfg.skin_autoscale);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "autoscroll_songname", cfg.autoscroll);
 	xmms_cfg_write_int(cfgfile, "xmms", "timer_mode", cfg.timer_mode);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "timer_minutes_only", cfg.timer_minutes_only);
@@ -775,6 +778,7 @@ void set_doublesize(gboolean ds)
 
 	if (cfg.eq_doublesize_linked)
 		equalizerwin_set_doublesize(ds);
+	playlistwin_set_doublesize(ds);
 }
 
 void mainwin_set_shade(gboolean shaded)
@@ -4310,6 +4314,17 @@ int main(int argc, char **argv)
 	check_wm_hints();
 	check_pposition();
 	mainwin_accel = gtk_accel_group_new();
+
+	/*
+	 * HiDPI auto-scaling: on screens advertising a doubled Xft DPI
+	 * (compositors that do not scale X11/XWayland clients themselves,
+	 * like GNOME's mutter) start with the skinned windows at 2x so
+	 * they are usable.  skin_autoscale=FALSE restores the historical
+	 * always-1x startup.
+	 */
+	if (cfg.skin_autoscale &&
+	    util_skin_scale_for_dpi(util_get_xft_dpi()) >= 2)
+		cfg.doublesize = TRUE;
 
 	sm_client_id = sm_init(argc, argv, options.previous_session_id);
 	gdk_set_sm_client_id(sm_client_id);

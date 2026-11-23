@@ -32,6 +32,7 @@ typedef struct
 	gint playlist_x, playlist_y, playlist_width, playlist_height;
 	guint snap_distance;
 	gboolean use_realtime, shuffle, repeat, doublesize, autoscroll;
+	gboolean skin_autoscale;
 	gboolean analyzer_peaks, equalizer_autoload, easy_move, equalizer_active;
 	gboolean playlist_visible, equalizer_visible, player_visible;
 	gboolean player_shaded, playlist_shaded, equalizer_shaded;

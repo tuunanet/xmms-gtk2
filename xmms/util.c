@@ -20,6 +20,7 @@
 #include "xmms.h"
 #include <gdk/gdkprivate.h>
 #include <X11/Xlib.h>
+#include <X11/Xresource.h>
 #include <sys/ipc.h>
 #include <ctype.h>
 #ifdef HAVE_FTS_H
@@ -935,6 +936,75 @@ GdkFont *util_font_load(char *name)
 	}
 
 	return font;
+}
+
+#define XMMS_DEFAULT_DPI 96
+#define XMMS_MAX_SANE_DPI 4096
+
+gint util_xft_dpi_parse(const gchar *value)
+{
+	gdouble dpi;
+	gchar *end;
+	gchar *trimmed;
+	gboolean usable;
+
+	if (value == NULL)
+		return XMMS_DEFAULT_DPI;
+
+	trimmed = g_strstrip(g_strdup(value));
+	dpi = g_ascii_strtod(trimmed, &end);
+	/* Validate before freeing: end points into trimmed. */
+	usable = (end != trimmed && *end == '\0' &&
+		  dpi > 0 && dpi <= XMMS_MAX_SANE_DPI);
+	g_free(trimmed);
+
+	if (!usable)
+		return XMMS_DEFAULT_DPI;
+
+	return (gint) (dpi + 0.5);
+}
+
+gint util_xft_dpi_from_rdb(const gchar *rdb)
+{
+	XrmDatabase database;
+	gchar *type;
+	XrmValue value;
+	gint dpi = XMMS_DEFAULT_DPI;
+
+	if (rdb == NULL)
+		return dpi;
+
+	XrmInitialize();
+	database = XrmGetStringDatabase((char *) rdb);
+	if (database != NULL)
+	{
+		if (XrmGetResource(database, "Xft.dpi", "Xft.Dpi",
+				   &type, &value) &&
+		    value.addr != NULL && value.size > 0)
+			dpi = util_xft_dpi_parse(value.addr);
+		XrmDestroyDatabase(database);
+	}
+
+	return dpi;
+}
+
+gint util_get_xft_dpi(void)
+{
+	Display *display;
+	gint dpi;
+
+	display = XOpenDisplay(NULL);
+	if (display == NULL)
+		return XMMS_DEFAULT_DPI;
+	dpi = util_xft_dpi_from_rdb(XResourceManagerString(display));
+	XCloseDisplay(display);
+
+	return dpi;
+}
+
+gint util_skin_scale_for_dpi(gint dpi)
+{
+	return (dpi >= XMMS_HIDPI_DOUBLE_DPI) ? 2 : 1;
 }
 
 #ifdef ENABLE_NLS
