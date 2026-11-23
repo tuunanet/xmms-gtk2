@@ -185,6 +185,11 @@ The scaling model (see `set_doublesize()` in
   real pixels).
 - The vis widgets draw directly to the real window and therefore render
   their own doubled content (`vis.c`, `svis.c`).
+- After a scale change the docked group is re-snapped once
+  (`resnap_dock_group()` in `main.c`): `dock_resize()` only keeps windows
+  docked directly to the window being resized, so rescaling a
+  player → equalizer → playlist chain would otherwise shuffle or overlap
+  the windows.
 
 ---
 

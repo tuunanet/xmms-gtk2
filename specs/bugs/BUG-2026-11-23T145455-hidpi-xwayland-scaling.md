@@ -125,6 +125,41 @@ config-path changes (new `[xmms]` key only), skin compatibility untouched
 - [x] Focused tests, Preflight (`make && xvfb-run make check && make lint`),
       and `make distcheck` pass.
 
+## Dock-Chain Rescale Follow-up (found in on-hardware testing)
+
+Manual testing on the affected GNOME session showed that toggling DoubleSize
+off and on again left the three docked windows shuffled: the test harness
+reproduced EQ and playlist landing on the same y coordinate (fully
+overlapping), and a saved 1x-consistent stack starting doubled with its
+windows overlapping.
+
+Root cause: `dock_resize()` re-docks only windows docked *directly* to the
+window being resized.  Rescaling a vertical chain (player -> equalizer ->
+playlist) runs three sequential docking passes; each recomputes docking from
+the intermediate geometry, so later windows detach or collide.  Saved window
+positions are also only consistent at 1x, so an autoscaled start needs the
+same treatment.
+
+Fix in `main.c`:
+
+- `resnap_dock_group()` runs once after all three windows rescale (and once
+  at startup when autoscale fires) and re-snaps flush-docked followers to
+  their leader's new edge: equalizer to the player, playlist to the
+  equalizer (falling back to the player when it was not docked to the
+  equalizer).  Docking relations are read from the pre-rescale geometry.
+- New sizes are **computed** from the skin geometry; reading them back with
+  `gdk_window_get_size()` during the transition returns stale values
+  (observed: intermediate 200px heights), which produced wrong targets in
+  an earlier revision.
+- The pre-rescale scale factor is captured before `cfg.doublesize` is
+  updated, so the startup menu-state callback (which re-enters
+  `set_doublesize()` with an unchanged scale) is a no-op instead of
+  mislabelling the old geometry.
+
+Verified on the affected GNOME/Wayland session by driving four consecutive
+Ctrl+d toggles and measuring all three X windows: both states stay flush
+(doubled: 1522/1754/1986; collapsed: 1522/1638/1754) and repeat identically.
+
 ## Verification Evidence
 
 - `tests/test-hidpi-scale` — 9/9 pass (parsing, RDB lookup, thresholds;
@@ -132,6 +167,9 @@ config-path changes (new `[xmms]` key only), skin compatibility untouched
 - `tests/test-hidpi-startup` — 4/4 pass (dpi-192 doubles both windows;
   Ctrl+D collapses both back to 1×; `skin_autoscale=FALSE` and
   standard-DPI stay 1×).
+- On-hardware dock-chain reassembly verified on the affected GNOME/Wayland
+  session across four Ctrl+D toggles (see follow-up section above); pixel
+  grabs of every window at every step showed complete, unclipped content.
 - Two-axis code review (standards + spec sub-agents, 2026-11-23) produced
   fixes: guarded shared blit helper (`playlistwin_double_bg_rect`),
   restored the historical `14px` configure-event escape at any scale,

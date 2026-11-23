@@ -751,11 +751,96 @@ void mainwin_set_shape_mask(void)
 }
 
 
+typedef struct
+{
+	gint x, y, w, h;
+} DockGeom;
+
+/* Re-dock FOLLOWER across a scale change when it was flush docked to
+ * LEADER before it.  dock_resize() only keeps windows docked directly to
+ * the one being resized, so rescaling a docked chain (player -> equalizer
+ * -> playlist) detaches or overlaps later windows: every step recomputes
+ * docking from the intermediate geometry.  (fx, fy) is the follower's
+ * pre-rescale position; (fw, fh) its post-rescale size.  On success the
+ * follower's new position is stored in (fx, fy).  All leader dimensions
+ * are computed from the skin geometry rather than read back from the X
+ * server, because window resizes land asynchronously and a mid-transition
+ * read returns stale dimensions. */
+static gboolean dock_resnap_pair(GtkWidget *follower, gint *fx, gint *fy,
+				 gint fw, gint fh,
+				 const DockGeom *leader_old,
+				 const DockGeom *leader_new)
+{
+	gint nx = *fx, ny = *fy;
+
+	if (abs(*fx - leader_old->x) <= cfg.snap_distance)
+	{
+		if (abs(*fy - (leader_old->y + leader_old->h)) <= cfg.snap_distance)
+			ny = leader_new->y + leader_new->h;
+		else if (abs((*fy + fh) - leader_old->y) <= cfg.snap_distance)
+			ny = leader_new->y - fh;
+	}
+	if (abs(*fy - leader_old->y) <= cfg.snap_distance)
+	{
+		if (abs(*fx - (leader_old->x + leader_old->w)) <= cfg.snap_distance)
+			nx = leader_new->x + leader_new->w;
+		else if (abs((*fx + fw) - leader_old->x) <= cfg.snap_distance)
+			nx = leader_new->x - fw;
+	}
+	if (nx == *fx && ny == *fy)
+		return FALSE;
+	*fx = nx;
+	*fy = ny;
+	dock_set_uposition(follower, nx, ny);
+	return TRUE;
+}
+
+/* Re-snap the docked skinned windows after a whole-group rescale.  The
+ * leader chain is player -> equalizer -> playlist; the playlist falls back
+ * to the player when it was not docked to the equalizer.  The main window
+ * anchors the group; every other window keeps its pre-rescale position
+ * relative to its leader's new edge. */
+static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
+			      const DockGeom *pl_old, gboolean eq_resized)
+{
+	gint ms = cfg.doublesize + 1;
+	DockGeom main_new, eq_new, pl_new;
+
+	main_new = *main_old;
+	main_new.w = 275 * ms;
+	main_new.h = (cfg.player_shaded ? 14 : 116) * ms;
+
+	eq_new = *eq_old;
+	if (eq_resized)
+	{
+		eq_new.w = 275 * ms;
+		eq_new.h = (cfg.equalizer_shaded ? 14 : 116) * ms;
+	}
+
+	pl_new = *pl_old;
+	pl_new.w = cfg.playlist_width * ms;
+	pl_new.h = PLAYLIST_HEIGHT * ms;
+
+	if (eq_resized)
+		dock_resnap_pair(equalizerwin, &eq_new.x, &eq_new.y,
+				 eq_new.w, eq_new.h, main_old, &main_new);
+	if (eq_resized &&
+	    dock_resnap_pair(playlistwin, &pl_new.x, &pl_new.y,
+			     pl_new.w, pl_new.h, eq_old, &eq_new))
+		return;
+	dock_resnap_pair(playlistwin, &pl_new.x, &pl_new.y,
+			 pl_new.w, pl_new.h, main_old, &main_new);
+}
+
 void set_doublesize(gboolean ds)
 {
-	gint height;
+	gint height, old_scale;
+	DockGeom main_old, eq_old, pl_old;
+	gboolean eq_resized;
 
+	old_scale = cfg.doublesize + 1;
 	cfg.doublesize = ds;
+	eq_resized = cfg.eq_doublesize_linked;
 
 	if (cfg.player_shaded)
 		height = 14;
@@ -763,6 +848,18 @@ void set_doublesize(gboolean ds)
 		height = 116;
 
 	mainwin_set_shape_mask();
+	/* Positions come from the dock bookkeeping (synchronous); sizes are
+	 * computed because X resizes land asynchronously. */
+	dock_get_widget_pos(mainwin, &main_old.x, &main_old.y);
+	main_old.w = 275 * old_scale;
+	main_old.h = height * old_scale;
+	dock_get_widget_pos(equalizerwin, &eq_old.x, &eq_old.y);
+	eq_old.w = 275 * old_scale;
+	eq_old.h = (cfg.equalizer_shaded ? 14 : 116) * old_scale;
+	dock_get_widget_pos(playlistwin, &pl_old.x, &pl_old.y);
+	pl_old.w = cfg.playlist_width * old_scale;
+	pl_old.h = PLAYLIST_HEIGHT * old_scale;
+
 	if (cfg.doublesize)
 	{
 		dock_resize(dock_window_list, mainwin, 550, height * 2);
@@ -776,9 +873,11 @@ void set_doublesize(gboolean ds)
 	draw_main_window(TRUE);
 	vis_set_doublesize(mainwin_vis, ds);
 
-	if (cfg.eq_doublesize_linked)
+	if (eq_resized)
 		equalizerwin_set_doublesize(ds);
 	playlistwin_set_doublesize(ds);
+
+	resnap_dock_group(&main_old, &eq_old, &pl_old, eq_resized);
 }
 
 void mainwin_set_shade(gboolean shaded)
@@ -4231,6 +4330,7 @@ static void enable_x11r5_session_management(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+	gboolean skin_autoscaled = FALSE;
 	char *filename;
 	const char *sm_client_id;
 	struct cmdlineopt options;
@@ -4324,7 +4424,10 @@ int main(int argc, char **argv)
 	 */
 	if (cfg.skin_autoscale &&
 	    util_skin_scale_for_dpi(util_get_xft_dpi()) >= 2)
+	{
 		cfg.doublesize = TRUE;
+		skin_autoscaled = TRUE;
+	}
 
 	sm_client_id = sm_init(argc, argv, options.previous_session_id);
 	gdk_set_sm_client_id(sm_client_id);
@@ -4342,6 +4445,29 @@ int main(int argc, char **argv)
 
 	playlistwin_create();
 	equalizerwin_create();
+	if (skin_autoscaled)
+	{
+		/* Saved positions and sizes are consistent at 1x; the
+		 * windows just came up doubled.  Reconstruct the 1x
+		 * geometry as the pre-rescale state so the dock chain
+		 * starts flush at the doubled scale. */
+		DockGeom main_old, eq_old, pl_old;
+
+		main_old.x = cfg.player_x;
+		main_old.y = cfg.player_y;
+		main_old.w = 275;
+		main_old.h = cfg.player_shaded ? 14 : 116;
+		eq_old.x = cfg.equalizer_x;
+		eq_old.y = cfg.equalizer_y;
+		eq_old.w = 275;
+		eq_old.h = cfg.equalizer_shaded ? 14 : 116;
+		pl_old.x = cfg.playlist_x;
+		pl_old.y = cfg.playlist_y;
+		pl_old.w = cfg.playlist_width;
+		pl_old.h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+		resnap_dock_group(&main_old, &eq_old, &pl_old,
+				  cfg.eq_doublesize_linked);
+	}
 	init_skins();
 	load_skin(cfg.skin);
 	create_popups();
