@@ -116,13 +116,18 @@ void mainwin_repeat_pushed(gboolean toggled);
 void mainwin_advance_pushed(gboolean toggled);
 void mainwin_disable_seekbar(void);
 void mainwin_set_shape_mask(void);
+gint mainwin_window_width(void);
+gint mainwin_window_height(void);
+gint equalizerwin_window_height(void);
+gint mainwin_scale_len(gint value);
+gint mainwin_unscale_len(gint value);
 void mainwin_recreate(void);
 void mainwin_set_shade_menu_cb(gboolean shaded);
 void mainwin_set_shade(gboolean shaded);
 void mainwin_shade_toggle(void);
 void mainwin_queue_manager(void);
 
-#define PLAYER_HEIGHT ((cfg.player_shaded ? 14 : 116) * (cfg.doublesize + 1))
-#define PLAYER_WIDTH (275 * (cfg.doublesize + 1))
+#define PLAYER_HEIGHT mainwin_window_height()
+#define PLAYER_WIDTH mainwin_window_width()
 
 #endif

@@ -75,7 +75,7 @@ invalidPrintfArgType_sint:xmms/bmp.c:240 # legacy warning
 invalidPointerCast:xmms/controlsocket.c:594 # legacy portability
 memleak:xmms/dock.c:552 # legacy error
 negativeIndex:xmms/eq_slider.c:70 # legacy warning
-resourceLeak:xmms/equalizer.c:1179 # legacy error
+resourceLeak:xmms/equalizer.c:1210 # legacy error
 signConversion:xmms/fft.c:196 # legacy warning
 signConversion:xmms/fft.c:197 # legacy warning
 invalidPrintfArgType_sint:xmms/fft.c:201 # legacy warning
@@ -85,8 +85,8 @@ readdirCalled:xmms/playlist.c:439 # legacy portability (Cppcheck 2.13)
 readdirCalled:xmms/pluginenum.c:402 # legacy portability (Cppcheck 2.13)
 readdirCalled:xmms/pluginenum.c:424 # legacy portability (Cppcheck 2.13)
 invalidPrintfArgType_uint:xmms/prefswin.c:1389 # legacy warning
-memleak:xmms/skin.c:626 # legacy error
-memleak:xmms/skin.c:628 # legacy error
+memleak:xmms/skin.c:685 # legacy error
+memleak:xmms/skin.c:687 # legacy error
 readdirCalled:xmms/skinwin.c:139 # legacy portability (Cppcheck 2.13)
 invalidScanfArgType_int:xmms/urldecode.c:46 # legacy warning
 readdirCalled:xmms/util.c:52 # legacy portability (Cppcheck 2.13)

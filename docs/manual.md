@@ -355,6 +355,10 @@ The **playlist editor always renders at a fixed 3/2 scale**, whatever the
 DoubleSize state: 275 pixels wide is too small on dense displays, and doubled
 is too large. It stays the same size when you toggle DoubleSize.
 
+In DoubleSize mode the **player and equalizer grow to the playlist editor's
+width** (never below the classic 2× width), so all three windows can share
+the same width. The extra size is rendered with the same smoothed scaling.
+
 - `Ctrl+d` still toggles Doublesize at any time for the player and equalizer.
   The state is remembered across restarts.
 - To keep the historical always-1x startup regardless of the display DPI, set

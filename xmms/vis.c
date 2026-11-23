@@ -109,14 +109,43 @@ void vis_timeout_func(Vis * vis, guchar * data)
 	}
 }
 
+/* Render the skin-space analyzer image at the widget's scale. */
+static void vis_draw_scaled(Vis *vis, const guchar *rgb_data,
+			    const guint32 *colors)
+{
+	gint sw = vis->vs_widget.width;
+	gint sh = vis->vs_widget.height;
+	gint dw = sw * vis->vs_scale_num / vis->vs_scale_den;
+	gint dh = sh * vis->vs_scale_num / vis->vs_scale_den;
+	GdkImage *img, *scaled;
+	gint x, y;
+
+	img = gdk_image_new(GDK_IMAGE_NORMAL, gdk_visual_get_best(), sw, sh);
+	if (!img)
+		return;
+	for (y = 0; y < sh; y++)
+		for (x = 0; x < sw; x++)
+			gdk_image_put_pixel(img, x, y,
+					    gdk_rgb_xpixel_from_rgb(
+						    colors[rgb_data[y * sw + x] % 24]));
+	scaled = scale_image(img, dw, dh);
+	gdk_image_destroy(img);
+	if (!scaled)
+		return;
+	gdk_draw_image(vis->vs_window, vis->vs_widget.gc, scaled,
+		       vis->vs_widget.x * vis->vs_scale_num / vis->vs_scale_den,
+		       vis->vs_widget.y * vis->vs_scale_num / vis->vs_scale_den,
+		       0, 0, dw, dh);
+	gdk_image_destroy(scaled);
+}
+
 void vis_draw(Widget * w)
 {
 	Vis *vis = (Vis *) w;
 	gint x, y, h = 0, h2;
 	guchar vis_color[24][3];
-	guchar rgb_data[152 * 32], *ptr, c;
+	guchar rgb_data[76 * 16], *ptr, c;
 	guint32 colors[24];
-	GdkRgbCmap *cmap;
 
 	if (!vis->vs_widget.visible)
 		return;
@@ -128,97 +157,72 @@ void vis_draw(Widget * w)
 	{
 		colors[y] = vis_color[y][0] << 16 | vis_color[y][1] << 8 | vis_color[y][2];
 	}
-	cmap = gdk_rgb_cmap_new(colors, 24);
 
-	if (!vis->vs_doublesize)
+	memset(rgb_data, 0, 76 * 16);
+	for (y = 1; y < 16; y += 2)
 	{
-		memset(rgb_data, 0, 76 * 16);
-		for (y = 1; y < 16; y += 2)
+		ptr = rgb_data + (y * 76);
+		for (x = 0; x < 76; x += 2, ptr += 2)
+			*ptr = 1;
+	}
+	if (cfg.vis_type == VIS_ANALYZER)
+	{
+		for (x = 0; x < 75; x++)
 		{
-			ptr = rgb_data + (y * 76);
-			for (x = 0; x < 76; x += 2, ptr += 2)
-				*ptr = 1;
+			if (cfg.analyzer_type == ANALYZER_BARS && (x % 4) == 0)
+				h = vis->vs_data[x >> 2];
+			else if (cfg.analyzer_type == ANALYZER_LINES)
+				h = vis->vs_data[x];
+			if (h && (cfg.analyzer_type == ANALYZER_LINES ||
+				  (x % 4) != 3))
+			{
+				ptr = rgb_data + ((16 - h) * 76) + x;
+				switch (cfg.analyzer_mode)
+				{
+					case ANALYZER_NORMAL:
+						for (y = 0; y < h; y++, ptr += 76)
+							*ptr = 18 - h + y;
+						break;
+					case ANALYZER_FIRE:
+						for (y = 0; y < h; y++, ptr += 76)
+							*ptr = y + 2;
+						break;
+					case ANALYZER_VLINES:
+						for (y = 0; y < h; y++, ptr += 76)
+							*ptr = 18 - h;
+						break;
+				}
+			}
 		}
-		if (cfg.vis_type == VIS_ANALYZER)
+		if (cfg.analyzer_peaks)
 		{
 			for (x = 0; x < 75; x++)
 			{
 				if (cfg.analyzer_type == ANALYZER_BARS && (x % 4) == 0)
-					h = vis->vs_data[x >> 2];
-				else if (cfg.analyzer_type == ANALYZER_LINES)
-					h = vis->vs_data[x];
-				if (h && (cfg.analyzer_type == ANALYZER_LINES ||
-					  (x % 4) != 3))
-				{
-					ptr = rgb_data + ((16 - h) * 76) + x;
-					switch (cfg.analyzer_mode)
-					{
-						case ANALYZER_NORMAL:
-							for (y = 0; y < h; y++, ptr += 76)
-								*ptr = 18 - h + y;
-							break;
-						case ANALYZER_FIRE:
-							for (y = 0; y < h; y++, ptr += 76)
-								*ptr = y + 2;
-							break;
-						case ANALYZER_VLINES:
-							for (y = 0; y < h; y++, ptr += 76)
-								*ptr = 18 - h;
-							break;
-					}
-				}
-			}
-			if (cfg.analyzer_peaks)
-			{
-				for (x = 0; x < 75; x++)
-				{
-					if (cfg.analyzer_type == ANALYZER_BARS && (x % 4) == 0)
-						h = vis->vs_peak[x >> 2];
-					else if(cfg.analyzer_type == ANALYZER_LINES)
-						h = vis->vs_peak[x];
-					if (h && (cfg.analyzer_type == ANALYZER_LINES || (x % 4) != 3))
-						rgb_data[(16 - h) * 76 + x] = 23;
-				}
+					h = vis->vs_peak[x >> 2];
+				else if(cfg.analyzer_type == ANALYZER_LINES)
+					h = vis->vs_peak[x];
+				if (h && (cfg.analyzer_type == ANALYZER_LINES || (x % 4) != 3))
+					rgb_data[(16 - h) * 76 + x] = 23;
 			}
 		}
-		else if (cfg.vis_type == VIS_SCOPE)
+	}
+	else if (cfg.vis_type == VIS_SCOPE)
+	{
+		for (x = 0; x < 75; x++)
 		{
-			for (x = 0; x < 75; x++)
+			switch (cfg.scope_mode)
 			{
-				switch (cfg.scope_mode)
-				{
-					case SCOPE_DOT:
-						h = vis->vs_data[x];
-						ptr = rgb_data + ((15 - h) * 76) + x;
-						*ptr = vis_scope_colors[h];
-						break;
-					case SCOPE_LINE:
-						if (x != 74)
-						{
-							h = 15 - vis->vs_data[x];
-							h2 = 15 - vis->vs_data[x + 1];
-							if (h > h2)
-							{
-								y = h;
-								h = h2;
-								h2 = y;
-							}
-							ptr = rgb_data + (h * 76) + x;
-							for (y = h; y <= h2; y++, ptr += 76)
-								*ptr = vis_scope_colors[y - 3];
-
-						}
-						else
-						{
-							h = 15 - vis->vs_data[x];
-							ptr = rgb_data + (h * 76) + x;
-							*ptr = vis_scope_colors[h];
-						}
-						break;
-					case SCOPE_SOLID:
+				case SCOPE_DOT:
+					h = vis->vs_data[x];
+					ptr = rgb_data + ((15 - h) * 76) + x;
+					*ptr = vis_scope_colors[h];
+					break;
+				case SCOPE_LINE:
+					if (x != 74)
+					{
 						h = 15 - vis->vs_data[x];
-						h2 = 9;
-						c = vis_scope_colors[(gint) vis->vs_data[x]];
+						h2 = 15 - vis->vs_data[x + 1];
 						if (h > h2)
 						{
 							y = h;
@@ -227,164 +231,35 @@ void vis_draw(Widget * w)
 						}
 						ptr = rgb_data + (h * 76) + x;
 						for (y = h; y <= h2; y++, ptr += 76)
-							*ptr = c;
-						break;
-				}
-			}
-		}
+							*ptr = vis_scope_colors[y - 3];
 
-		gdk_draw_indexed_image(vis->vs_window, vis->vs_widget.gc, vis->vs_widget.x, vis->vs_widget.y, vis->vs_widget.width, vis->vs_widget.height, GDK_RGB_DITHER_NORMAL, (guchar *) rgb_data, 76, cmap);
-	}
-	else
-	{
-		memset(rgb_data, 0, 152 * 32);
-		for (y = 1; y < 16; y += 2)
-		{
-			ptr = rgb_data + (y * 304);
-			for (x = 0; x < 76; x += 2, ptr += 4)
-			{
-				*ptr = 1;
-				*(ptr + 1) = 1;
-				*(ptr + 152) = 1;
-				*(ptr + 153) = 1;
-			}
-		}
-		if (cfg.vis_type == VIS_ANALYZER)
-		{
-			for (x = 0; x < 75; x++)
-			{
-				if (cfg.analyzer_type == ANALYZER_BARS && (x % 4) == 0)
-					h = vis->vs_data[x >> 2];	
-				else if (cfg.analyzer_type == ANALYZER_LINES)
-					h = vis->vs_data[x];
-				if (h && (cfg.analyzer_type == ANALYZER_LINES || (x % 4) != 3))
-				{
-					ptr = rgb_data + ((16 - h) * 304) + (x << 1);
-					switch (cfg.analyzer_mode)
-					{
-						case ANALYZER_NORMAL:
-							for (y = 0; y < h; y++, ptr += 304)
-							{
-								*ptr = 18 - h + y;
-								*(ptr + 1) = 18 - h + y;
-								*(ptr + 152) = 18 - h + y;
-								*(ptr + 153) = 18 - h + y;
-							}
-							break;
-						case ANALYZER_FIRE:
-							for (y = 0; y < h; y++, ptr += 304)
-							{
-								*ptr = y + 2;
-								*(ptr + 1) = y + 2;
-								*(ptr + 152) = y + 2;
-								*(ptr + 153) = y + 2;
-							}
-							break;
-						case ANALYZER_VLINES:
-							for (y = 0; y < h; y++, ptr += 304)
-							{
-								*ptr = 18 - h;
-								*(ptr + 1) = 18 - h;
-								*(ptr + 152) = 18 - h;
-								*(ptr + 153) = 18 - h;
-							}
-
-							break;
 					}
-
-				}
-			}
-			if (cfg.analyzer_peaks)
-			{
-
-				for (x = 0; x < 75; x++)
-				{
-					if (cfg.analyzer_type == ANALYZER_BARS && (x % 4) == 0)
-						h = vis->vs_peak[x >> 2];
-					else if (cfg.analyzer_type == ANALYZER_LINES)
-						h = vis->vs_peak[x];
-
-					if (h && (cfg.analyzer_type == ANALYZER_LINES || (x % 4) != 3))
+					else
 					{
-						ptr = rgb_data + (16 - h) * 304 + (x << 1);
-						*ptr = 23;
-						*(ptr + 1) = 23;
-						*(ptr + 152) = 23;
-						*(ptr + 153) = 23;
-					}
-				}
-			}
-		}
-		else if (cfg.vis_type == VIS_SCOPE)
-		{
-			for (x = 0; x < 75; x++)
-			{
-				switch (cfg.scope_mode)
-				{
-					case SCOPE_DOT:
-						h = vis->vs_data[x];
-						ptr = rgb_data + ((15 - h) * 304) + (x << 1);
-						*ptr = vis_scope_colors[h];
-						*(ptr + 1) = vis_scope_colors[h];
-						*(ptr + 152) = vis_scope_colors[h];
-						*(ptr + 153) = vis_scope_colors[h];
-						break;
-					case SCOPE_LINE:
-						if (x != 74)
-						{
-							h = 15 - vis->vs_data[x];
-							h2 = 15 - vis->vs_data[x + 1];
-							if (h > h2)
-							{
-								y = h;
-								h = h2;
-								h2 = y;
-							}
-							ptr = rgb_data + (h * 304) + (x << 1);
-							for (y = h; y <= h2; y++, ptr += 304)
-							{
-								*ptr = vis_scope_colors[y - 3];
-								*(ptr + 1) = vis_scope_colors[y - 3];
-								*(ptr + 152) = vis_scope_colors[y - 3];
-								*(ptr + 153) = vis_scope_colors[y - 3];
-							}
-						}
-						else
-						{
-							h = 15 - vis->vs_data[x];
-							ptr = rgb_data + (h * 304) + (x << 1);
-							*ptr = vis_scope_colors[h];
-							*(ptr + 1) = vis_scope_colors[h];
-							*(ptr + 152) = vis_scope_colors[h];
-							*(ptr + 153) = vis_scope_colors[h];
-						}
-						break;
-					case SCOPE_SOLID:
 						h = 15 - vis->vs_data[x];
-						h2 = 9;
-						c = vis_scope_colors[(gint) vis->vs_data[x]];
-						if (h > h2)
-						{
-							y = h;
-							h = h2;
-							h2 = y;
-						}
-						ptr = rgb_data + (h * 304) + (x << 1);
-						for (y = h; y <= h2; y++, ptr += 304)
-						{
-							*ptr = c;
-							*(ptr + 1) = c;
-							*(ptr + 152) = c;
-							*(ptr + 153) = c;
-						}
-						break;
-				}
+						ptr = rgb_data + (h * 76) + x;
+						*ptr = vis_scope_colors[h];
+					}
+					break;
+				case SCOPE_SOLID:
+					h = 15 - vis->vs_data[x];
+					h2 = 9;
+					c = vis_scope_colors[(gint) vis->vs_data[x]];
+					if (h > h2)
+					{
+						y = h;
+						h = h2;
+						h2 = y;
+					}
+					ptr = rgb_data + (h * 76) + x;
+					for (y = h; y <= h2; y++, ptr += 76)
+						*ptr = c;
+					break;
 			}
 		}
-
-		gdk_draw_indexed_image(vis->vs_window, vis->vs_widget.gc, vis->vs_widget.x << 1, vis->vs_widget.y << 1, vis->vs_widget.width << 1, vis->vs_widget.height << 1, GDK_RGB_DITHER_NONE, (guchar *) rgb_data, 152, cmap);
 	}
-	gdk_rgb_cmap_free(cmap);
+
+	vis_draw_scaled(vis, rgb_data, colors);
 	GDK_THREADS_LEAVE();
 
 }
@@ -400,17 +275,20 @@ void vis_clear_data(Vis * vis)
 	}
 }
 
-void vis_set_doublesize(Vis * vis, gboolean doublesize)
+void vis_set_scale(Vis * vis, gint scale_num, gint scale_den)
 {
-	vis->vs_doublesize = doublesize;
+	vis->vs_scale_num = scale_num;
+	vis->vs_scale_den = scale_den;
 }
 
 void vis_clear(Vis * vis)
 {
-	if (!vis->vs_doublesize)
-		gdk_window_clear_area(vis->vs_window, vis->vs_widget.x, vis->vs_widget.y, vis->vs_widget.width, vis->vs_widget.height);
-	else
-		gdk_window_clear_area(vis->vs_window, vis->vs_widget.x << 1, vis->vs_widget.y << 1, vis->vs_widget.width << 1, vis->vs_widget.height << 1);
+	gint x = vis->vs_widget.x * vis->vs_scale_num / vis->vs_scale_den;
+	gint y = vis->vs_widget.y * vis->vs_scale_num / vis->vs_scale_den;
+	gint w = vis->vs_widget.width * vis->vs_scale_num / vis->vs_scale_den;
+	gint h = vis->vs_widget.height * vis->vs_scale_num / vis->vs_scale_den;
+
+	gdk_window_clear_area(vis->vs_window, x, y, w + 1, h + 1);
 }
 
 void vis_set_window(Vis * vis, GdkWindow * window)
@@ -418,7 +296,7 @@ void vis_set_window(Vis * vis, GdkWindow * window)
 	vis->vs_window = window;
 }
 
-Vis *create_vis(GList ** wlist, GdkPixmap * parent, GdkWindow * window, GdkGC * gc, gint x, gint y, gint width, gboolean doublesize)
+Vis *create_vis(GList ** wlist, GdkPixmap * parent, GdkWindow * window, GdkGC * gc, gint x, gint y, gint width, gint scale_num, gint scale_den)
 {
 	Vis *vis;
 
@@ -431,7 +309,8 @@ Vis *create_vis(GList ** wlist, GdkPixmap * parent, GdkWindow * window, GdkGC * 
 	vis->vs_widget.width = width;
 	vis->vs_widget.height = 16;
 	vis->vs_widget.visible = 1;
-	vis->vs_doublesize = doublesize;
+	vis->vs_scale_num = scale_num;
+	vis->vs_scale_den = scale_den;
 	add_widget(wlist, vis);
 	return vis;
 }

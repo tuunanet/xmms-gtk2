@@ -89,6 +89,7 @@ void load_skin(const gchar * path);
 void reload_skin(void);
 void cleanup_skins(void);
 GdkBitmap *skin_get_mask(MaskIndex mi, gboolean doublesize, gboolean shaded);
+void skin_set_scale(gint num, gint den);
 GdkColor *get_skin_color(SkinColorIndex si);
 void get_skin_viscolor(guchar vis_color[24][3]);
 int skin_get_id(void);

@@ -38,6 +38,7 @@ void playlistwin_real_show(void);
 void playlistwin_real_hide(void);
 void playlistwin_set_back_pixmap(void);
 void playlistwin_scroll(int num);
+gint playlistwin_window_width(void);
 void playlistwin_vis_disable(void);
 void playlistwin_vis_enable(void);
 

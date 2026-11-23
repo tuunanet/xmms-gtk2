@@ -30,6 +30,10 @@ for XMMS GTK2.
   DoubleSize toggle: the classic 1x playlist is too small on dense displays
   and the doubled one too large. DoubleSize (`Ctrl+d`) still scales the
   player and equalizer.
+- In DoubleSize mode the player and equalizer grow to match the playlist
+  editor's width (never below the classic 2x width), so the three windows can
+  share a width. This also replaces the fixed 2x scale with a bilinear
+  arbitrary scale.
 - DoubleSize rendering is now bilinearly smoothed instead of
   nearest-neighbour pixel-doubled. This matches the appearance of a
   compositor upscaling the 1x window on Wayland, which is the look HiDPI

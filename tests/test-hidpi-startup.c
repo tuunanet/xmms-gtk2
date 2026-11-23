@@ -142,6 +142,7 @@ static void write_config(const gchar *home, const gchar *extra)
 	GError *error = NULL;
 	gchar *content = g_strdup_printf("[xmms]\n"
 					 "playlist_visible=TRUE\n"
+					 "equalizer_visible=TRUE\n"
 					 "%s", extra ? extra : "");
 	gboolean written;
 
@@ -222,6 +223,7 @@ static void send_key(Display *display, Window window, KeySym keysym,
 
 static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 			       guint *main_width, guint *main_height,
+			       guint *eq_width, guint *eq_height,
 			       guint *playlist_width, guint *playlist_height,
 			       KeySym toggle_keysym, guint toggle_modifiers)
 {
@@ -234,6 +236,7 @@ static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 	GPid child = 0;
 	Display *display;
 	Window main_window;
+	Window eq_window;
 	Window playlist_window;
 	gint status = 0;
 	gint attempt;
@@ -262,6 +265,7 @@ static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 	g_strfreev(environment);
 
 	main_window = wait_for_window(display, "XMMS");
+	eq_window = None;
 	playlist_window = None;
 	if (main_window != None)
 	{
@@ -269,24 +273,32 @@ static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 				     main_height);
 		for (attempt = 0; attempt < WINDOW_WAIT_ATTEMPTS; attempt++)
 		{
+			eq_window = find_mapped_window(display,
+				DefaultRootWindow(display), "XMMS Equalizer");
 			playlist_window = find_mapped_window(display,
 				DefaultRootWindow(display), "XMMS Playlist");
-			if (playlist_window != None)
+			if (eq_window != None && playlist_window != None)
 				break;
 			g_usleep(WINDOW_WAIT_DELAY_US);
 		}
+		if (eq_window != None)
+			wait_for_stable_size(display, eq_window,
+					     eq_width, eq_height);
 		if (playlist_window != None)
 			wait_for_stable_size(display, playlist_window,
 					     playlist_width, playlist_height);
 
 		/* Optional in-session toggle (e.g. Ctrl+d for DoubleSize),
-		 * then re-measure both windows. */
+		 * then re-measure all windows. */
 		if (toggle_keysym != 0 && playlist_window != None)
 		{
 			send_key(display, main_window, toggle_keysym,
 				 toggle_modifiers);
 			wait_for_stable_size(display, main_window,
 					     main_width, main_height);
+			if (eq_window != None)
+				wait_for_stable_size(display, eq_window,
+						     eq_width, eq_height);
 			wait_for_stable_size(display, playlist_window,
 					     playlist_width, playlist_height);
 		}
@@ -317,9 +329,11 @@ static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 static void test_dpi_192_doubles_both_windows(void)
 {
 	guint main_width = 0, main_height = 0;
+	guint eq_width = 0, eq_height = 0;
 	guint playlist_width = 0, playlist_height = 0;
 
 	launch_and_measure(NULL, "192", &main_width, &main_height,
+			   &eq_width, &eq_height,
 			   &playlist_width, &playlist_height, 0, 0);
 
 	g_assert_cmpint(unexpected_x_error, ==, 0);
@@ -327,6 +341,8 @@ static void test_dpi_192_doubles_both_windows(void)
 	g_assert_cmpuint(main_height, !=, 0);
 	g_assert_cmpuint(main_width, ==, 550);
 	g_assert_cmpuint(main_height, ==, 232);
+	g_assert_cmpuint(eq_width, ==, 550);
+	g_assert_cmpuint(eq_height, ==, 232);
 	g_assert_cmpuint(playlist_width, !=, 0);
 	/* The playlist editor keeps its fixed 3/2 scale in every mode:
 	 * 300x232 skin dimensions become 450x348. */
@@ -334,12 +350,36 @@ static void test_dpi_192_doubles_both_windows(void)
 	g_assert_cmpuint(playlist_height, ==, 348);
 }
 
+/* The player and equalizer grow to the playlist editor's width so all
+ * three windows can share a width.  400x232 playlist skin dimensions
+ * become 600x348, so the doubled player becomes 600x253. */
+static void test_wide_playlist_matches_player_width(void)
+{
+	guint main_width = 0, main_height = 0;
+	guint eq_width = 0, eq_height = 0;
+	guint playlist_width = 0, playlist_height = 0;
+
+	launch_and_measure("playlist_width=400\n", "192", &main_width,
+			   &main_height, &eq_width, &eq_height,
+			   &playlist_width, &playlist_height, 0, 0);
+
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	g_assert_cmpuint(main_width, ==, 600);
+	g_assert_cmpuint(main_height, ==, 253);
+	g_assert_cmpuint(eq_width, ==, 600);
+	g_assert_cmpuint(eq_height, ==, 253);
+	g_assert_cmpuint(playlist_width, ==, 600);
+	g_assert_cmpuint(playlist_height, ==, 348);
+}
+
 static void test_ctrl_d_collapses_doubled_windows(void)
 {
 	guint main_width = 0, main_height = 0;
+	guint eq_width = 0, eq_height = 0;
 	guint playlist_width = 0, playlist_height = 0;
 
 	launch_and_measure(NULL, "192", &main_width, &main_height,
+			   &eq_width, &eq_height,
 			   &playlist_width, &playlist_height, XK_d,
 			   ControlMask);
 
@@ -349,6 +389,8 @@ static void test_ctrl_d_collapses_doubled_windows(void)
 	 * its fixed 3/2 scale. */
 	g_assert_cmpuint(main_width, ==, 275);
 	g_assert_cmpuint(main_height, ==, 116);
+	g_assert_cmpuint(eq_width, ==, 275);
+	g_assert_cmpuint(eq_height, ==, 116);
 	g_assert_cmpuint(playlist_width, ==, 450);
 	g_assert_cmpuint(playlist_height, ==, 348);
 }
@@ -356,15 +398,18 @@ static void test_ctrl_d_collapses_doubled_windows(void)
 static void test_skin_autoscale_disabled_keeps_one_x(void)
 {
 	guint main_width = 0, main_height = 0;
+	guint eq_width = 0, eq_height = 0;
 	guint playlist_width = 0, playlist_height = 0;
 
 	launch_and_measure("skin_autoscale=FALSE\n", "192", &main_width,
-			   &main_height, &playlist_width, &playlist_height,
-			   0, 0);
+			   &main_height, &eq_width, &eq_height,
+			   &playlist_width, &playlist_height, 0, 0);
 
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	g_assert_cmpuint(main_width, ==, 275);
 	g_assert_cmpuint(main_height, ==, 116);
+	g_assert_cmpuint(eq_width, ==, 275);
+	g_assert_cmpuint(eq_height, ==, 116);
 	g_assert_cmpuint(playlist_width, ==, 450);
 	g_assert_cmpuint(playlist_height, ==, 348);
 }
@@ -372,14 +417,18 @@ static void test_skin_autoscale_disabled_keeps_one_x(void)
 static void test_standard_dpi_keeps_one_x(void)
 {
 	guint main_width = 0, main_height = 0;
+	guint eq_width = 0, eq_height = 0;
 	guint playlist_width = 0, playlist_height = 0;
 
 	launch_and_measure(NULL, NULL, &main_width, &main_height,
+			   &eq_width, &eq_height,
 			   &playlist_width, &playlist_height, 0, 0);
 
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	g_assert_cmpuint(main_width, ==, 275);
 	g_assert_cmpuint(main_height, ==, 116);
+	g_assert_cmpuint(eq_width, ==, 275);
+	g_assert_cmpuint(eq_height, ==, 116);
 	g_assert_cmpuint(playlist_width, ==, 450);
 	g_assert_cmpuint(playlist_height, ==, 348);
 }
@@ -391,6 +440,8 @@ int main(int argc, char **argv)
 			test_dpi_192_doubles_both_windows);
 	g_test_add_func("/hidpi-startup/ctrl-d-collapses-doubled-windows",
 			test_ctrl_d_collapses_doubled_windows);
+	g_test_add_func("/hidpi-startup/wide-playlist-matches-player-width",
+			test_wide_playlist_matches_player_width);
 	g_test_add_func("/hidpi-startup/skin-autoscale-disabled-keeps-one-x",
 			test_skin_autoscale_disabled_keeps_one_x);
 	g_test_add_func("/hidpi-startup/standard-dpi-keeps-one-x",

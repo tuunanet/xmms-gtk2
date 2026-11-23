@@ -198,6 +198,13 @@ The scaling model (see `set_doublesize()` in
   independent of `cfg.doublesize`: only its window/mask/hint/hit-test
   boundary uses the factor; widgets and `playlistwin_bg` stay in skin
   space.  This also means DoubleSize toggles never resize it.
+- In DoubleSize mode the player and equalizer use an arbitrary scale whose
+  width is the playlist window width (`mainwin_window_width()` in
+  `main.c`, never below 550), so all three windows can share a width.
+  Rendering uses `scale_image()`, hit-testing uses
+  `mainwin_scale_len()`/`mainwin_unscale_len()`, and the shape-mask cache
+  is rebuilt for the scale (`skin_set_scale()`); masks must always match
+  the window size.
 - Shape masks are applied **after** the window resize, never before:
   XWayland compositors (mutter) keep the pre-resize shape region otherwise,
   which crops the window on screen even though its geometry and contents

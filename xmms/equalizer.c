@@ -35,6 +35,24 @@ static GtkWidget *eqconfwin_options_eqdf_entry, *eqconfwin_options_eqef_entry;
 GdkPixmap *equalizerwin_bg, *equalizerwin_bg_dblsize;
 GdkGC *equalizerwin_gc;
 
+static gint equalizerwin_bg_dblsize_w, equalizerwin_bg_dblsize_h;
+
+static void equalizerwin_ensure_dblsize_pixmap(void)
+{
+	gint w = mainwin_window_width();
+	gint h = mainwin_scale_len(116);
+
+	if (equalizerwin_bg_dblsize && equalizerwin_bg_dblsize_w == w &&
+	    equalizerwin_bg_dblsize_h == h)
+		return;
+	if (equalizerwin_bg_dblsize)
+		gdk_pixmap_unref(equalizerwin_bg_dblsize);
+	equalizerwin_bg_dblsize = gdk_pixmap_new(NULL, w, h,
+						 gdk_rgb_get_visual()->depth);
+	equalizerwin_bg_dblsize_w = w;
+	equalizerwin_bg_dblsize_h = h;
+}
+
 GList *equalizerwin_wlist = NULL;
 
 static GtkAccelGroup *equalizerwin_accel;
@@ -128,7 +146,9 @@ void equalizerwin_set_doublesize(gboolean ds)
 
 	if (ds)
 	{
-		dock_resize(dock_window_list, equalizerwin, 550, height * 2);
+		equalizerwin_ensure_dblsize_pixmap();
+		dock_resize(dock_window_list, equalizerwin,
+			    mainwin_window_width(), equalizerwin_window_height());
 		gdk_window_set_back_pixmap(equalizerwin->window, equalizerwin_bg_dblsize, 0);
 	}
 	else
@@ -148,7 +168,7 @@ void equalizerwin_set_shade_menu_cb(gboolean shaded)
 
 	if (shaded)
 	{
-		dock_shade(dock_window_list, equalizerwin, 14 * (EQUALIZER_DOUBLESIZE + 1));
+		dock_shade(dock_window_list, equalizerwin, equalizerwin_window_height());
 		pbutton_set_button_data(equalizerwin_shade, -1, 3, -1, 47);
 		pbutton_set_skin_index1(equalizerwin_shade, SKIN_EQ_EX);
 		pbutton_set_button_data(equalizerwin_close, 11, 38, 11, 47);
@@ -158,7 +178,7 @@ void equalizerwin_set_shade_menu_cb(gboolean shaded)
 	}
 	else
 	{
-		dock_shade(dock_window_list, equalizerwin, 116 * (EQUALIZER_DOUBLESIZE + 1));
+		dock_shade(dock_window_list, equalizerwin, equalizerwin_window_height());
 		pbutton_set_button_data(equalizerwin_shade, -1, 137, -1, 38);
 		pbutton_set_skin_index1(equalizerwin_shade, SKIN_EQMAIN);
 		pbutton_set_button_data(equalizerwin_close, 0, 116, 0, 125);
@@ -258,14 +278,25 @@ void draw_equalizer_window(gboolean force)
 
 	if (force || redraw)
 	{
-		/* Re-double the whole background (see draw_main_window()). */
+		/* Re-scale the whole background (see draw_main_window()). */
 		if (cfg.doublesize && cfg.eq_doublesize_linked)
 		{
 			img = gdk_image_get(equalizerwin_bg, 0, 0, 275, 116);
-			img2 = create_dblsize_image(img);
-			gdk_draw_image(equalizerwin_bg_dblsize, equalizerwin_gc, img2, 0, 0, 0, 0, 550, 232);
-			gdk_image_destroy(img2);
-			gdk_image_destroy(img);
+			if (img)
+			{
+				img2 = scale_image(img, mainwin_scale_len(275),
+						   mainwin_scale_len(116));
+				if (img2)
+				{
+					gdk_draw_image(equalizerwin_bg_dblsize,
+						       equalizerwin_gc, img2,
+						       0, 0, 0, 0,
+						       mainwin_scale_len(275),
+						       mainwin_scale_len(116));
+					gdk_image_destroy(img2);
+				}
+				gdk_image_destroy(img);
+			}
 		}
 		clear_widget_list_redraw(equalizerwin_wlist);
 		gdk_window_clear(equalizerwin->window);
@@ -305,8 +336,8 @@ void equalizerwin_press(GtkWidget * widget, GdkEventButton * event, gpointer cal
 	my = event->y;
 	if (cfg.doublesize && cfg.eq_doublesize_linked)
 	{
-		event->x /= 2;
-		event->y /= 2;
+		event->x = mainwin_unscale_len(event->x);
+		event->y = mainwin_unscale_len(event->y);
 	}
 
 	if (event->button == 1 && event->type == GDK_BUTTON_PRESS &&
@@ -359,8 +390,8 @@ void equalizerwin_motion(GtkWidget * widget, GdkEventMotion * event, gpointer ca
 
 	if (cfg.doublesize && cfg.eq_doublesize_linked)
 	{
-		event->x /= 2;
-		event->y /= 2;
+		event->x = mainwin_unscale_len(event->x);
+		event->y = mainwin_unscale_len(event->y);
 	}
 	if (dock_is_moving(equalizerwin))
 	{
@@ -735,7 +766,7 @@ static void equalizerwin_create_gtk(void)
 	if (cfg.equalizer_x != -1 && cfg.save_window_position)
 		dock_set_uposition(equalizerwin, cfg.equalizer_x, cfg.equalizer_y);
 	if (cfg.doublesize && cfg.eq_doublesize_linked)
-		gtk_widget_set_usize(equalizerwin, 550, (cfg.equalizer_shaded ? 28 : 232));
+		gtk_widget_set_usize(equalizerwin, mainwin_window_width(), equalizerwin_window_height());
 	else
 		gtk_widget_set_usize(equalizerwin, 275, (cfg.equalizer_shaded ? 14 : 116));
 
@@ -787,7 +818,7 @@ void equalizerwin_create(void)
 	equalizer_auto_presets = equalizerwin_read_presets("eq.auto_preset");
 
 	equalizerwin_bg = gdk_pixmap_new(NULL, 275, 116, gdk_rgb_get_visual()->depth);
-	equalizerwin_bg_dblsize = gdk_pixmap_new(NULL, 550, 232, gdk_rgb_get_visual()->depth);
+	equalizerwin_ensure_dblsize_pixmap();
 	equalizerwin_create_gtk();
 	equalizerwin_gc = gdk_gc_new(equalizerwin->window);
 	equalizerwin_create_widgets();
@@ -820,7 +851,7 @@ void equalizerwin_real_show(void)
 	if (pposition_broken && cfg.equalizer_x != -1 && cfg.save_window_position)
 		dock_set_uposition(equalizerwin, cfg.equalizer_x, cfg.equalizer_y);
 	if (cfg.doublesize && cfg.eq_doublesize_linked)
-		gtk_widget_set_usize(equalizerwin, 550, (cfg.equalizer_shaded ? 28 : 232));
+		gtk_widget_set_usize(equalizerwin, mainwin_window_width(), equalizerwin_window_height());
 	else
 		gtk_widget_set_usize(equalizerwin, 275, (cfg.equalizer_shaded ? 14 : 116));
 	gdk_flush();

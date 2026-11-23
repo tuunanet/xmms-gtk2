@@ -39,6 +39,13 @@ char* mkdtemp(char* path);
 #endif
 
 Skin *skin;
+
+/* DoubleSize player/equalizer scale in window pixels per skin pixel.
+ * Defaults to 2x and is raised to match the playlist width when needed. */
+static gint skin_scale_num = 2;
+static gint skin_scale_den = 1;
+
+#define SKIN_SCALE_LEN(v) (((v) * skin_scale_num) / skin_scale_den)
 static int skin_current_num;
 
 static const gint skin_default_viscolor[24][3] =
@@ -95,6 +102,58 @@ static GdkBitmap *create_default_mask(GdkWindow * parent, gint w, gint h)
 	gdk_gc_destroy(gc);
 
 	return ret;
+}
+
+/* Rebuild the cached DoubleSize masks at the current player scale.  The
+ * shapes must match the window size exactly: XWayland compositors keep a
+ * stale shape region when it differs from the window. */
+GdkBitmap *skin_create_transparent_mask(const gchar * path, const gchar * file,
+					const gchar * section, GdkWindow * window,
+					gint width, gint height,
+					gint scale_num, gint scale_den);
+
+static void skin_rebuild_scaled_masks(void)
+{
+	if (!skin)
+		return;
+
+	if (skin->def_mask_ds)
+		gdk_bitmap_unref(skin->def_mask_ds);
+	skin->def_mask_ds = create_default_mask(mainwin->window,
+						SKIN_SCALE_LEN(275),
+						SKIN_SCALE_LEN(116));
+	if (skin->def_mask_shade_ds)
+		gdk_bitmap_unref(skin->def_mask_shade_ds);
+	skin->def_mask_shade_ds = create_default_mask(mainwin->window,
+						      SKIN_SCALE_LEN(275),
+						      SKIN_SCALE_LEN(14));
+
+#define REBUILD_REGION_MASK(field, file, section, win, wh, hh) \
+	if (skin->field) \
+	{ \
+		gdk_bitmap_unref(skin->field); \
+		skin->field = skin_create_transparent_mask(skin->path, \
+			file, section, win, SKIN_SCALE_LEN(wh), \
+			SKIN_SCALE_LEN(hh), skin_scale_num, skin_scale_den); \
+	}
+
+	REBUILD_REGION_MASK(mask_main_ds, "region.txt", "Normal", mainwin->window, 275, 116)
+	REBUILD_REGION_MASK(mask_shade_ds, "region.txt", "WindowShade", mainwin->window, 275, 14)
+	REBUILD_REGION_MASK(mask_eq_ds, "region.txt", "Equalizer", equalizerwin->window, 275, 116)
+	REBUILD_REGION_MASK(mask_eq_shade_ds, "region.txt", "EqualizerWS", equalizerwin->window, 275, 14)
+#undef REBUILD_REGION_MASK
+}
+
+/* Set the player/equalizer DoubleSize scale (window pixels per skin
+ * pixel) and rebuild the cached masks if it changed. */
+void skin_set_scale(gint num, gint den)
+{
+	if (num <= 0 || den <= 0 ||
+	    (num == skin_scale_num && den == skin_scale_den))
+		return;
+	skin_scale_num = num;
+	skin_scale_den = den;
+	skin_rebuild_scaled_masks();
 }
 
 static void load_def_pixmap(SkinPixmap *skinpixmap, gchar **skindata)
@@ -208,9 +267,9 @@ void init_skins(void)
 		skin->vis_color[i][2] = skin_default_viscolor[i][2];
 	}
 	skin->def_mask = create_default_mask(mainwin->window, 275, 116);
-	skin->def_mask_ds = create_default_mask(mainwin->window, 550, 232);
+	skin->def_mask_ds = create_default_mask(mainwin->window, SKIN_SCALE_LEN(275), SKIN_SCALE_LEN(116));
 	skin->def_mask_shade = create_default_mask(mainwin->window, 275, 14);
-	skin->def_mask_shade_ds = create_default_mask(mainwin->window, 550, 28);
+	skin->def_mask_shade_ds = create_default_mask(mainwin->window, SKIN_SCALE_LEN(275), SKIN_SCALE_LEN(14));
 
 	setup_skin_masks();
 
@@ -303,7 +362,7 @@ static void load_skin_pixmap(SkinPixmap *skinpixmap,
 	skinpixmap->current_height = MIN(h, skinpixmap->height);
 }
 
-GdkBitmap *skin_create_transparent_mask(const gchar * path, const gchar * file, const gchar * section, GdkWindow * window, gint width, gint height, gboolean doublesize)
+GdkBitmap *skin_create_transparent_mask(const gchar * path, const gchar * file, const gchar * section, GdkWindow * window, gint width, gint height, gint scale_num, gint scale_den)
 {
 	gchar *filename;
 
@@ -353,8 +412,8 @@ GdkBitmap *skin_create_transparent_mask(const gchar * path, const gchar * file, 
 			gpoints = g_malloc(g_array_index(num, gint, i) * sizeof (GdkPoint));
 			for (k = 0; k < g_array_index(num, gint, i); k++)
 			{
-				gpoints[k].x = g_array_index(point, gint, j + k * 2) * (1 + doublesize);
-				gpoints[k].y = g_array_index(point, gint, j + k * 2 + 1) * (1 + doublesize);
+				gpoints[k].x = g_array_index(point, gint, j + k * 2) * scale_num / scale_den;
+				gpoints[k].y = g_array_index(point, gint, j + k * 2 + 1) * scale_num / scale_den;
 			}
 			j += k * 2;
 			gdk_draw_polygon(mask, gc, TRUE, gpoints, g_array_index(num, gint, i));
@@ -549,14 +608,14 @@ static void skin_load_pixmaps(const char *path)
 	skin->pledit_current = load_skin_color(path, "pledit.txt", "text", "current");
 	skin->pledit_normalbg = load_skin_color(path, "pledit.txt", "text", "normalbg");
 	skin->pledit_selectedbg = load_skin_color(path, "pledit.txt", "text", "selectedbg");
-	skin->mask_main = skin_create_transparent_mask(path, "region.txt", "Normal", mainwin->window, 275, 116, FALSE);
-	skin->mask_main_ds = skin_create_transparent_mask(path, "region.txt", "Normal", mainwin->window, 550, 232, TRUE);
-	skin->mask_shade = skin_create_transparent_mask(path, "region.txt", "WindowShade", mainwin->window, 275, 14, FALSE);
-	skin->mask_shade_ds = skin_create_transparent_mask(path, "region.txt", "WindowShade", mainwin->window, 550, 28, TRUE);
-	skin->mask_eq = skin_create_transparent_mask(path, "region.txt", "Equalizer", equalizerwin->window, 275, 116, FALSE);
-	skin->mask_eq_ds = skin_create_transparent_mask(path, "region.txt", "Equalizer", equalizerwin->window, 550, 232, TRUE);
-	skin->mask_eq_shade = skin_create_transparent_mask(path, "region.txt", "EqualizerWS", equalizerwin->window, 275, 14, FALSE);
-	skin->mask_eq_shade_ds = skin_create_transparent_mask(path, "region.txt", "EqualizerWS", equalizerwin->window, 550, 28, TRUE);
+	skin->mask_main = skin_create_transparent_mask(path, "region.txt", "Normal", mainwin->window, 275, 116, 1, 1);
+	skin->mask_main_ds = skin_create_transparent_mask(path, "region.txt", "Normal", mainwin->window, SKIN_SCALE_LEN(275), SKIN_SCALE_LEN(116), skin_scale_num, skin_scale_den);
+	skin->mask_shade = skin_create_transparent_mask(path, "region.txt", "WindowShade", mainwin->window, 275, 14, 1, 1);
+	skin->mask_shade_ds = skin_create_transparent_mask(path, "region.txt", "WindowShade", mainwin->window, SKIN_SCALE_LEN(275), SKIN_SCALE_LEN(14), skin_scale_num, skin_scale_den);
+	skin->mask_eq = skin_create_transparent_mask(path, "region.txt", "Equalizer", equalizerwin->window, 275, 116, 1, 1);
+	skin->mask_eq_ds = skin_create_transparent_mask(path, "region.txt", "Equalizer", equalizerwin->window, SKIN_SCALE_LEN(275), SKIN_SCALE_LEN(116), skin_scale_num, skin_scale_den);
+	skin->mask_eq_shade = skin_create_transparent_mask(path, "region.txt", "EqualizerWS", equalizerwin->window, 275, 14, 1, 1);
+	skin->mask_eq_shade_ds = skin_create_transparent_mask(path, "region.txt", "EqualizerWS", equalizerwin->window, SKIN_SCALE_LEN(275), SKIN_SCALE_LEN(14), skin_scale_num, skin_scale_den);
 	
 	load_skin_viscolor(path, "viscolor.txt");
 }

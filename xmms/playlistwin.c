@@ -492,6 +492,11 @@ void playlistwin_scroll(int num)
 	playlistwin_update_list();
 }
 
+gint playlistwin_window_width(void)
+{
+	return PLAYLISTWIN_SCALED(cfg.playlist_width);
+}
+
 static void playlistwin_scroll_up_pushed(void)
 {
 	playlistwin_list->pl_first -= 3;
@@ -2011,7 +2016,7 @@ static void playlistwin_create_widgets(void)
 	playlistwin_time_min = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 82, cfg.playlist_height - 15, 15, FALSE, SKIN_TEXT);
 	playlistwin_time_sec = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 64, cfg.playlist_height - 15, 10, FALSE, SKIN_TEXT);
 	playlistwin_info = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 143, cfg.playlist_height - 28, 85, FALSE, SKIN_TEXT);
-	playlistwin_vis = create_vis(&playlistwin_wlist, playlistwin_bg, playlistwin->window, playlistwin_gc, cfg.playlist_width - 223, cfg.playlist_height - 26, 72, FALSE);
+	playlistwin_vis = create_vis(&playlistwin_wlist, playlistwin_bg, playlistwin->window, playlistwin_gc, cfg.playlist_width - 223, cfg.playlist_height - 26, 72, PLAYLISTWIN_SCALE_NUM, PLAYLISTWIN_SCALE_DEN);
 	hide_widget(playlistwin_vis);
 
 	playlistwin_srew = create_sbutton(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 144, cfg.playlist_height - 16, 8, 7, playlist_prev);

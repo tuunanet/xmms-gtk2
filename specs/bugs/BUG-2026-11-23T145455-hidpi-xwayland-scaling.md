@@ -224,6 +224,19 @@ it.  `playlistwin_set_doublesize()` was removed and `set_doublesize()` no
 longer touches the playlist; the dock re-snap now treats the playlist as a
 non-resizing follower.
 
+## Player-Width Match Follow-up (UAT request)
+
+The playlist editor's 3/2 width can exceed the classic 550 px DoubleSize
+width; UAT asked for the three windows to be able to share a width by
+growing the player.  The player/equalizer DoubleSize scale is now
+`max(550, playlist window width) / 275`: window sizes, background scaling
+(`scale_image()`), hit-testing (`mainwin_scale_len()`/
+`mainwin_unscale_len()`), popup anchors and the dock re-snap all use the
+rational scale, and the cached shape masks are rebuilt for it
+(`skin_set_scale()`, including polygon masks from `region.txt`).  The
+main-window analyzer and the shaded mini analyzer now render through the
+same scaler instead of hardcoded 2x drawing.
+
 ## Verification Evidence
 
 - `tests/test-hidpi-scale` — 9/9 pass (parsing, RDB lookup, thresholds;
