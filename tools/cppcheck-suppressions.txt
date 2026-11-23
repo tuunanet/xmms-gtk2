@@ -75,7 +75,7 @@ invalidPrintfArgType_sint:xmms/bmp.c:240 # legacy warning
 invalidPointerCast:xmms/controlsocket.c:594 # legacy portability
 memleak:xmms/dock.c:552 # legacy error
 negativeIndex:xmms/eq_slider.c:70 # legacy warning
-resourceLeak:xmms/equalizer.c:1201 # legacy error
+resourceLeak:xmms/equalizer.c:1202 # legacy error
 signConversion:xmms/fft.c:196 # legacy warning
 signConversion:xmms/fft.c:197 # legacy warning
 invalidPrintfArgType_sint:xmms/fft.c:201 # legacy warning

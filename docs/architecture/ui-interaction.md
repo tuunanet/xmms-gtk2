@@ -190,6 +190,10 @@ The scaling model (see `set_doublesize()` in
   docked directly to the window being resized, so rescaling a
   player → equalizer → playlist chain would otherwise shuffle or overlap
   the windows.
+- Shape masks are applied **after** the window resize, never before:
+  XWayland compositors (mutter) keep the pre-resize shape region otherwise,
+  which crops the window on screen even though its geometry and contents
+  are correct.
 
 ---
 

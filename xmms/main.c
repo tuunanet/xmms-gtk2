@@ -847,9 +847,6 @@ void set_doublesize(gboolean ds)
 	else
 		height = 116;
 
-	mainwin_set_shape_mask();
-	/* Positions come from the dock bookkeeping (synchronous); sizes are
-	 * computed because X resizes land asynchronously. */
 	dock_get_widget_pos(mainwin, &main_old.x, &main_old.y);
 	main_old.w = 275 * old_scale;
 	main_old.h = height * old_scale;
@@ -870,6 +867,11 @@ void set_doublesize(gboolean ds)
 		dock_resize(dock_window_list, mainwin, 275, height);
 		gdk_window_set_back_pixmap(mainwin->window, mainwin_bg, 0);
 	}
+	/* Apply the shape mask only after the resize: XWayland compositors
+	 * (mutter) keep the pre-resize shape region if the mask changes
+	 * while the window still has its old size, which makes a doubled
+	 * window render cropped to the previous mask. */
+	mainwin_set_shape_mask();
 	draw_main_window(TRUE);
 	vis_set_doublesize(mainwin_vis, ds);
 
@@ -892,7 +894,6 @@ void mainwin_set_shade_menu_cb(gboolean shaded)
 {
 	cfg.player_shaded = shaded;
 
-	mainwin_set_shape_mask();
 	if (shaded)
 	{
 		dock_shade(dock_window_list, mainwin, 14 * (cfg.doublesize + 1));
@@ -937,6 +938,8 @@ void mainwin_set_shade_menu_cb(gboolean shaded)
 		mainwin_shade->pb_ny = mainwin_shade->pb_py = 18;
 	}
 
+	/* After dock_shade() resized the window (see set_doublesize()). */
+	mainwin_set_shape_mask();
 	draw_main_window(TRUE);
 }
 

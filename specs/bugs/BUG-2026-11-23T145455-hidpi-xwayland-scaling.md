@@ -160,6 +160,30 @@ Verified on the affected GNOME/Wayland session by driving four consecutive
 Ctrl+d toggles and measuring all three X windows: both states stay flush
 (doubled: 1522/1754/1986; collapsed: 1522/1638/1754) and repeat identically.
 
+## Compositor Shape-Region Follow-up (found in on-hardware testing)
+
+After the dock-chain fix, on-screen testing still showed the main player and
+equalizer rendered as if cropped to the top-left corner while the playlist
+was correct. X-level inspection (window geometry, back-pixmap contents, and
+the applied shape-mask dimensions) reported everything correct in every
+state, which pointed at the compositor rather than the app.
+
+Root cause: the main window and equalizer applied their new shape mask
+*before* resizing the window (`mainwin_set_shape_mask()` /
+`equalizerwin_set_shape_mask()` ran before `dock_resize()`). XWayland
+compositors keep the pre-resize shape region in that case, so expanding a
+window left the compositor clipping it to the previous (smaller) shape —
+exactly the cropped appearance, and the stale clip never recovered. The
+playlist window was unaffected because it already rebuilt its mask *after*
+its resize, and it rendered correctly in the same screenshots.
+
+Fix: apply the shape mask after the window resize in all four paths —
+`set_doublesize()`, `mainwin_set_shade_menu_cb()`,
+`equalizerwin_set_doublesize()` and `equalizerwin_set_shade_menu_cb()`.
+
+Verified by the user watching a scripted Ctrl+D cycle on the affected
+GNOME/Wayland session: both directions render complete, uncropped windows.
+
 ## Verification Evidence
 
 - `tests/test-hidpi-scale` — 9/9 pass (parsing, RDB lookup, thresholds;
