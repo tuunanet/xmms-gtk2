@@ -30,8 +30,6 @@ for XMMS GTK2.
   previously only supported 1x. At 1x, rendering, geometry, and behavior are
   unchanged from previous releases.
 
-### Fixed
-
 ## [1.2.13] - 2026-07-29
 
 ### Added

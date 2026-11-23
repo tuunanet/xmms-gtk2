@@ -1,5 +1,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/keysym.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <signal.h>
@@ -193,9 +194,36 @@ static void wait_for_stable_size(Display *display, Window window,
 	*height = previous_height;
 }
 
+static void send_key(Display *display, Window window, KeySym keysym,
+		     guint modifiers)
+{
+	XKeyEvent event;
+
+	memset(&event, 0, sizeof(event));
+	event.display = display;
+	event.window = window;
+	event.root = DefaultRootWindow(display);
+	event.time = CurrentTime;
+	event.x = 1;
+	event.y = 1;
+	event.x_root = 1;
+	event.y_root = 1;
+	event.same_screen = True;
+	event.keycode = XKeysymToKeycode(display, keysym);
+	event.state = modifiers;
+
+	XSetInputFocus(display, window, RevertToParent, CurrentTime);
+	event.type = KeyPress;
+	XSendEvent(display, window, True, KeyPressMask, (XEvent *) &event);
+	event.type = KeyRelease;
+	XSendEvent(display, window, True, KeyReleaseMask, (XEvent *) &event);
+	XSync(display, False);
+}
+
 static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 			       guint *main_width, guint *main_height,
-			       guint *playlist_width, guint *playlist_height)
+			       guint *playlist_width, guint *playlist_height,
+			       KeySym toggle_keysym, guint toggle_modifiers)
 {
 	gchar *runtime_directory;
 	gchar *resource_backup;
@@ -207,7 +235,6 @@ static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 	Display *display;
 	Window main_window;
 	Window playlist_window;
-	gboolean exited = FALSE;
 	gint status = 0;
 	gint attempt;
 
@@ -251,27 +278,33 @@ static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 		if (playlist_window != None)
 			wait_for_stable_size(display, playlist_window,
 					     playlist_width, playlist_height);
+
+		/* Optional in-session toggle (e.g. Ctrl+d for DoubleSize),
+		 * then re-measure both windows. */
+		if (toggle_keysym != 0 && playlist_window != None)
+		{
+			send_key(display, main_window, toggle_keysym,
+				 toggle_modifiers);
+			wait_for_stable_size(display, main_window,
+					     main_width, main_height);
+			wait_for_stable_size(display, playlist_window,
+					     playlist_width, playlist_height);
+		}
 	}
 
 	write_resource_manager(display, resource_backup);
 
-	if (!exited)
+	kill(child, SIGTERM);
+	for (attempt = 0; attempt < WINDOW_WAIT_ATTEMPTS; attempt++)
 	{
-		kill(child, SIGTERM);
-		for (attempt = 0; attempt < WINDOW_WAIT_ATTEMPTS; attempt++)
-		{
-			if (waitpid(child, &status, WNOHANG) == child)
-			{
-				exited = TRUE;
-				break;
-			}
-			g_usleep(WINDOW_WAIT_DELAY_US);
-		}
-		if (!exited)
-		{
-			kill(child, SIGKILL);
-			waitpid(child, &status, 0);
-		}
+		if (waitpid(child, &status, WNOHANG) == child)
+			break;
+		g_usleep(WINDOW_WAIT_DELAY_US);
+	}
+	if (waitpid(child, &status, WNOHANG) != child)
+	{
+		kill(child, SIGKILL);
+		waitpid(child, &status, 0);
 	}
 	g_spawn_close_pid(child);
 	XCloseDisplay(display);
@@ -287,7 +320,7 @@ static void test_dpi_192_doubles_both_windows(void)
 	guint playlist_width = 0, playlist_height = 0;
 
 	launch_and_measure(NULL, "192", &main_width, &main_height,
-			   &playlist_width, &playlist_height);
+			   &playlist_width, &playlist_height, 0, 0);
 
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	g_assert_cmpuint(main_width, !=, 0);
@@ -299,13 +332,32 @@ static void test_dpi_192_doubles_both_windows(void)
 	g_assert_cmpuint(playlist_height, ==, 464);
 }
 
+static void test_ctrl_d_collapses_doubled_windows(void)
+{
+	guint main_width = 0, main_height = 0;
+	guint playlist_width = 0, playlist_height = 0;
+
+	launch_and_measure(NULL, "192", &main_width, &main_height,
+			   &playlist_width, &playlist_height, XK_d,
+			   ControlMask);
+
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	/* The in-session Ctrl+d toggle wins over HiDPI autoscaling and
+	 * collapses both windows back to their skin-space sizes. */
+	g_assert_cmpuint(main_width, ==, 275);
+	g_assert_cmpuint(main_height, ==, 116);
+	g_assert_cmpuint(playlist_width, ==, 300);
+	g_assert_cmpuint(playlist_height, ==, 232);
+}
+
 static void test_skin_autoscale_disabled_keeps_one_x(void)
 {
 	guint main_width = 0, main_height = 0;
 	guint playlist_width = 0, playlist_height = 0;
 
 	launch_and_measure("skin_autoscale=FALSE\n", "192", &main_width,
-			   &main_height, &playlist_width, &playlist_height);
+			   &main_height, &playlist_width, &playlist_height,
+			   0, 0);
 
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	g_assert_cmpuint(main_width, ==, 275);
@@ -320,7 +372,7 @@ static void test_standard_dpi_keeps_one_x(void)
 	guint playlist_width = 0, playlist_height = 0;
 
 	launch_and_measure(NULL, NULL, &main_width, &main_height,
-			   &playlist_width, &playlist_height);
+			   &playlist_width, &playlist_height, 0, 0);
 
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	g_assert_cmpuint(main_width, ==, 275);
@@ -334,6 +386,8 @@ int main(int argc, char **argv)
 	g_test_init(&argc, &argv, NULL);
 	g_test_add_func("/hidpi-startup/dpi-192-doubles-both-windows",
 			test_dpi_192_doubles_both_windows);
+	g_test_add_func("/hidpi-startup/ctrl-d-collapses-doubled-windows",
+			test_ctrl_d_collapses_doubled_windows);
 	g_test_add_func("/hidpi-startup/skin-autoscale-disabled-keeps-one-x",
 			test_skin_autoscale_disabled_keeps_one_x);
 	g_test_add_func("/hidpi-startup/standard-dpi-keeps-one-x",

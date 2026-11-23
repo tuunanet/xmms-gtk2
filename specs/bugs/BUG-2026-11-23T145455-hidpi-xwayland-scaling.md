@@ -72,6 +72,14 @@ historical default (scale 1) when nothing is configured.
    existing `set_doublesize(TRUE)` before windows are shown. No new
    rendering code; scale factor remains 1 or 2. Manual override: the
    existing Ctrl+D toggle wins and updates `doublesize` as today.
+   *Implementation note (2026-11-23 code review):* `set_doublesize()`
+   dereferences windows that do not exist yet, so startup sets
+   `cfg.doublesize = TRUE` directly — byte-for-byte what the existing
+   persisted-`doublesize=TRUE` startup path does. The Ctrl+D toggle wins
+   within the running session; because the legacy config format writes
+   `doublesize=FALSE` on every exit (it cannot distinguish an untouched
+   default from an explicit opt-out), the persistent opt-out on HiDPI
+   displays is `skin_autoscale=FALSE`.
 3. **Playlist DoubleSize support.** Extend the doublesize machinery to the
    playlist window: compose `playlistwin_bg` at 2× (reuse
    `create_dblsize_image()`), scale slider/button/text widget geometry and
@@ -79,6 +87,14 @@ historical default (scale 1) when nothing is configured.
    style rows (29 px tiles, 25 px buttons) are doubled by the same factor
    arithmetic used in `skin_get_mask()`. Keep 1× rendering byte-identical
    when doublesize is off.
+   *Design decision (2026-11-23 code review):* the "doubled pixel size
+   font" wording is deliberately not implemented literally. The playlist
+   list computes row layout from the font metrics in skin space
+   (`pl_fheight`), so a 2× font there would double the row height again
+   through the bg doubling (4× effective). Text instead stays in skin
+   space and is doubled on the way out — identical to how every other
+   skinned element, including mainwin's skinned fonts, renders in
+   DoubleSize.
 4. **Docs.** Document the behavior in the manual (`xmms.1.in`) and
    `docs/architecture/ui-interaction.md`; mention the GNOME
    `scale-monitor-framebuffer` alternative.
@@ -98,10 +114,14 @@ config-path changes (new `[xmms]` key only), skin compatibility untouched
       275×116 / 300×232 in both scenarios.)
 - [x] Ctrl+D still toggles 1×/2× per window group as it does today; the
       playlist window now follows the same toggle
-      (`playlistwin_set_doublesize()`).
+      (`playlistwin_set_doublesize()`). (Automated:
+      `tests/test-hidpi-startup.c` sends Ctrl+D on a doubled session and
+      asserts both windows collapse to 275×116 / 300×232.)
 - [x] Playlist window scales with DoubleSize for the first time; clicks map
       to correct rows/buttons at 2× (event coordinates halved at dispatch,
-      mirroring the documented mainwin mechanism).
+      mirroring the documented mainwin mechanism). Click mapping itself is
+      manual-verified only; the dispatch path is shared with mainwin's
+      decades-established doublesize handling.
 - [x] Focused tests, Preflight (`make && xvfb-run make check && make lint`),
       and `make distcheck` pass.
 
@@ -109,8 +129,13 @@ config-path changes (new `[xmms]` key only), skin compatibility untouched
 
 - `tests/test-hidpi-scale` — 9/9 pass (parsing, RDB lookup, thresholds;
   caught and fixed a use-after-free in the first parser draft during RED).
-- `tests/test-hidpi-startup` — 3/3 pass (dpi-192 doubles both windows;
-  `skin_autoscale=FALSE` and standard-DPI stay 1×).
+- `tests/test-hidpi-startup` — 4/4 pass (dpi-192 doubles both windows;
+  Ctrl+D collapses both back to 1×; `skin_autoscale=FALSE` and
+  standard-DPI stay 1×).
+- Two-axis code review (standards + spec sub-agents, 2026-11-23) produced
+  fixes: guarded shared blit helper (`playlistwin_double_bg_rect`),
+  restored the historical `14px` configure-event escape at any scale,
+  removed dead test logic, and the design notes above.
 - `xvfb-run --auto-servernum make check` — pass (163 TAP assertions,
   includes the pre-existing suites).
 - `make lint` (Cppcheck 2.19.0) — pass; one pre-existing memleak false

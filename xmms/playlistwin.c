@@ -46,21 +46,30 @@ static GdkPixmap *playlistwin_get_back_pixmap(void)
 	return cfg.doublesize ? playlistwin_bg_dblsize : playlistwin_bg;
 }
 
-static void playlistwin_update_dblsize_bg(gint width, gint height)
+/* Blit a skin-space rectangle of playlistwin_bg into the doubled
+ * background pixmap.  All coordinates are skin space. */
+static void playlistwin_double_bg_rect(gint x, gint y, gint width, gint height)
 {
 	GdkImage *img, *img2;
 
-	img = gdk_image_get(playlistwin_bg, 0, 0, width, height);
+	img = gdk_image_get(playlistwin_bg, x, y, width, height);
 	if (!img)
 		return;
 	img2 = create_dblsize_image(img);
-	if (img2)
+	if (!img2)
 	{
-		gdk_draw_image(playlistwin_bg_dblsize, playlistwin_gc, img2,
-			       0, 0, 0, 0, width << 1, height << 1);
-		gdk_image_destroy(img2);
+		gdk_image_destroy(img);
+		return;
 	}
+	gdk_draw_image(playlistwin_bg_dblsize, playlistwin_gc, img2, 0, 0,
+		       x << 1, y << 1, width << 1, height << 1);
+	gdk_image_destroy(img2);
 	gdk_image_destroy(img);
+}
+
+static void playlistwin_update_dblsize_bg(gint width, gint height)
+{
+	playlistwin_double_bg_rect(0, 0, width, height);
 }
 
 static void playlistwin_allocate_bg(GtkWidget *window)
@@ -1401,8 +1410,11 @@ static gboolean playlistwin_configure(GtkWidget * window, GdkEventConfigure *eve
 
 	if (cfg.show_wm_decorations || hint_move_resize_available())
 	{
+		/* Shade transitions deliver the shaded height; ignore them
+		 * exactly like the historical 1x check did. */
 		if (event->width != cfg.playlist_width * PLAYLISTWIN_SCALE ||
-		    (event->height != PLAYLIST_HEIGHT * PLAYLISTWIN_SCALE))
+		    (event->height != PLAYLIST_HEIGHT * PLAYLISTWIN_SCALE &&
+		     event->height != 14 * PLAYLISTWIN_SCALE))
 			playlistwin_queue_resize(event->width / PLAYLISTWIN_SCALE,
 						 event->height / PLAYLISTWIN_SCALE);
 	}
@@ -1837,13 +1849,7 @@ void draw_playlist_window(gboolean force)
 				{
 					if (cfg.doublesize)
 					{
-						GdkImage *img, *img2;
-
-						img = gdk_image_get(playlistwin_bg, w->x, w->y, w->width, w->height);
-						img2 = create_dblsize_image(img);
-						gdk_draw_image(playlistwin_bg_dblsize, playlistwin_gc, img2, 0, 0, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
-						gdk_image_destroy(img2);
-						gdk_image_destroy(img);
+						playlistwin_double_bg_rect(w->x, w->y, w->width, w->height);
 						gdk_window_clear_area(playlistwin->window, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
 					}
 					else
