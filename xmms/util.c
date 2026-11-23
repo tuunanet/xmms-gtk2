@@ -168,187 +168,143 @@ void del_directory(const char *dirname)
 }
 
 /*
- * Bilinear 2x scale of 24/32-bit images.  Destination pixel n samples the
- * source at n/2 - 0.25, so even destinations blend 1/4 of the previous
- * source pixel with 3/4 of the current one, and odd destinations blend 3/4
- * of the current with 1/4 of the next.  Edges clamp.  This matches how a
- * compositor upscales the window on Wayland, which is the look the HiDPI
- * mode aims for.
+ * General bilinear scale.  Destination pixel d samples the source at
+ * (d + 0.5) * src / dst - 0.5, blended with 1/256 precision and clamped at
+ * the edges.  This reproduces the 1/4-3/4 weights of a 2x scale and
+ * matches how a compositor upscales a window on Wayland, which is the look
+ * the HiDPI mode aims for.
  */
-static void scale2x_bilinear(GdkImage *src, GdkImage *dst, gint bpp)
+static void scale_bilinear(GdkImage *src, GdkImage *dst)
 {
 	XImage *src_x = GDK_IMAGE_XIMAGE(src);
 	XImage *dst_x = GDK_IMAGE_XIMAGE(dst);
 	gint sw = src->width, sh = src->height;
+	gint dw = dst->width, dh = dst->height;
 	gint sbpl = src_x->bytes_per_line, dbpl = dst_x->bytes_per_line;
-	guint8 *row_even, *row_odd;
-	gint x, y, k;
+	gint bpp = dst->bpp;
+	gint *x0s, *x1s, *fxs;
+	gint dx, dy, k;
 
-	row_even = g_malloc(sw * bpp);
-	row_odd = g_malloc(sw * bpp);
-
-	for (y = 0; y < sh; y++)
+	x0s = g_malloc(sizeof(gint) * dw);
+	x1s = g_malloc(sizeof(gint) * dw);
+	fxs = g_malloc(sizeof(gint) * dw);
+	for (dx = 0; dx < dw; dx++)
 	{
-		guint8 *prev = (guint8 *)src_x->data +
-			(size_t)(y > 0 ? y - 1 : 0) * sbpl;
-		guint8 *cur = (guint8 *)src_x->data + (size_t)y * sbpl;
-		guint8 *next = (guint8 *)src_x->data +
-			(size_t)(y < sh - 1 ? y + 1 : sh - 1) * sbpl;
-		guint8 *d_even = (guint8 *)dst_x->data + (size_t)(2 * y) * dbpl;
-		guint8 *d_odd = (guint8 *)dst_x->data + (size_t)(2 * y + 1) * dbpl;
+		gint64 pos = ((gint64)(2 * dx + 1) * sw * 128) / dw - 128;
+		gint x0, fx;
 
-		/* Vertical blend for the two destination rows. */
-		for (x = 0; x < sw * bpp; x++)
+		if (pos < 0)
 		{
-			row_even[x] = (guint8)((prev[x] + 3 * cur[x]) >> 2);
-			row_odd[x] = (guint8)((3 * cur[x] + next[x]) >> 2);
+			x0 = 0;
+			fx = 0;
 		}
-
-		/* Horizontal blend while writing both destination rows. */
-		for (x = 0; x < sw; x++)
+		else
 		{
-			gint x0 = (x > 0 ? x - 1 : 0) * bpp;
-			gint x1 = (x < sw - 1 ? x + 1 : sw - 1) * bpp;
-			gint xc = x * bpp;
+			x0 = (gint)(pos >> 8);
+			fx = (gint)(pos & 0xff);
+			if (x0 >= sw - 1)
+			{
+				x0 = sw - 1;
+				fx = 0;
+			}
+		}
+		x0s[dx] = x0 * bpp;
+		x1s[dx] = (x0 < sw - 1 ? x0 + 1 : sw - 1) * bpp;
+		fxs[dx] = fx;
+	}
+
+	for (dy = 0; dy < dh; dy++)
+	{
+		gint64 pos = ((gint64)(2 * dy + 1) * sh * 128) / dh - 128;
+		gint y0, y1, fy;
+		guint8 *row0, *row1, *drow;
+
+		if (pos < 0)
+		{
+			y0 = 0;
+			fy = 0;
+		}
+		else
+		{
+			y0 = (gint)(pos >> 8);
+			fy = (gint)(pos & 0xff);
+			if (y0 >= sh - 1)
+			{
+				y0 = sh - 1;
+				fy = 0;
+			}
+		}
+		y1 = (y0 < sh - 1 ? y0 + 1 : sh - 1);
+		row0 = (guint8 *)src_x->data + (size_t)y0 * sbpl;
+		row1 = (guint8 *)src_x->data + (size_t)y1 * sbpl;
+		drow = (guint8 *)dst_x->data + (size_t)dy * dbpl;
+
+		for (dx = 0; dx < dw; dx++)
+		{
+			gint fx = fxs[dx];
+			gint xa = x0s[dx], xb = x1s[dx];
+			gint dbase = dx * bpp;
 			for (k = 0; k < bpp; k++)
 			{
-				d_even[(2 * x) * bpp + k] =
-					(guint8)((row_even[x0 + k] +
-						  3 * row_even[xc + k]) >> 2);
-				d_even[(2 * x + 1) * bpp + k] =
-					(guint8)((3 * row_even[xc + k] +
-						  row_even[x1 + k]) >> 2);
-				d_odd[(2 * x) * bpp + k] =
-					(guint8)((row_odd[x0 + k] +
-						  3 * row_odd[xc + k]) >> 2);
-				d_odd[(2 * x + 1) * bpp + k] =
-					(guint8)((3 * row_odd[xc + k] +
-						  row_odd[x1 + k]) >> 2);
+				gint top = row0[xa + k] * (256 - fx) +
+					row0[xb + k] * fx;
+				gint bot = row1[xa + k] * (256 - fx) +
+					row1[xb + k] * fx;
+				drow[dbase + k] = (guint8)
+					((top * (256 - fy) + bot * fy) >> 16);
 			}
 		}
 	}
 
-	g_free(row_even);
-	g_free(row_odd);
+	g_free(x0s);
+	g_free(x1s);
+	g_free(fxs);
 }
 
-GdkImage *create_dblsize_image(GdkImage * img)
+/* Nearest-neighbour fallback for legacy non-TrueColor visuals. */
+static void scale_nearest(GdkImage *src, GdkImage *dst)
 {
-	GdkImage *dblimg;
-	register guint x, y;
+	XImage *src_x = GDK_IMAGE_XIMAGE(src);
+	XImage *dst_x = GDK_IMAGE_XIMAGE(dst);
+	gint sw = src->width, sh = src->height;
+	gint dw = dst->width, dh = dst->height;
+	gint sbpp = src->bpp, dbpp = dst->bpp;
+	gint dx, dy;
 
-	dblimg = gdk_image_new(GDK_IMAGE_NORMAL, gdk_visual_get_best_with_depth(img->depth), img->width << 1, img->height << 1);
-
-	if (dblimg->bpp == 3 || dblimg->bpp == 4)
+	for (dy = 0; dy < dh; dy++)
 	{
-		scale2x_bilinear(img, dblimg, dblimg->bpp);
-		return dblimg;
+		guint8 *srow = (guint8 *)src_x->data +
+			(size_t)(dy * sh / dh) * src_x->bytes_per_line;
+		guint8 *drow = (guint8 *)dst_x->data +
+			(size_t)dy * dst_x->bytes_per_line;
+		for (dx = 0; dx < dw; dx++)
+			memcpy(drow + dx * dbpp,
+			       srow + (dx * sw / dw) * sbpp,
+			       MIN(sbpp, dbpp));
 	}
+}
 
-	if (dblimg->bpp == 1)
-	{
-		char *srcptr, *ptr, *ptr2;
+GdkImage *scale_image(GdkImage *img, gint out_w, gint out_h)
+{
+	GdkImage *out;
 
-		srcptr = GDK_IMAGE_XIMAGE(img)->data;
-		ptr = GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + dblimg->bpl;
+	out = gdk_image_new(GDK_IMAGE_NORMAL,
+			    gdk_visual_get_best_with_depth(img->depth),
+			    out_w, out_h);
+	if (!out)
+		return NULL;
 
-		for (y = 0; y < img->height; y++)
-		{
-			for (x = 0; x < img->width; x++)
-			{
-				gint8 pix = *srcptr++;
-				*ptr++ = pix;
-				*ptr++ = pix;
-				*ptr2++ = pix;
-				*ptr2++ = pix;
-			}
-			srcptr += img->bpl - img->width;
-			ptr += (dblimg->bpl << 1) - dblimg->width;
-			ptr2 += (dblimg->bpl << 1) - dblimg->width;
-		}
-	}
-	if (dblimg->bpp == 2)
-	{
-		guint16 *srcptr, *ptr, *ptr2;
+	if (out->bpp == 3 || out->bpp == 4)
+		scale_bilinear(img, out);
+	else
+		scale_nearest(img, out);
 
-		srcptr = (guint16 *) GDK_IMAGE_XIMAGE(img)->data;
-		ptr = (guint16 *) GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + (dblimg->bpl >> 1);
+	return out;
+}
 
-		for (y = 0; y < img->height; y++)
-		{
-			for (x = 0; x < img->width; x++)
-			{
-				guint16 pix = *srcptr++;
-				*ptr++ = pix;
-				*ptr++ = pix;
-				*ptr2++ = pix;
-				*ptr2++ = pix;
-			}
-			srcptr += (img->bpl >> 1) - img->width;
-			ptr += (dblimg->bpl) - dblimg->width;
-			ptr2 += (dblimg->bpl) - dblimg->width;
-		}
-	}
-	if (dblimg->bpp == 3)
-	{
-		char *srcptr, *ptr, *ptr2;
-
-		srcptr = GDK_IMAGE_XIMAGE(img)->data;
-		ptr = GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + dblimg->bpl;
-
-		for (y = 0; y < img->height; y++)
-		{
-			for (x = 0; x < img->width; x++)
-			{
-				char pix1 = *srcptr++;
-				char pix2 = *srcptr++;
-				char pix3 = *srcptr++;
-				*ptr++ = pix1;
-				*ptr++ = pix2;
-				*ptr++ = pix3;
-				*ptr++ = pix1;
-				*ptr++ = pix2;
-				*ptr++ = pix3;
-				*ptr2++ = pix1;
-				*ptr2++ = pix2;
-				*ptr2++ = pix3;
-				*ptr2++ = pix1;
-				*ptr2++ = pix2;
-				*ptr2++ = pix3;
-
-			}
-			srcptr += img->bpl - (img->width * 3);
-			ptr += (dblimg->bpl << 1) - (dblimg->width * 3);
-			ptr2 += (dblimg->bpl << 1) - (dblimg->width * 3);
-		}
-	}
-	if (dblimg->bpp == 4)
-	{
-		register guint32 *srcptr, *ptr, *ptr2, pix;
-
-		srcptr = (guint32 *) GDK_IMAGE_XIMAGE(img)->data;
-		ptr = (guint32 *) GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + (dblimg->bpl >> 2);
-
-		for (y = 0; y < img->height; y++)
-		{
-			for (x = 0; x < img->width; x++)
-			{
-				pix = *srcptr++;
-				*ptr++ = pix;
-				*ptr++ = pix;
-				*ptr2++ = pix;
-				*ptr2++ = pix;
-			}
-			srcptr += (img->bpl >> 2) - img->width;
-			ptr += (dblimg->bpl >> 1) - dblimg->width;
-			ptr2 += (dblimg->bpl >> 1) - dblimg->width;
-		}
-	}
-	return dblimg;
+GdkImage *create_dblsize_image(GdkImage *img)
+{
+	return scale_image(img, img->width << 1, img->height << 1);
 }
 
 static char *read_string(const char *filename, const char *section, const char *key, gboolean comment)

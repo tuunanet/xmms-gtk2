@@ -328,8 +328,10 @@ static void test_dpi_192_doubles_both_windows(void)
 	g_assert_cmpuint(main_width, ==, 550);
 	g_assert_cmpuint(main_height, ==, 232);
 	g_assert_cmpuint(playlist_width, !=, 0);
-	g_assert_cmpuint(playlist_width, ==, 600);
-	g_assert_cmpuint(playlist_height, ==, 464);
+	/* The playlist editor keeps its fixed 3/2 scale in every mode:
+	 * 300x232 skin dimensions become 450x348. */
+	g_assert_cmpuint(playlist_width, ==, 450);
+	g_assert_cmpuint(playlist_height, ==, 348);
 }
 
 static void test_ctrl_d_collapses_doubled_windows(void)
@@ -343,11 +345,12 @@ static void test_ctrl_d_collapses_doubled_windows(void)
 
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	/* The in-session Ctrl+d toggle wins over HiDPI autoscaling and
-	 * collapses both windows back to their skin-space sizes. */
+	 * collapses the player windows, while the playlist editor keeps
+	 * its fixed 3/2 scale. */
 	g_assert_cmpuint(main_width, ==, 275);
 	g_assert_cmpuint(main_height, ==, 116);
-	g_assert_cmpuint(playlist_width, ==, 300);
-	g_assert_cmpuint(playlist_height, ==, 232);
+	g_assert_cmpuint(playlist_width, ==, 450);
+	g_assert_cmpuint(playlist_height, ==, 348);
 }
 
 static void test_skin_autoscale_disabled_keeps_one_x(void)
@@ -362,8 +365,8 @@ static void test_skin_autoscale_disabled_keeps_one_x(void)
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	g_assert_cmpuint(main_width, ==, 275);
 	g_assert_cmpuint(main_height, ==, 116);
-	g_assert_cmpuint(playlist_width, ==, 300);
-	g_assert_cmpuint(playlist_height, ==, 232);
+	g_assert_cmpuint(playlist_width, ==, 450);
+	g_assert_cmpuint(playlist_height, ==, 348);
 }
 
 static void test_standard_dpi_keeps_one_x(void)
@@ -377,8 +380,8 @@ static void test_standard_dpi_keeps_one_x(void)
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	g_assert_cmpuint(main_width, ==, 275);
 	g_assert_cmpuint(main_height, ==, 116);
-	g_assert_cmpuint(playlist_width, ==, 300);
-	g_assert_cmpuint(playlist_height, ==, 232);
+	g_assert_cmpuint(playlist_width, ==, 450);
+	g_assert_cmpuint(playlist_height, ==, 348);
 }
 
 int main(int argc, char **argv)

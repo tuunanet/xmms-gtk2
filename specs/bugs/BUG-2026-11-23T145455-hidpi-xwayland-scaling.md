@@ -210,6 +210,20 @@ which avoids seams from blending widget rectangles against stale
 neighbours.  Unit tests (`tests/test-dblsize-scale.c`) pin the blend
 weights, clamping and flat-colour preservation.
 
+## Playlist Fixed 3/2 Scale Follow-up (UAT request)
+
+UAT asked for the playlist editor to sit between the cramped 1x and the
+oversized 2x: it now renders at a **fixed 3/2 scale that never changes with
+Ctrl+D**.  `PLAYLISTWIN_SCALED()`/`PLAYLISTWIN_UNSCALED()` (integer 3/2
+arithmetic) replace the cfg-dependent factor at the window, mask, geometry
+hint, event-unscale, drop-coordinate and popup-anchor boundaries; widget
+geometry and `playlistwin_bg` stay in skin space.  The scaler was
+generalized (`scale_image()`) with bilinear 1/256-precision weights; the
+2x path is `scale_image(img, 2w, 2h)` so the earlier blend tests still pin
+it.  `playlistwin_set_doublesize()` was removed and `set_doublesize()` no
+longer touches the playlist; the dock re-snap now treats the playlist as a
+non-resizing follower.
+
 ## Verification Evidence
 
 - `tests/test-hidpi-scale` — 9/9 pass (parsing, RDB lookup, thresholds;

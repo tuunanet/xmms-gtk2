@@ -818,8 +818,8 @@ static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
 	}
 
 	pl_new = *pl_old;
-	pl_new.w = cfg.playlist_width * ms;
-	pl_new.h = PLAYLIST_HEIGHT * ms;
+	pl_new.w = pl_old->w;
+	pl_new.h = pl_old->h;
 
 	if (eq_resized)
 		dock_resnap_pair(equalizerwin, &eq_new.x, &eq_new.y,
@@ -854,8 +854,9 @@ void set_doublesize(gboolean ds)
 	eq_old.w = 275 * old_scale;
 	eq_old.h = (cfg.equalizer_shaded ? 14 : 116) * old_scale;
 	dock_get_widget_pos(playlistwin, &pl_old.x, &pl_old.y);
-	pl_old.w = cfg.playlist_width * old_scale;
-	pl_old.h = PLAYLIST_HEIGHT * old_scale;
+	/* The playlist keeps its fixed scale across DoubleSize toggles, so
+	 * its current size is stable and is used as-is. */
+	gdk_window_get_size(playlistwin->window, &pl_old.w, &pl_old.h);
 
 	if (cfg.doublesize)
 	{
@@ -877,7 +878,6 @@ void set_doublesize(gboolean ds)
 
 	if (eq_resized)
 		equalizerwin_set_doublesize(ds);
-	playlistwin_set_doublesize(ds);
 
 	resnap_dock_group(&main_old, &eq_old, &pl_old, eq_resized);
 }

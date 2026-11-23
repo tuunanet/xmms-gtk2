@@ -149,6 +149,42 @@ static void test_no_seams_for_solid_strips(void)
 	gdk_image_destroy(dst);
 }
 
+static void test_three_halves_scale(void)
+{
+	GdkImage *src, *dst;
+	guint32 black = rgb_pixel(0, 0, 0);
+	guint32 white = rgb_pixel(255, 255, 255);
+	guint32 corner = rgb_pixel(0xaa, 0xbb, 0xcc);
+	gint x, y;
+
+	src = make_image(4, 4);
+	skip_unless_rgb24(src);
+	for (y = 0; y < 4; y++)
+		for (x = 0; x < 4; x++)
+			gdk_image_put_pixel(src, x, y,
+					    (x < 2) ? black : white);
+	gdk_image_put_pixel(src, 0, 0, corner);
+
+	dst = scale_image(src, 6, 6);
+	g_assert_nonnull(dst);
+	g_assert_cmpint(dst->width, ==, 6);
+	g_assert_cmpint(dst->height, ==, 6);
+	/* Clamped corner is preserved exactly. */
+	g_assert_cmpuint(gdk_image_get_pixel(dst, 0, 0), ==, corner);
+	/* The black/white boundary lands between destination columns 2
+	 * and 3 and must be blended, never a hard duplicate. */
+	g_assert_cmpint(pixel_r(gdk_image_get_pixel(dst, 2, 2)), >, 0);
+	g_assert_cmpint(pixel_r(gdk_image_get_pixel(dst, 2, 2)), <, 255);
+	g_assert_cmpint(pixel_r(gdk_image_get_pixel(dst, 3, 2)), >, 0);
+	g_assert_cmpint(pixel_r(gdk_image_get_pixel(dst, 3, 2)), <, 255);
+	g_assert_cmpint(pixel_r(gdk_image_get_pixel(dst, 3, 2)), >,
+			pixel_r(gdk_image_get_pixel(dst, 2, 2)));
+	/* Far flat areas stay exact. */
+	g_assert_cmpuint(gdk_image_get_pixel(dst, 5, 5), ==, white);
+	gdk_image_destroy(src);
+	gdk_image_destroy(dst);
+}
+
 int main(int argc, char **argv)
 {
 	gtk_init(&argc, &argv);
@@ -162,5 +198,7 @@ int main(int argc, char **argv)
 			test_corners_are_clamped);
 	g_test_add_func("/dblsize/no-seams-for-checkerboard",
 			test_no_seams_for_solid_strips);
+	g_test_add_func("/dblsize/three-halves-scale",
+			test_three_halves_scale);
 	return g_test_run();
 }

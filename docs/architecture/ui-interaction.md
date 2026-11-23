@@ -193,6 +193,11 @@ The scaling model (see `set_doublesize()` in
   docked directly to the window being resized, so rescaling a
   player → equalizer → playlist chain would otherwise shuffle or overlap
   the windows.
+- The playlist editor renders at a fixed 3/2 scale
+  (`PLAYLISTWIN_SCALED()` in [`playlistwin.c`](../../xmms/playlistwin.c)),
+  independent of `cfg.doublesize`: only its window/mask/hint/hit-test
+  boundary uses the factor; widgets and `playlistwin_bg` stay in skin
+  space.  This also means DoubleSize toggles never resize it.
 - Shape masks are applied **after** the window resize, never before:
   XWayland compositors (mutter) keep the pre-resize shape region otherwise,
   which crops the window on screen even though its geometry and contents

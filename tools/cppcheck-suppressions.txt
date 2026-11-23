@@ -93,4 +93,4 @@ readdirCalled:xmms/util.c:52 # legacy portability (Cppcheck 2.13)
 readdirCalled:xmms/util.c:89 # legacy portability (Cppcheck 2.13)
 readdirCalled:xmms/util.c:152 # legacy portability (Cppcheck 2.13)
 memleak:xmms/util.c:527 # legacy error
-memleak:xmms/util.c:596 # same ownership transfer to gtk_object_set_data_by_id_full; Cppcheck 2.19 reports at function close brace
+memleak:xmms/util.c:552 # same ownership transfer to gtk_object_set_data_by_id_full; Cppcheck 2.19 reports at function close brace

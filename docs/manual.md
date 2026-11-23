@@ -345,14 +345,18 @@ does not by default; KDE scales XWayland clients for you). XMMS would
 otherwise open at its raw skin size — 275 pixels wide — and look tiny.
 
 XMMS therefore reads the `Xft.dpi` X resource at startup. When it is 144 DPI
-or more (that is, a 1.5× or higher desktop scale), the main window, equalizer,
-and playlist window all start in **Doublesize** mode and render at twice the
-skin size, matching the compositor scaling on KDE. DoubleSize scaling is
-smoothed (bilinear), so it looks like a compositor upscaling the window
-rather than blocky pixel doubling.
+or more (that is, a 1.5× or higher desktop scale), the main window and
+equalizer start in **Doublesize** mode and render at twice the skin size,
+matching the compositor scaling on KDE. DoubleSize scaling is smoothed
+(bilinear), so it looks like a compositor upscaling the window rather than
+blocky pixel doubling.
 
-- `Ctrl+d` still toggles Doublesize at any time, for all three windows at
-  once. The state is remembered across restarts.
+The **playlist editor always renders at a fixed 3/2 scale**, whatever the
+DoubleSize state: 275 pixels wide is too small on dense displays, and doubled
+is too large. It stays the same size when you toggle DoubleSize.
+
+- `Ctrl+d` still toggles Doublesize at any time for the player and equalizer.
+  The state is remembered across restarts.
 - To keep the historical always-1x startup regardless of the display DPI, set
   `skin_autoscale=FALSE` in the `[xmms]` section of `~/.xmms/config`.
 - On GNOME it also works to let the compositor scale every X11 app instead:
@@ -533,8 +537,8 @@ Here you change most of XMMS's behavior and settings.
 - **Show numbers in playlist** — Enables the display of the internal track
   number in the playlist.
 - **Equalizer doublesize linked** — Will display the Equalizer in doublesize if
-  you make XMMS doublesize. (The Playlist window always follows Doublesize as
-  well; see [HiDPI displays](#32-hidpi-displays).)
+  you make XMMS doublesize. (The Playlist window keeps its fixed 3/2 scale
+  regardless; see [HiDPI displays](#32-hidpi-displays).)
 - **Smooth title scroll** — Makes the title scroll go smoother.
 - **Snap window at [ ] pixels** — Tells XMMS how close you can position the
   three windows until they dock / snap together with each other.

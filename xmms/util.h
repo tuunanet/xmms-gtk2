@@ -46,6 +46,7 @@
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);
 GdkImage *create_dblsize_image(GdkImage * img);
+GdkImage *scale_image(GdkImage *img, gint out_w, gint out_h);
 char *read_ini_string(const char *filename, const char *section, const char *key);
 char *read_ini_string_no_comment(const char *filename, const char *section, const char *key);
 GArray *read_ini_array(const gchar * filename, const gchar * section, const gchar * key);
