@@ -153,7 +153,12 @@ flowchart LR
 | **Skin browser** | (skinwin) | Pick `.wsz` / skin directories |
 
 Window positions, visibility, shade mode, and doublesize live in **`Config
-cfg`** ([`main.h`](../../xmms/main.h)) and are saved on exit.
+cfg`** ([`main.h`](../../xmms/main.h)) and are saved on exit. Before the
+windows are created, `main.c` consults `Xft.dpi` from the X
+`RESOURCE_MANAGER` property (`util_get_xft_dpi()`, threshold
+`XMMS_HIDPI_DOUBLE_DPI`) and starts in doublesize on HiDPI desktops whose
+compositors leave XWayland unscaled; the `skin_autoscale` config key
+(default TRUE) opts out persistently.
 
 The three skinned windows are registered with **`dock.c`** so they can snap
 together and move as a group — that is UI chrome only; it does not affect

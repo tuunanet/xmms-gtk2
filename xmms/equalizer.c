@@ -126,8 +126,6 @@ void equalizerwin_set_doublesize(gboolean ds)
 	else
 		height = 116;
 
-	equalizerwin_set_shape_mask();
-
 	if (ds)
 	{
 		dock_resize(dock_window_list, equalizerwin, 550, height * 2);
@@ -138,14 +136,15 @@ void equalizerwin_set_doublesize(gboolean ds)
 		dock_resize(dock_window_list, equalizerwin, 275, height);
 		gdk_window_set_back_pixmap(equalizerwin->window, equalizerwin_bg, 0);
 	}
+	/* After the resize, for the same XWayland shape-region reason as
+	 * set_doublesize(). */
+	equalizerwin_set_shape_mask();
 	draw_equalizer_window(TRUE);
 }
 
 void equalizerwin_set_shade_menu_cb(gboolean shaded)
 {
 	cfg.equalizer_shaded = shaded;
-
-	equalizerwin_set_shape_mask();
 
 	if (shaded)
 	{
@@ -168,6 +167,9 @@ void equalizerwin_set_shade_menu_cb(gboolean shaded)
 		hide_widget(equalizerwin_balance);
 	}
 
+	/* After dock_shade() resized the window (see
+	 * equalizerwin_set_doublesize()). */
+	equalizerwin_set_shape_mask();
 	draw_equalizer_window(TRUE);
 }
 

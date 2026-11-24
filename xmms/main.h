@@ -39,7 +39,7 @@ typedef struct
 	gboolean convert_underscore, convert_twenty;
 	gboolean show_numbers_in_pl, snap_windows, save_window_position;
 	gboolean dim_titlebar, get_info_on_load;
-	gboolean get_info_on_demand, eq_doublesize_linked;
+	gboolean get_info_on_demand, eq_doublesize_linked, skin_autoscale;
 	gboolean sort_jump_to_file, use_eplugins, always_on_top, sticky;
 	gboolean no_playlist_advance, smooth_title_scroll, use_pl_metadata;
 	gboolean use_backslash_as_dir_delimiter;

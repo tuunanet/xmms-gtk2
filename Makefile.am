@@ -22,15 +22,9 @@ EXTRA_DIST = \
 	README.md \
 	SECURITY.md \
 	docs/architecture/build-and-test.md \
-	docs/history/README.md \
-	docs/history/upstream-changelog.txt \
-	docs/history/upstream-faq.txt \
-	docs/history/upstream-release-notes.txt \
-	docs/history/upstream-todo.txt \
 	docs/images/README.md \
 	docs/images/xmms.png \
 	docs/manual.md \
-	docs/releases.md \
 	mkinstalldirs \
 	packaging/debian/control \
 	packaging/debian/copyright \
@@ -47,6 +41,9 @@ EXTRA_DIST = \
 	tests/test-alsa-volume.c \
 	tests/test-filebrowser.c \
 	tests/test-font-load.c \
+	tests/test-hidpi-scale.c \
+	tests/test-hidpi-startup.c \
+	tests/test-dock-resnap.c \
 	tests/test-c-lint.sh \
 	tests/test-intl-generated-sources.sh \
 	tests/test-keyboard-shortcuts.c \

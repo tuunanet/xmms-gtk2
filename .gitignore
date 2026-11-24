@@ -44,6 +44,10 @@
 /tests/test-xentry
 /tests/test-filebrowser
 /tests/test-font-load
+/tests/test-mpg123-fileinfo
+/tests/test-hidpi-scale
+/tests/test-hidpi-startup
+/tests/test-dock-resnap
 /tests/test-keyboard-shortcuts
 /tests/test-mpg123-file-duration
 /tests/test-mpg123-stream-position

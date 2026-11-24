@@ -1,8 +1,3 @@
-# XMMS GTK2 — AI Agents
-
-Read `CONVENTIONS.md` before Git, GitHub, or implementation work.
-
-<!-- BEGIN bigpowers:project -->
 ## Project
 
 XMMS is a Linux multimedia audio player built with C and GTK2.
@@ -50,34 +45,24 @@ Input, Output, Effect, Visualization, and General plugins load dynamically.
 - Never commit credentials, binaries, package artifacts, or generated local build output.
 - Never publish GitHub Releases automatically.
 
-## Agent Rules
-
-- MUST use the matching bigpowers skill for every task.
-- MUST run `survey-context` when lifecycle state is unclear.
-- MUST use `kickoff-branch` before implementation.
-- MUST write an approved plan before feature code.
-- MUST use `develop-tdd` or `execute-plan` for approved implementation.
-- MUST run `verify-work` before review.
-- MUST run `audit-code` before requesting review.
-- MUST use `commit-message` before committing.
-- MUST use `release-branch` for integration decisions.
-- MUST stop forward work on reproducible red Preflight or CI.
-<!-- END bigpowers:project -->
-
-<!-- BEGIN bigpowers:context-routing -->
 ## Context Routing
 
 | Path | Read first |
 | --- | --- |
-| `specs/` | `specs/state.yaml` and relevant epic or bug specification |
 | `xmms/` | `docs/architecture/ui-interaction.md` |
 | `Input/`, `Output/`, `Effect/`, `Visualization/`, `General/` | `docs/architecture/plugin-system.md` and `docs/architecture/processing-pipeline.md` |
 | `libxmms/`, `wmxmms/` | `docs/architecture/external-control.md` |
-| `packaging/`, `tools/`, `.github/` | `docs/architecture/build-and-test.md` and `docs/releases.md` |
-<!-- END bigpowers:context-routing -->
 
-<!-- BEGIN bigpowers:learned-preferences -->
-## Learned User Preferences
+## Agent skills
 
-## Workspace Facts
-<!-- END bigpowers:learned-preferences -->
+### Issue tracker
+
+Issues and specs live as GitHub issues in `tuunanet/xmms-gtk2`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` plus `docs/adr/` at the repo root. See `docs/agents/domain.md`.

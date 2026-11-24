@@ -511,6 +511,12 @@ Here you change most of XMMS's behavior and settings.
   number in the playlist.
 - **Equalizer doublesize linked** — Will display the Equalizer in doublesize if
   you make XMMS doublesize.
+- On desktops that report a HiDPI scale through `Xft.dpi` (150% or more),
+  XMMS starts in doublesize automatically so the skinned windows stay
+  readable where the compositor leaves XWayland unscaled. Set
+  `skin_autoscale=FALSE` in the `[xmms]` section of `~/.xmms/config` to
+  disable this (for example under KWin, which already upscales X11
+  windows itself).
 - **Smooth title scroll** — Makes the title scroll go smoother.
 - **Snap window at [ ] pixels** — Tells XMMS how close you can position the
   three windows until they dock / snap together with each other.
