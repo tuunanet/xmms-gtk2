@@ -128,7 +128,7 @@ size).
 | --- | --- | --- | --- | --- |
 | Main player | **275×116** | **275×14** | 550×232 | 825×348 |
 | Equalizer | **275×116** | **275×14** | 550×232 | 825×348 |
-| Playlist | **≥275×116**, width steps of **25 px** from 275 | shaded height 14 | (always rendered at 1×) | (always rendered at 1×) |
+| Playlist | **≥275×116**, width steps of **25 px** from 275 | shaded height 14 | 600×464 | 900×696 |
 
 `main.bmp` should be **at least 275×116**. Larger images are clipped to the
 default pixmap size when blitting; smaller images only cover part of the
@@ -439,12 +439,15 @@ skin format extensions.
 ### 8.3 Scale (DoubleSize / triple size)
 
 The UI supports integer scales 1×–3× (`cfg.doublesize` holds the extra
-scale factor 0/1/2). At scale > 1 the windows allocate an n×-sized
-backing pixmap; every widget still draws at 1× and its rectangle is
-pixel-replicated (`create_scaled_image`), and window input handlers
-divide event coordinates by the scale. Shape masks are generated per
-scale (points from `region.txt` multiply by the scale). Authors still
-deliver 1× BMPs; hit testing never changes.
+scale factor 0/1/2); the playlist window always follows the player's
+scale. At scale > 1 the windows allocate an n×-sized backing pixmap;
+every widget still draws at 1× and its rectangle is pixel-replicated
+(`create_scaled_image`), and window input handlers divide event
+coordinates by the scale. Shape masks are generated per scale (points
+from `region.txt` multiply by the scale). Playlist resize steps and
+geometry hints multiply by the scale as well (25·s / 29·s from a base
+of 275·s × 116·s). Authors still deliver 1× BMPs; hit testing never
+changes.
 
 ### 8.4 Compatibility priority
 

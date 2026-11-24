@@ -348,7 +348,7 @@ static void read_config(void)
 	ConfigFile *cfgfile;
 	gchar *filename;
 	gint i, length;
-	gboolean doublesize_flag;
+	gboolean doublesize_flag = FALSE;
 
 	memset(&cfg, 0, sizeof (Config));
 	cfg.autoscroll = TRUE;
@@ -811,13 +811,14 @@ static gboolean dock_resnap_pair(GtkWidget *follower, gint *fx, gint *fy,
  * leader chain is player -> equalizer -> playlist; the playlist falls
  * back to the player when it was not docked to the equalizer.  The main
  * window anchors the group; every other window keeps its pre-rescale
- * position relative to its leader's new edge.  The playlist does not
- * rescale on toggles, so only its position is adjusted. */
+ * position relative to its leader's new edge.  The playlist rescales
+ * with the group (it always follows the player's scale), so its new
+ * size is computed the same way as the other windows. */
 static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
 			      const DockGeom *pl_old, gboolean eq_resized)
 {
 	gint ms = cfg.doublesize + 1;
-	gint playlist_h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+	gint playlist_h = PLAYLIST_HEIGHT;
 	DockGeom main_new, eq_new, pl_new;
 
 	main_new = *main_old;
@@ -832,7 +833,7 @@ static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
 	}
 
 	pl_new = *pl_old;
-	pl_new.w = cfg.playlist_width;
+	pl_new.w = PLAYLIST_WIDTH;
 	pl_new.h = playlist_h;
 
 	if (eq_resized)
@@ -887,8 +888,8 @@ void set_doublesize(gboolean ds)
 	eq_old.w = 275 * old_scale;
 	eq_old.h = (cfg.equalizer_shaded ? 14 : 116) * old_scale;
 	dock_get_widget_pos(playlistwin, &pl_old.x, &pl_old.y);
-	pl_old.w = cfg.playlist_width;
-	pl_old.h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+	pl_old.w = cfg.playlist_width * old_scale;
+	pl_old.h = (cfg.playlist_shaded ? 14 : cfg.playlist_height) * old_scale;
 
 	if (cfg.doublesize)
 	{
@@ -911,6 +912,9 @@ void set_doublesize(gboolean ds)
 
 	if (eq_resized)
 		equalizerwin_set_scale(cfg.doublesize);
+
+	/* The playlist always follows the player's scale. */
+	playlistwin_set_scale(cfg.doublesize);
 
 	resnap_dock_group(&main_old, &eq_old, &pl_old, eq_resized);
 }

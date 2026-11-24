@@ -25,11 +25,15 @@ for XMMS GTK2.
   pixmaps (`create_scaled_image`), region.txt shape masks (generated
   per scale), event coordinate translation, window hints and dock
   geometry, and the analyzer/vis renderers (now computed at 1x and
-  expanded by pixel replication). The playlist stays 1x by design; all
-  1x and 2x behavior is unchanged. Covered by unit tests (coefficient
-  mapping to 3), end-to-end startup tests (`skin_scale=3.0` and a
-  private-Xvfb 8K screen both render 825x348), and a dock-resnap case
-  exercising the 3x start plus the 3x-to-1x-to-3x toggle cycle.
+  expanded by pixel replication). The playlist follows the player's
+  scale too — including its drag-resize steps, geometry hints, shape
+  mask, and embedded vis — fixing the mixed-size docked chain at 2x/3x;
+  1x and 2x behavior is otherwise unchanged. Covered by unit tests
+  (coefficient mapping to 3), end-to-end startup tests (`skin_scale=3.0`
+  and a private-Xvfb 8K screen both render 825x348), and dock-resnap
+  cases exercising the scaled playlist in the docked chain (600x464 at
+  2x, 900x696 at 3x on a private 2560x1440 screen) plus the
+  3x-to-1x-to-3x toggle cycle.
 - Automatic skin scale from the display resolution: XMMS now picks its
   startup size from a size coefficient relative to the QHD baseline —
   2560x1440 keeps the classic 1x UI, while larger screens scale up

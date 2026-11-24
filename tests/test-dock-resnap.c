@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #ifndef XMMS_BINARY
 #define XMMS_BINARY "../xmms/xmms"
@@ -34,9 +35,8 @@
 	"playlist_visible=TRUE\n" \
 	"equalizer_visible=TRUE\n"
 
-/* Same vertical chain, but started at the 3x scale via a skin_scale
- * override. The playlist keeps a stepped height (58 + 29 * 8 = 290)
- * short enough that the 3x stack fits on the ambient Xvfb screen. */
+/* Same vertical chain, started at the 3x scale via a skin_scale
+ * override on a private screen large enough for the 3x stack. */
 #define TRIPLE_CHAIN_CONFIG \
 	"[xmms]\n" \
 	"player_x=20\n" \
@@ -46,7 +46,7 @@
 	"playlist_x=20\n" \
 	"playlist_y=252\n" \
 	"playlist_width=300\n" \
-	"playlist_height=290\n" \
+	"playlist_height=232\n" \
 	"skin_scale=3.0\n" \
 	"playlist_visible=TRUE\n" \
 	"equalizer_visible=TRUE\n"
@@ -223,6 +223,83 @@ static void write_resource_manager(Display *display, const gchar *value)
 	XSync(display, False);
 }
 
+/* Stops a spawned child (XMMS or Xvfb) reliably on tear-down. */
+static void terminate_child(GPid child)
+{
+	gint status = 0;
+	guint attempt;
+
+	kill(child, SIGTERM);
+	for (attempt = 0; attempt < WINDOW_WAIT_ATTEMPTS; attempt++)
+	{
+		if (waitpid(child, &status, WNOHANG) == child)
+			break;
+		g_usleep(WINDOW_WAIT_DELAY_US);
+	}
+	if (waitpid(child, &status, WNOHANG) != child)
+	{
+		kill(child, SIGKILL);
+		waitpid(child, &status, 0);
+	}
+	g_spawn_close_pid(child);
+}
+
+/* Duplicates the pipe write end onto fd 3 for Xvfb's -displayfd. */
+static void x11_displayfd_child_setup(gpointer data)
+{
+	dup2(GPOINTER_TO_INT(data), 3);
+}
+
+/* Spawns a private Xvfb with the given screen geometry; on success the
+ * caller receives the pid and a display name (":N") that the server
+ * picked via -displayfd. Returns FALSE when Xvfb is unavailable. */
+static gboolean start_xvfb(const gchar *geometry, GPid *xvfb_pid,
+			   gchar **display_name)
+{
+	gint fds[2];
+	gchar *arguments[] = { (gchar *) "Xvfb", (gchar *) "-displayfd",
+			       (gchar *) "3", (gchar *) "-screen",
+			       (gchar *) "0", (gchar *) geometry,
+			       (gchar *) "-nolisten", (gchar *) "tcp", NULL };
+	gchar buffer[16];
+	gssize length = 0;
+	GError *error = NULL;
+
+	if (pipe(fds) != 0)
+		return FALSE;
+	if (!g_spawn_async(NULL, arguments, NULL,
+			   G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH,
+			   x11_displayfd_child_setup,
+			   GINT_TO_POINTER(fds[1]), xvfb_pid, &error))
+	{
+		g_error_free(error);
+		close(fds[0]);
+		close(fds[1]);
+		return FALSE;
+	}
+	close(fds[1]);
+
+	/* Xvfb writes the display number once it accepts connections. */
+	while (length < (gssize) sizeof(buffer) - 1)
+	{
+		gssize got = read(fds[0], buffer + length, 1);
+
+		if (got <= 0 || buffer[length] == '\n')
+			break;
+		length++;
+	}
+	close(fds[0]);
+
+	if (length <= 0 || !g_ascii_isdigit(buffer[0]))
+	{
+		terminate_child(*xvfb_pid);
+		return FALSE;
+	}
+	buffer[length] = '\0';
+	*display_name = g_strdup_printf(":%s", buffer);
+	return TRUE;
+}
+
 static void remove_tree(const gchar *path)
 {
 	GDir *directory;
@@ -268,8 +345,11 @@ static void write_config(const gchar *home, const gchar *content)
 
 /* Spawns XMMS with an isolated HOME and Xft.dpi injected, waits for the
  * three windows and the layout to settle, measures everything and
- * restores the RESOURCE_MANAGER property. */
-static void launch_and_measure(const gchar *config_content, const gchar *dpi,
+ * restores the RESOURCE_MANAGER property. display_name selects the X
+ * server (NULL = ambient display). */
+static void launch_and_measure_on(const gchar *display_name,
+				  const gchar *config_content,
+				  const gchar *dpi,
 			       WindowBox *main_box, WindowBox *eq_box,
 			       WindowBox *playlist_box, GPid *child_out,
 			       Display **display_out, Window *main_out,
@@ -291,7 +371,7 @@ static void launch_and_measure(const gchar *config_content, const gchar *dpi,
 	g_assert_nonnull(runtime_directory);
 	write_config(runtime_directory, config_content);
 
-	display = XOpenDisplay(NULL);
+	display = XOpenDisplay(display_name);
 	g_assert_nonnull(display);
 	XSetErrorHandler(record_x_error);
 	resource_backup = read_resource_manager(display);
@@ -303,6 +383,9 @@ static void launch_and_measure(const gchar *config_content, const gchar *dpi,
 				       TRUE);
 	environment = g_environ_setenv(environment, "TMPDIR", runtime_directory,
 				       TRUE);
+	if (display_name)
+		environment = g_environ_setenv(environment, "DISPLAY",
+					       display_name, TRUE);
 	g_assert_true(g_spawn_async(NULL, arguments, environment,
 				    G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
 				    &child, &error));
@@ -326,6 +409,18 @@ static void launch_and_measure(const gchar *config_content, const gchar *dpi,
 	*eq_out = eq_window;
 	*playlist_out = playlist_window;
 	*runtime_dir_out = runtime_directory;
+}
+
+static void launch_and_measure(const gchar *config_content, const gchar *dpi,
+			       WindowBox *main_box, WindowBox *eq_box,
+			       WindowBox *playlist_box, GPid *child_out,
+			       Display **display_out, Window *main_out,
+			       Window *eq_out, Window *playlist_out,
+			       gchar **runtime_dir_out)
+{
+	launch_and_measure_on(NULL, config_content, dpi, main_box, eq_box,
+			      playlist_box, child_out, display_out, main_out,
+			      eq_out, playlist_out, runtime_dir_out);
 }
 
 static void finish_child(GPid child, Display *display,
@@ -357,7 +452,8 @@ static void assert_flush_doubled_stack(const WindowBox *main_box,
 				       const WindowBox *playlist_box)
 {
 	/* Doubled player at (20,20); equalizer flush below it; playlist
-	 * flush below the equalizer, still 1x sized. */
+	 * flush below the equalizer, doubled too (it follows the
+	 * player's scale). */
 	g_assert_cmpint(main_box->x, ==, 20);
 	g_assert_cmpint(main_box->y, ==, 20);
 	g_assert_cmpint(main_box->width, ==, 550);
@@ -369,8 +465,8 @@ static void assert_flush_doubled_stack(const WindowBox *main_box,
 	g_assert_cmpint(playlist_box->x, ==, 20);
 	g_assert_cmpint(playlist_box->y,
 			==, eq_box->y + eq_box->height);
-	g_assert_cmpint(playlist_box->width, ==, 300);
-	g_assert_cmpint(playlist_box->height, ==, 232);
+	g_assert_cmpint(playlist_box->width, ==, 600);
+	g_assert_cmpint(playlist_box->height, ==, 464);
 }
 
 static void assert_flush_single_stack(const WindowBox *main_box,
@@ -409,8 +505,8 @@ static void assert_flush_triple_stack(const WindowBox *main_box,
 	g_assert_cmpint(playlist_box->x, ==, 20);
 	g_assert_cmpint(playlist_box->y,
 			==, eq_box->y + eq_box->height);
-	g_assert_cmpint(playlist_box->width, ==, 300);
-	g_assert_cmpint(playlist_box->height, ==, 290);
+	g_assert_cmpint(playlist_box->width, ==, 900);
+	g_assert_cmpint(playlist_box->height, ==, 696);
 }
 
 static void test_autoscaled_start_is_flush(void)
@@ -463,14 +559,22 @@ static void test_double_toggle_stays_flush(void)
 static void test_triple_start_and_toggle_stay_flush(void)
 {
 	WindowBox main_box, eq_box, playlist_box;
-	GPid child;
+	GPid child, xvfb_pid = 0;
 	Display *display;
 	Window main_window, eq_window, playlist_window;
-	gchar *runtime_directory;
+	gchar *runtime_directory, *display_name = NULL;
 
-	launch_and_measure(TRIPLE_CHAIN_CONFIG, NULL, &main_box, &eq_box,
-			   &playlist_box, &child, &display, &main_window,
-			   &eq_window, &playlist_window, &runtime_directory);
+	/* The 3x stack (825x348 windows plus a 900x696 playlist) needs
+	 * more than the ambient Xvfb screen provides. */
+	if (!start_xvfb("2560x1440x24", &xvfb_pid, &display_name))
+	{
+		g_test_skip("Xvfb is not available");
+		return;
+	}
+	launch_and_measure_on(display_name, TRIPLE_CHAIN_CONFIG, NULL,
+			      &main_box, &eq_box, &playlist_box, &child,
+			      &display, &main_window, &eq_window,
+			      &playlist_window, &runtime_directory);
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	assert_flush_triple_stack(&main_box, &eq_box, &playlist_box);
 
@@ -481,21 +585,7 @@ static void test_triple_start_and_toggle_stay_flush(void)
 				playlist_window, &main_box, &eq_box,
 				&playlist_box);
 	g_assert_cmpint(unexpected_x_error, ==, 0);
-	/* At 1x the playlist keeps its configured height (it never
-	 * rescales). */
-	g_assert_cmpint(main_box.x, ==, 20);
-	g_assert_cmpint(main_box.y, ==, 20);
-	g_assert_cmpint(main_box.width, ==, 275);
-	g_assert_cmpint(main_box.height, ==, 116);
-	g_assert_cmpint(eq_box.x, ==, 20);
-	g_assert_cmpint(eq_box.y, ==, main_box.y + main_box.height);
-	g_assert_cmpint(eq_box.width, ==, 275);
-	g_assert_cmpint(eq_box.height, ==, 116);
-	g_assert_cmpint(playlist_box.x, ==, 20);
-	g_assert_cmpint(playlist_box.y,
-			==, eq_box.y + eq_box.height);
-	g_assert_cmpint(playlist_box.width, ==, 300);
-	g_assert_cmpint(playlist_box.height, ==, 290);
+	assert_flush_single_stack(&main_box, &eq_box, &playlist_box);
 
 	send_ctrl_d(display, main_window);
 	wait_for_settled_layout(display, main_window, eq_window,
@@ -505,6 +595,8 @@ static void test_triple_start_and_toggle_stay_flush(void)
 	assert_flush_triple_stack(&main_box, &eq_box, &playlist_box);
 
 	finish_child(child, display, runtime_directory);
+	terminate_child(xvfb_pid);
+	g_free(display_name);
 }
 
 int main(int argc, char **argv)

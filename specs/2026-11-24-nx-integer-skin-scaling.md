@@ -73,11 +73,31 @@ persisted `doublesize=TRUE` still starts at 2× (never 3×).
 
 ## Explicitly unchanged
 
-- Playlist window rendering, resize steps, and hints (always 1×).
-- `dock.c` (takes explicit pixel sizes), `resnap_dock_group` (`ms` arithmetic).
+- `dock.c` (takes explicit pixel sizes), `resnap_dock_group` (`ms`
+  arithmetic — the playlist's scaled size feeds it via
+  `PLAYLIST_WIDTH`/`PLAYLIST_HEIGHT`).
 - Widgets themselves (draw at 1×, receive pre-translated coordinates).
 - Config key names and formats.
 - Mask-after-resize ordering (XWayland workaround).
+
+## Playlist scaling (added during review)
+
+The first N× cut kept the playlist at 1× (its historical behavior), but
+at 2×/3× the docked chain came up with mixed window sizes, which reads
+as broken. The playlist now follows the player's scale:
+
+- `PLAYLIST_SCALE`/`PLAYLIST_WIDTH`/`PLAYLIST_HEIGHT` macros multiply
+  the 1× config dimensions; the config values themselves stay 1×.
+- Same backing-pixmap model as main/EQ: a 1× working pixmap plus a
+  scaled pixmap (`playlistwin_update_scaled_bg()`), maintained on
+  interactive resize (each quantized 25/29-px 1× step), on skin change
+  and on shade/focus force redraws.
+- Drag-resize, popup hit regions and keyboard handling operate on
+  event coordinates divided by the scale; WM-driven resizes are divided
+  in the configure handler. Geometry hints and the shade height scale.
+- `playlistwin_set_scale()` is called from `set_doublesize()`; the
+  dock resnap uses the scaled playlist geometry.
+- The embedded vis switches scale with the window (`vis_set_scale`).
 
 ## Known gap retained
 

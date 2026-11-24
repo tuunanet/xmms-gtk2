@@ -28,6 +28,10 @@ static GtkItemFactory *playlistwin_popup_menu, *playlistwin_save_menu;
 static GtkAccelGroup *playlistwin_accel;
 
 static GdkPixmap *playlistwin_bg;
+/* Scaled backing pixmap for scale > 1, plus the size it was allocated
+ * for (0 when none is allocated). */
+static GdkPixmap *playlistwin_bg_scaled;
+static gint playlistwin_bg_scaled_w = 0, playlistwin_bg_scaled_h = 0;
 static GdkBitmap *playlistwin_mask;
 static GdkGC *playlistwin_gc;
 static int playlistwin_resizing, playlistwin_resize_x, playlistwin_resize_y;
@@ -345,16 +349,56 @@ static void playlistwin_create_mask(void)
 		return;
 
 	tmp = playlistwin_mask;
-	playlistwin_mask = gdk_pixmap_new(playlistwin->window, cfg.playlist_width, PLAYLIST_HEIGHT, 1);
+	playlistwin_mask = gdk_pixmap_new(playlistwin->window, PLAYLIST_WIDTH, PLAYLIST_HEIGHT, 1);
 	gc = gdk_gc_new(playlistwin_mask);
 	pattern.pixel = 1;
 	gdk_gc_set_foreground(gc, &pattern);
-	gdk_draw_rectangle(playlistwin_mask, gc, TRUE, 0, 0, cfg.playlist_width, PLAYLIST_HEIGHT);
+	gdk_draw_rectangle(playlistwin_mask, gc, TRUE, 0, 0, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
 	gdk_gc_destroy(gc);
 	gtk_widget_shape_combine_mask(playlistwin, playlistwin_mask, 0, 0);
 
 	if (tmp)
 		gdk_bitmap_unref(tmp);
+}
+
+/* Allocates the scaled backing pixmap for the given scale if the
+ * current one does not match. */
+static void playlistwin_ensure_scaled_bg(gint scale)
+{
+	gint w = cfg.playlist_width * scale, h = cfg.playlist_height * scale;
+	gint cw, ch;
+
+	if (playlistwin_bg_scaled)
+	{
+		gdk_drawable_get_size((GdkDrawable *) playlistwin_bg_scaled,
+				      &cw, &ch);
+		if (cw == w && ch == h)
+			return;
+		gdk_pixmap_unref(playlistwin_bg_scaled);
+	}
+	playlistwin_bg_scaled = gdk_pixmap_new(NULL, w, h,
+					       gdk_rgb_get_visual()->depth);
+	playlistwin_bg_scaled_w = w;
+	playlistwin_bg_scaled_h = h;
+}
+
+/* Re-allocates the scaled backing pixmap as needed and replicates the
+ * current 1x background into it (the shaded mode uses the top rows). */
+static void playlistwin_update_scaled_bg(void)
+{
+	gint scale = cfg.doublesize + 1;
+	gint src_h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+	GdkImage *img, *img2;
+
+	if (scale == 1)
+		return;
+	playlistwin_ensure_scaled_bg(scale);
+	img = gdk_image_get(playlistwin_bg, 0, 0, cfg.playlist_width, src_h);
+	img2 = create_scaled_image(img, scale);
+	gdk_draw_image(playlistwin_bg_scaled, playlistwin_gc, img2, 0, 0, 0, 0,
+		       cfg.playlist_width * scale, src_h * scale);
+	gdk_image_destroy(img2);
+	gdk_image_destroy(img);
 }
 
 void playlistwin_set_shade_menu_cb(gboolean shaded)
@@ -415,6 +459,12 @@ static void playlistwin_release(GtkWidget * widget, GdkEventButton * event, gpoi
 {
 	if (event->button == 3)
 		return;
+
+	if (cfg.doublesize)
+	{
+		event->x /= (cfg.doublesize + 1);
+		event->y /= (cfg.doublesize + 1);
+	}
 
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_flush();
@@ -536,7 +586,8 @@ static void playlistwin_resize(int width, int height)
 	playlistwin_draw_frame();
 	draw_widget_list(playlistwin_wlist, &dummy, TRUE);
 	clear_widget_list_redraw(playlistwin_wlist);
-	gdk_window_set_back_pixmap(playlistwin->window, playlistwin_bg, 0);
+	playlistwin_update_scaled_bg();
+	gdk_window_set_back_pixmap(playlistwin->window, cfg.doublesize ? playlistwin_bg_scaled : playlistwin_bg, 0);
 	gdk_window_clear(playlistwin->window);
 	gdk_pixmap_unref(oldbg);
 }
@@ -566,6 +617,12 @@ static void playlistwin_queue_resize(int width, int height)
 static void playlistwin_motion(GtkWidget * widget, GdkEventMotion * event, gpointer callback_data)
 {
 	XEvent ev;
+
+	if (cfg.doublesize)
+	{
+		event->x /= (cfg.doublesize + 1);
+		event->y /= (cfg.doublesize + 1);
+	}
 
 	if (playlistwin_resizing)
 	{
@@ -1117,6 +1174,12 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 	gboolean grab = TRUE;
 	int xpos, ypos;
 
+	if (cfg.doublesize)
+	{
+		event->x /= (cfg.doublesize + 1);
+		event->y /= (cfg.doublesize + 1);
+	}
+
 	dock_get_widget_pos(playlistwin, &xpos, &ypos);
 	if (event->button == 1 && !cfg.show_wm_decorations &&
 	    ((!cfg.playlist_shaded && event->x > cfg.playlist_width - 20 &&
@@ -1332,9 +1395,13 @@ static gboolean playlistwin_configure(GtkWidget * window, GdkEventConfigure *eve
 
 	if (cfg.show_wm_decorations || hint_move_resize_available())
 	{
-		if (event->width != cfg.playlist_width ||
-		    (event->height != cfg.playlist_height && event->height != 14))
-			playlistwin_queue_resize(event->width, event->height);
+		gint scale = cfg.doublesize + 1;
+
+		if (event->width / scale != cfg.playlist_width ||
+		    (event->height / scale != cfg.playlist_height &&
+		     event->height != 14 * scale))
+			playlistwin_queue_resize(event->width / scale,
+						 event->height / scale);
 	}
 
 	if (cfg.show_wm_decorations)
@@ -1350,8 +1417,28 @@ static gboolean playlistwin_configure(GtkWidget * window, GdkEventConfigure *eve
 
 void playlistwin_set_back_pixmap()
 {
-	gdk_window_set_back_pixmap(playlistwin->window, playlistwin_bg, 0);
+	if (cfg.doublesize)
+		gdk_window_set_back_pixmap(playlistwin->window, playlistwin_bg_scaled, 0);
+	else
+		gdk_window_set_back_pixmap(playlistwin->window, playlistwin_bg, 0);
 	gdk_window_clear(playlistwin->window);
+}
+
+/* Rescales the playlist window to the player's scale (extra_scale is
+ * the Config.doublesize value: 0 = 1x, 1 = 2x, 2 = 3x). Rebuilds the
+ * geometry hints, shape mask, backing pixmap and the embedded vis. */
+void playlistwin_set_scale(gint extra_scale)
+{
+	gint scale = extra_scale + 1;
+
+	vis_set_scale(playlistwin_vis, scale);
+	playlistwin_set_hints();
+	dock_resize(dock_window_list, playlistwin, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
+	gtk_widget_set_usize(playlistwin, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
+	playlistwin_create_mask();
+	playlistwin_update_scaled_bg();
+	playlistwin_set_back_pixmap();
+	draw_playlist_window(TRUE);
 }
 
 static int playlistwin_client_event(GtkWidget *w, GdkEventClient *event, gpointer data)
@@ -1381,28 +1468,29 @@ static void playlistwin_set_hints(void)
 {
 	GdkGeometry geometry;
 	GdkWindowHints mask;
+	gint scale = cfg.doublesize + 1;
 
 	if (!cfg.show_wm_decorations && !hint_move_resize_available())
 		return;
 
-	geometry.min_width = 275;
-	geometry.base_width = 275;
-	geometry.width_inc = 25;
-	geometry.height_inc = 29;
+	geometry.min_width = 275 * scale;
+	geometry.base_width = 275 * scale;
+	geometry.width_inc = 25 * scale;
+	geometry.height_inc = 29 * scale;
 	geometry.max_width = (1 << 16) - 1;
 	geometry.max_height = (1 << 16) - 1;
 	mask = GDK_HINT_MIN_SIZE | GDK_HINT_RESIZE_INC |
 		GDK_HINT_MAX_SIZE | GDK_HINT_BASE_SIZE;
 	if (cfg.playlist_shaded)
 	{
-		geometry.min_height = 14;
-		geometry.max_height = 14;
-		geometry.base_height = 14;
+		geometry.min_height = 14 * scale;
+		geometry.max_height = 14 * scale;
+		geometry.base_height = 14 * scale;
 	}
 	else
 	{
-		geometry.min_height = 116;
-		geometry.base_height = 116;
+		geometry.min_height = 116 * scale;
+		geometry.base_height = 116 * scale;
 	}
 
 	gtk_window_set_geometry_hints(GTK_WINDOW(playlistwin),
@@ -1721,6 +1809,7 @@ void draw_playlist_window(gboolean force)
 	gboolean redraw;
 	GList *wl;
 	Widget *w;
+	gint scale = cfg.doublesize + 1;
 
 	if (force)
 	{
@@ -1737,7 +1826,10 @@ void draw_playlist_window(gboolean force)
 	if (redraw || force)
 	{
 		if (force)
+		{
+			playlistwin_update_scaled_bg();
 			gdk_window_clear(playlistwin->window);
+		}
 		else
 		{
 			wl = playlistwin_wlist;
@@ -1746,7 +1838,23 @@ void draw_playlist_window(gboolean force)
 				w = (Widget *) wl->data;
 				if (w->redraw && w->visible)
 				{
-					gdk_window_clear_area(playlistwin->window, w->x, w->y, w->width, w->height);
+					if (cfg.doublesize)
+					{
+						GdkImage *img, *img2;
+
+						/* Replicate the widget's
+						 * updated 1x rectangle into
+						 * the scaled backing
+						 * pixmap. */
+						img = gdk_image_get(playlistwin_bg, w->x, w->y, w->width, w->height);
+						img2 = create_scaled_image(img, scale);
+						gdk_draw_image(playlistwin_bg_scaled, playlistwin_gc, img2, 0, 0, w->x * scale, w->y * scale, w->width * scale, w->height * scale);
+						gdk_image_destroy(img2);
+						gdk_image_destroy(img);
+						gdk_window_clear_area(playlistwin->window, w->x * scale, w->y * scale, w->width * scale, w->height * scale);
+					}
+					else
+						gdk_window_clear_area(playlistwin->window, w->x, w->y, w->width, w->height);
 					w->redraw = FALSE;
 				}
 				wl = wl->next;
@@ -1883,6 +1991,10 @@ static void playlistwin_drag_data_received(GtkWidget * widget,
 
 	if (selection_data->data)
 	{
+		gint scale = cfg.doublesize + 1;
+
+		x /= scale;
+		y /= scale;
 		if (inside_widget(x, y, playlistwin_list))
 		{
 			pos = ((y - ((Widget *) playlistwin_list)->y) / playlistwin_list->pl_fheight) + playlistwin_list->pl_first;
@@ -1918,7 +2030,7 @@ static void playlistwin_create_widgets(void)
 	playlistwin_time_min = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 82, cfg.playlist_height - 15, 15, FALSE, SKIN_TEXT);
 	playlistwin_time_sec = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 64, cfg.playlist_height - 15, 10, FALSE, SKIN_TEXT);
 	playlistwin_info = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 143, cfg.playlist_height - 28, 85, FALSE, SKIN_TEXT);
-	playlistwin_vis = create_vis(&playlistwin_wlist, playlistwin_bg, playlistwin->window, playlistwin_gc, cfg.playlist_width - 223, cfg.playlist_height - 26, 72, 1);
+	playlistwin_vis = create_vis(&playlistwin_wlist, playlistwin_bg, playlistwin->window, playlistwin_gc, cfg.playlist_width - 223, cfg.playlist_height - 26, 72, cfg.doublesize + 1);
 	hide_widget(playlistwin_vis);
 
 	playlistwin_srew = create_sbutton(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 144, cfg.playlist_height - 16, 8, 7, playlist_prev);
@@ -1953,7 +2065,7 @@ static void playlistwin_create_gtk(void)
 	gtk_window_set_transient_for(GTK_WINDOW(playlistwin), GTK_WINDOW(mainwin));
 	if (cfg.playlist_x != -1 && cfg.save_window_position)
 		dock_set_uposition(playlistwin, cfg.playlist_x, cfg.playlist_y);
-	gtk_widget_set_usize(playlistwin, cfg.playlist_width, cfg.playlist_shaded ? 14 : cfg.playlist_height);
+	gtk_widget_set_usize(playlistwin, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
 	gtk_widget_set_events(playlistwin, GDK_FOCUS_CHANGE_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 	gtk_widget_realize(playlistwin);
 	hint_set_skip_winlist(playlistwin);
@@ -1976,7 +2088,9 @@ static void playlistwin_create_gtk(void)
 	if (!cfg.show_wm_decorations)
 		gdk_window_set_decorations(playlistwin->window, 0);
 
-	gdk_window_set_back_pixmap(playlistwin->window, playlistwin_bg, 0);
+	if (cfg.doublesize)
+		playlistwin_ensure_scaled_bg(cfg.doublesize + 1);
+	gdk_window_set_back_pixmap(playlistwin->window, cfg.doublesize ? playlistwin_bg_scaled : playlistwin_bg, 0);
 	playlistwin_create_mask();
 }
 
@@ -2061,7 +2175,7 @@ void playlistwin_real_show(void)
 	gtk_widget_show(playlistwin);
 	if (pposition_broken && cfg.playlist_x != -1 && cfg.save_window_position)
 		dock_set_uposition(playlistwin, cfg.playlist_x, cfg.playlist_y);
-	gtk_widget_set_usize(playlistwin, cfg.playlist_width, PLAYLIST_HEIGHT);
+	gtk_widget_set_usize(playlistwin, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
 	gdk_flush();
 	draw_playlist_window(TRUE);
 	tbutton_set_toggled(mainwin_pl, TRUE);
