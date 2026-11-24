@@ -8,7 +8,7 @@ LDLIBS += $(shell pkg-config --libs gtk+-2.0)
 
 .PHONY: check clean test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 
-check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
+check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 	./test-xentry
 	./test-filebrowser
 	./test-font-load
@@ -16,6 +16,11 @@ check: test-xentry test-filebrowser test-font-load test-popup-position test-keyb
 	./test-keyboard-shortcuts
 	./test-pluginenum
 	./test-outputplugin
+	@if [ -f "$(top_builddir)/Output/alsa/.libs/libALSA.so" ]; then \
+		./test-output-pacing "$(top_builddir)/Output/alsa/.libs/libALSA.so"; \
+	else \
+		echo "test-output-pacing: SKIP (ALSA output plugin not built)"; \
+	fi
 	./test-alsa-pcm-state
 	./test-alsa-volume
 	./test-mpg123-file-duration
@@ -77,6 +82,10 @@ test-outputplugin: override CFLAGS += -DBUILD_PLUGIN_DIR=\"$(CURDIR)/test-output
 test-outputplugin: $(srcdir)/test-outputplugin.c $(top_srcdir)/xmms/outputplugin.c $(top_srcdir)/xmms/outputplugin.h test-outputplugin-plugins/Output/alsa/.libs/libALSA.so
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-outputplugin.c $(top_srcdir)/xmms/outputplugin.c $(LDLIBS)
 
+test-output-pacing: LDFLAGS += -Wl,--export-dynamic -Wl,--no-as-needed -Wl,-rpath,$(top_builddir)/libxmms/.libs
+test-output-pacing: $(srcdir)/test-output-pacing.c $(top_srcdir)/xmms/plugin.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-output-pacing.c $(LDLIBS) -L$(top_builddir)/libxmms/.libs -lxmms -ldl
+
 test-outputplugin-plugins/Output/alsa/.libs/libALSA.so:
 	mkdir -p test-outputplugin-plugins/Output/alsa/.libs
 	touch $@
@@ -118,4 +127,4 @@ test-release-tools:
 	$(srcdir)/test-release-tools.sh $(top_srcdir)
 
 clean:
-	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-plugins test-outputplugin-plugins
+	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-plugins test-outputplugin-plugins
