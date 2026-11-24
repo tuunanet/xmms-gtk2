@@ -42,6 +42,13 @@
 #define XMMS_DEFAULT_MAINWIN_FONT \
 	"-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-1"
 
+/* Desktop DPI detection for HiDPI startup scaling. */
+#define XMMS_DEFAULT_DPI 96
+#define XMMS_MAX_SANE_DPI 4096
+/* 1.5x or more of the default 96 DPI counts as HiDPI and starts the
+ * skin doubled (covers GNOME fractional scales of 150% and up). */
+#define XMMS_HIDPI_DOUBLE_DPI 144
+
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);
 GdkImage *create_dblsize_image(GdkImage * img);
@@ -62,6 +69,10 @@ void util_set_cursor(GtkWidget *window);
 void util_dump_menu_rc(void);
 void util_read_menu_rc(void);
 void util_dialog_keypress_cb(GtkWidget *w, GdkEventKey *event, gpointer data);
+gint util_xft_dpi_parse(const gchar *value);
+gint util_xft_dpi_from_rdb(const gchar *rdb);
+gint util_get_xft_dpi(void);
+gint util_skin_scale_for_dpi(gint dpi);
 
 #if ENABLE_NLS
     gchar* util_menu_translate(const gchar *path, gpointer func_data);

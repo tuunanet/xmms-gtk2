@@ -5,6 +5,13 @@ Scope: **only the changes required because Ubuntu (GNOME/mutter) and Kubuntu
 (playlist scale, player width matching, etc.) are intentionally excluded —
 see the final section for the boundary.
 
+> **Status on this branch (2026-11-24):** only required change A (HiDPI
+> startup self-scaling) has been implemented here, minimally, together
+> with regression tests. Change B (mask ordering) and the optional
+> cosmetic smoothing were **not** ported — the observed Ubuntu symptom is
+> "tiny windows" only, with no cropping. See section 8 for the diagnosis
+> record and implementation notes.
+
 Implemented on branch `fix/hidpi-xwayland-scaling`; specs and evidence:
 `specs/bugs/BUG-2026-11-23T145455-hidpi-xwayland-scaling.md`.
 
@@ -222,3 +229,42 @@ window-size/app-logic decisions and are excluded from this handover:
 - Dock-chain re-snapping after a rescale (`resnap_dock_group()`), which
   fixes window shuffling when the three docked windows change size — an
   application-logic bug reproducible independently of the desktop.
+
+---
+
+## 8. Diagnosis record (fix-hidpi-os-compatibility, 2026-11-24)
+
+The winning hypothesis: **XMMS never consults the desktop's DPI**. Startup
+size derives solely from the persisted `doublesize` config bit applied to
+the fixed 275×116 skin; combined with GNOME leaving XWayland at scale 1.0,
+the UI opens unscaled on a 6144-px panel. Fix: read `Xft.dpi` from
+`RESOURCE_MANAGER` before `mainwin_create()` and set `cfg.doublesize`
+exactly like the persisted-DoubleSize startup path, with `skin_autoscale`
+(default TRUE) as the persistent opt-out for compositors that already
+upscale X11 clients (KWin).
+
+Feedback loop and verification:
+
+- `tests/test-hidpi-startup.c` injects `Xft.dpi: 192` via `XChangeProperty`
+  on `XA_RESOURCE_MANAGER` and asserts the mapped main window geometry
+  (red pre-fix: measured 275×116; green post-fix: 550×232). Four cases:
+  192 → doublesize, 96 → single, unset → single, `skin_autoscale=FALSE`
+  → single.
+- Validated on the real affected machine (Ubuntu GNOME, `:0` at
+  `Xft.dpi: 192`): the main window opens 550×232.
+
+Debugging notes worth keeping:
+
+- On this system `xrdb -merge` and `xprop -set` silently fail to write the
+  `RESOURCE_MANAGER` property (rc 0, nothing lands). Direct `Xlib`
+  `XChangeProperty` works — hence the in-test injection.
+- **Xvfb resets when its last client disconnects, and the reset clears
+  root properties.** A helper process that sets `RESOURCE_MANAGER` and
+  exits before the player connects therefore injects nothing. The test
+  holds its own display connection open across write → spawn → measure,
+  which also matches the real desktop, where the property is set before
+  any client starts.
+- Cppcheck baseline entries are line-numbered; inserting the
+  `X11/Xresource.h` include in `xmms/util.c` shifted
+  `memleak:xmms/util.c:527` to `:528` (updated in
+  `tools/cppcheck-suppressions.txt`).

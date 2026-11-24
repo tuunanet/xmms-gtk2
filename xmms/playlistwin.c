@@ -579,6 +579,13 @@ static void playlistwin_motion(GtkWidget * widget, GdkEventMotion * event, gpoin
 				  cfg.playlist_width, PLAYLIST_HEIGHT);
 		gtk_widget_set_usize(playlistwin,
 				     cfg.playlist_width, PLAYLIST_HEIGHT);
+		/* playlistwin_resize() applied the shape mask before this
+		 * resize; re-apply mask and back pixmap afterwards so
+		 * XWayland compositors do not keep clipping to the
+		 * pre-resize shape region. */
+		playlistwin_create_mask();
+		playlistwin_set_back_pixmap();
+		draw_playlist_window(TRUE);
 	}
 	else if (dock_is_moving(playlistwin))
 	{

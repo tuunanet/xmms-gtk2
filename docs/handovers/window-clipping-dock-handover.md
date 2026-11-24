@@ -5,6 +5,16 @@ the **player and equalizer appear cropped to their top-left corner while the
 playlist editor renders completely**, with **gaps between the docked
 windows** instead of a flush stack.
 
+> **Status on this branch (2026-11-24):** both defects are implemented
+> here, minimally, with `tests/test-dock-resnap.c` covering the dock
+> chain headlessly. Adaptation to this branch: the playlist does not
+> rescale on toggles here (there is no `playlistwin_set_doublesize()`),
+> so `resnap_dock_group()` keeps the playlist at its 1× size and only
+> adjusts its position; the `skin_set_scale()` mask-cache note is
+> therefore not needed here. The old branch's commit references below
+> describe the same changes as originally proven; this branch carries
+> its own versions of them.
+
 Implemented on branch `fix/hidpi-xwayland-scaling`. Full investigation and
 evidence: `specs/bugs/BUG-2026-11-23T145455-hidpi-xwayland-scaling.md`.
 Window-size decisions (playlist scale, player width matching) are out of

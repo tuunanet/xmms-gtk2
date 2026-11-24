@@ -15,6 +15,29 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+### Fixed
+- Kept the docked skinned windows flush and fully visible across HiDPI
+  autoscale and DoubleSize toggles on XWayland compositors that apply
+  shape masks (mutter): the player and equalizer now apply their shape
+  mask *after* resizing (both doublesize and shade paths, plus the
+  playlist drag-resize path), and the docked group is re-snapped once
+  per rescale from pre-rescale geometry — including an autoscaled
+  start, where windows previously came up doubled at their saved 1×
+  spacing (overlapping), and toggle cycles could land the playlist on
+  the equalizer's position.
+- Started the skinned windows at the desktop scale on HiDPI desktops whose
+  XWayland compositors leave X11 clients unscaled (for example Ubuntu GNOME
+  at 200% scaling, where the player previously opened at 275×116 on a
+  6144-px-wide screen). `main.c` now reads `Xft.dpi` from the X
+  `RESOURCE_MANAGER` property before window creation and starts in
+  doublesize when it reports 144 DPI or more. The new `skin_autoscale`
+  key in `[xmms]` (default TRUE) opts out persistently, for example under
+  KWin, which already upscales XWayland clients itself.
+- Covered by `tests/test-hidpi-scale.c` (DPI parsing and threshold),
+  `tests/test-hidpi-startup.c` (end-to-end startup geometry under an
+  injected `Xft.dpi`), and `tests/test-dock-resnap.c` (dock chain stays
+  flush across an autoscaled start and a Ctrl+D cycle).
+
 ## [1.2.13] - 2026-07-29
 
 ### Added

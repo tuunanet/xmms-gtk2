@@ -358,6 +358,7 @@ static void read_config(void)
 	cfg.get_info_on_load = FALSE;
 	cfg.get_info_on_demand = TRUE;
 	cfg.eq_doublesize_linked = TRUE;
+	cfg.skin_autoscale = TRUE;
 	cfg.player_visible = TRUE;
 	cfg.no_playlist_advance = FALSE;
 	cfg.smooth_title_scroll = TRUE;
@@ -423,6 +424,7 @@ static void read_config(void)
 		xmms_cfg_read_boolean(cfgfile, "xmms", "shuffle", &cfg.shuffle);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "repeat", &cfg.repeat);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "doublesize", &cfg.doublesize);
+		xmms_cfg_read_boolean(cfgfile, "xmms", "skin_autoscale", &cfg.skin_autoscale);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "autoscroll_songname", &cfg.autoscroll);
 		xmms_cfg_read_int(cfgfile, "xmms", "timer_mode", &cfg.timer_mode);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "timer_minutes_only", &cfg.timer_minutes_only);
@@ -618,6 +620,7 @@ void save_config(void)
 	xmms_cfg_write_boolean(cfgfile, "xmms", "shuffle", mainwin_shuffle->tb_selected);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "repeat", mainwin_repeat->tb_selected);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "doublesize", cfg.doublesize);
+	xmms_cfg_write_boolean(cfgfile, "xmms", "skin_autoscale", cfg.skin_autoscale);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "autoscroll_songname", cfg.autoscroll);
 	xmms_cfg_write_int(cfgfile, "xmms", "timer_mode", cfg.timer_mode);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "timer_minutes_only", cfg.timer_minutes_only);
@@ -748,18 +751,116 @@ void mainwin_set_shape_mask(void)
 }
 
 
+typedef struct
+{
+	gint x, y, w, h;
+} DockGeom;
+
+/* Re-dock FOLLOWER across a scale change when it was flush docked to
+ * LEADER before it.  dock_resize() only keeps windows docked directly
+ * to the one being resized, so rescaling a docked chain (player ->
+ * equalizer -> playlist) detaches or overlaps later windows: every step
+ * recomputes docking from the intermediate geometry.  (fx, fy) is the
+ * follower's pre-rescale position; (fw, fh) its post-rescale size.  On
+ * success the follower's new position is stored in (fx, fy).  All leader
+ * dimensions are computed from the skin geometry rather than read back
+ * from the X server, because window resizes land asynchronously and a
+ * mid-transition read returns stale dimensions. */
+static gboolean dock_resnap_pair(GtkWidget *follower, gint *fx, gint *fy,
+				 gint fw, gint fh,
+				 const DockGeom *leader_old,
+				 const DockGeom *leader_new)
+{
+	gint nx = *fx, ny = *fy;
+
+	if (abs(*fx - leader_old->x) <= cfg.snap_distance)
+	{
+		if (abs(*fy - (leader_old->y + leader_old->h)) <= cfg.snap_distance)
+			ny = leader_new->y + leader_new->h;
+		else if (abs((*fy + fh) - leader_old->y) <= cfg.snap_distance)
+			ny = leader_new->y - fh;
+	}
+	if (abs(*fy - leader_old->y) <= cfg.snap_distance)
+	{
+		if (abs(*fx - (leader_old->x + leader_old->w)) <= cfg.snap_distance)
+			nx = leader_new->x + leader_new->w;
+		else if (abs((*fx + fw) - leader_old->x) <= cfg.snap_distance)
+			nx = leader_new->x - fw;
+	}
+	if (nx == *fx && ny == *fy)
+		return FALSE;
+	*fx = nx;
+	*fy = ny;
+	dock_set_uposition(follower, nx, ny);
+	return TRUE;
+}
+
+/* Re-snap the docked skinned windows after a whole-group rescale.  The
+ * leader chain is player -> equalizer -> playlist; the playlist falls
+ * back to the player when it was not docked to the equalizer.  The main
+ * window anchors the group; every other window keeps its pre-rescale
+ * position relative to its leader's new edge.  The playlist does not
+ * rescale on toggles, so only its position is adjusted. */
+static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
+			      const DockGeom *pl_old, gboolean eq_resized)
+{
+	gint ms = cfg.doublesize + 1;
+	gint playlist_h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+	DockGeom main_new, eq_new, pl_new;
+
+	main_new = *main_old;
+	main_new.w = 275 * ms;
+	main_new.h = (cfg.player_shaded ? 14 : 116) * ms;
+
+	eq_new = *eq_old;
+	if (eq_resized)
+	{
+		eq_new.w = 275 * ms;
+		eq_new.h = (cfg.equalizer_shaded ? 14 : 116) * ms;
+	}
+
+	pl_new = *pl_old;
+	pl_new.w = cfg.playlist_width;
+	pl_new.h = playlist_h;
+
+	if (eq_resized)
+		dock_resnap_pair(equalizerwin, &eq_new.x, &eq_new.y,
+				 eq_new.w, eq_new.h, main_old, &main_new);
+	if (eq_resized &&
+	    dock_resnap_pair(playlistwin, &pl_new.x, &pl_new.y,
+			     pl_new.w, pl_new.h, eq_old, &eq_new))
+		return;
+	dock_resnap_pair(playlistwin, &pl_new.x, &pl_new.y,
+			 pl_new.w, pl_new.h, main_old, &main_new);
+}
+
 void set_doublesize(gboolean ds)
 {
-	gint height;
+	gint height, old_scale;
+	DockGeom main_old, eq_old, pl_old;
+	gboolean eq_resized;
 
+	old_scale = cfg.doublesize + 1;
 	cfg.doublesize = ds;
+	eq_resized = cfg.eq_doublesize_linked;
 
 	if (cfg.player_shaded)
 		height = 14;
 	else
 		height = 116;
 
-	mainwin_set_shape_mask();
+	/* Positions come from the dock bookkeeping (synchronous); sizes
+	 * are computed because X resizes land asynchronously. */
+	dock_get_widget_pos(mainwin, &main_old.x, &main_old.y);
+	main_old.w = 275 * old_scale;
+	main_old.h = height * old_scale;
+	dock_get_widget_pos(equalizerwin, &eq_old.x, &eq_old.y);
+	eq_old.w = 275 * old_scale;
+	eq_old.h = (cfg.equalizer_shaded ? 14 : 116) * old_scale;
+	dock_get_widget_pos(playlistwin, &pl_old.x, &pl_old.y);
+	pl_old.w = cfg.playlist_width;
+	pl_old.h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+
 	if (cfg.doublesize)
 	{
 		dock_resize(dock_window_list, mainwin, 550, height * 2);
@@ -770,11 +871,18 @@ void set_doublesize(gboolean ds)
 		dock_resize(dock_window_list, mainwin, 275, height);
 		gdk_window_set_back_pixmap(mainwin->window, mainwin_bg, 0);
 	}
+	/* Apply the shape mask only after the resize: XWayland compositors
+	 * (mutter) keep the pre-resize shape region if the mask changes
+	 * while the window still has its old size, which makes a doubled
+	 * window render cropped to the previous mask. */
+	mainwin_set_shape_mask();
 	draw_main_window(TRUE);
 	vis_set_doublesize(mainwin_vis, ds);
 
-	if (cfg.eq_doublesize_linked)
+	if (eq_resized)
 		equalizerwin_set_doublesize(ds);
+
+	resnap_dock_group(&main_old, &eq_old, &pl_old, eq_resized);
 }
 
 void mainwin_set_shade(gboolean shaded)
@@ -789,7 +897,6 @@ void mainwin_set_shade_menu_cb(gboolean shaded)
 {
 	cfg.player_shaded = shaded;
 
-	mainwin_set_shape_mask();
 	if (shaded)
 	{
 		dock_shade(dock_window_list, mainwin, 14 * (cfg.doublesize + 1));
@@ -834,6 +941,10 @@ void mainwin_set_shade_menu_cb(gboolean shaded)
 		mainwin_shade->pb_ny = mainwin_shade->pb_py = 18;
 	}
 
+	/* After dock_shade() resized the window (see set_doublesize()):
+	 * XWayland compositors keep the pre-resize shape region when the
+	 * mask changes before the resize. */
+	mainwin_set_shape_mask();
 	draw_main_window(TRUE);
 }
 
@@ -4227,6 +4338,7 @@ static void enable_x11r5_session_management(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+	gboolean skin_autoscaled = FALSE;
 	char *filename;
 	const char *sm_client_id;
 	struct cmdlineopt options;
@@ -4313,6 +4425,17 @@ int main(int argc, char **argv)
 
 	sm_client_id = sm_init(argc, argv, options.previous_session_id);
 	gdk_set_sm_client_id(sm_client_id);
+	/* Adopt the desktop scale on HiDPI screens where the compositor
+	 * leaves XWayland unscaled (GNOME/mutter). Done before window
+	 * creation, exactly like the persisted DoubleSize startup path;
+	 * skin_autoscale=FALSE opts out persistently (e.g. under KWin,
+	 * which already upscales X11 clients). */
+	if (cfg.skin_autoscale &&
+	    util_skin_scale_for_dpi(util_get_xft_dpi()) >= 2)
+	{
+		cfg.doublesize = TRUE;
+		skin_autoscaled = TRUE;
+	}
 	mainwin_create();
 
 	filename = g_strconcat(g_get_home_dir(), "/.xmms/gtkrc", NULL);
@@ -4327,6 +4450,29 @@ int main(int argc, char **argv)
 
 	playlistwin_create();
 	equalizerwin_create();
+	if (skin_autoscaled)
+	{
+		/* Saved positions and sizes are consistent at 1x; the
+		 * windows just came up doubled.  Reconstruct the 1x
+		 * geometry as the pre-rescale state so the dock chain
+		 * starts flush at the doubled scale. */
+		DockGeom main_old, eq_old, pl_old;
+
+		main_old.x = cfg.player_x;
+		main_old.y = cfg.player_y;
+		main_old.w = 275;
+		main_old.h = cfg.player_shaded ? 14 : 116;
+		eq_old.x = cfg.equalizer_x;
+		eq_old.y = cfg.equalizer_y;
+		eq_old.w = 275;
+		eq_old.h = cfg.equalizer_shaded ? 14 : 116;
+		pl_old.x = cfg.playlist_x;
+		pl_old.y = cfg.playlist_y;
+		pl_old.w = cfg.playlist_width;
+		pl_old.h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+		resnap_dock_group(&main_old, &eq_old, &pl_old,
+				  cfg.eq_doublesize_linked);
+	}
 	init_skins();
 	load_skin(cfg.skin);
 	create_popups();
