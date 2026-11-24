@@ -524,7 +524,13 @@ Here you change most of XMMS's behavior and settings.
   upscales X11 windows itself), or set `skin_scale=<coefficient>` to
   choose the size yourself: `skin_scale=1.0` keeps the classic size on
   a 4K screen, `skin_scale=1.5` (or higher) forces doublesize, and `0`
-  (the default) restores the automatic choice.
+  (the default) restores the automatic choice. When a decision signal
+  is present (automatic scaling enabled or an explicit `skin_scale`),
+  it decides the startup size in both directions and replaces a stale
+  `doublesize=TRUE` that an earlier doubled session saved; the Ctrl+D
+  toggle still wins for the running session. To keep a non-default size
+  across restarts, set `skin_scale` — note that XMMS rewrites its
+  config on exit, so edit it while XMMS is not running.
 - **Smooth title scroll** — Makes the title scroll go smoother.
 - **Snap window at [ ] pixels** — Tells XMMS how close you can position the
   three windows until they dock / snap together with each other.

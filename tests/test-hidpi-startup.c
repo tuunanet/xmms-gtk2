@@ -483,6 +483,33 @@ static void test_resolution_qhd_starts_single_size(void)
 	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
 }
 
+static void test_skin_scale_override_wins_over_persisted_doublesize(void)
+{
+	guint width = 0, height = 0;
+
+	launch_and_measure("skin_scale=1.0\n"
+			   "doublesize=TRUE\n", NULL, &width, &height);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	/* A previous autoscaled session persists doublesize=TRUE in the
+	 * config; an explicit skin_scale override must still pin the
+	 * classic size. */
+	g_assert_cmpuint(width, ==, SINGLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
+}
+
+static void test_autoscale_clears_persisted_doublesize(void)
+{
+	guint width = 0, height = 0;
+
+	launch_and_measure("doublesize=TRUE\n", "96", &width, &height);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	/* With skin_autoscale enabled (default) the startup decision is
+	 * authoritative: a low-DPI screen must not inherit a stale
+	 * doublesize=TRUE saved by an earlier autoscaled session. */
+	g_assert_cmpuint(width, ==, SINGLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -502,6 +529,10 @@ int main(int argc, char **argv)
 			test_resolution_4k_starts_doublesize);
 	g_test_add_func("/hidpi-startup/resolution-qhd-starts-single-size",
 			test_resolution_qhd_starts_single_size);
+	g_test_add_func("/hidpi-startup/skin-scale-override-wins-over-persisted-doublesize",
+			test_skin_scale_override_wins_over_persisted_doublesize);
+	g_test_add_func("/hidpi-startup/autoscale-clears-persisted-doublesize",
+			test_autoscale_clears_persisted_doublesize);
 
 	return g_test_run();
 }

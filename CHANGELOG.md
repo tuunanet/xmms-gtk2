@@ -24,7 +24,10 @@ for XMMS GTK2.
   resolution ratio and the existing DPI signal. The new `skin_scale`
   float key in `[xmms]` (default 0 = automatic) overrides the
   coefficient explicitly; `skin_autoscale=FALSE` still opts out of the
-  automatic signals. Covered by `tests/test-hidpi-scale.c` (coefficient
+  automatic signals. A decision signal also replaces a stale
+  `doublesize=TRUE` saved by an earlier doubled session, which
+  previously masked both keys at startup. Covered by
+  `tests/test-hidpi-scale.c` (coefficient
   math) and new end-to-end startup tests on private Xvfb 4K/QHD screens.
 
 ### Fixed

@@ -4339,10 +4339,11 @@ static void enable_x11r5_session_management(int argc, char **argv)
 #endif
 }
 
-/* Startup skin scale for this session. An explicit skin_scale
- * coefficient (>= 1) in the config overrides every automatic signal;
- * otherwise the strongest automatic signal (display resolution vs.
- * Xft.dpi) decides, and only when skin_autoscale has not opted out. */
+/* Startup skin scale for this session, or 0 when no decision signal
+ * exists. An explicit skin_scale coefficient (>= 1) in the config
+ * overrides every automatic signal; otherwise the strongest automatic
+ * signal (display resolution vs. Xft.dpi) decides, and only when
+ * skin_autoscale has not opted out. */
 static gint startup_skin_scale(void)
 {
 	if (cfg.skin_scale >= 1.0)
@@ -4351,12 +4352,13 @@ static gint startup_skin_scale(void)
 		return util_skin_scale_for_display(gdk_screen_width(),
 						   gdk_screen_height(),
 						   util_get_xft_dpi());
-	return 1;
+	return 0;
 }
 
 int main(int argc, char **argv)
 {
 	gboolean skin_autoscaled = FALSE;
+	gint scale;
 	char *filename;
 	const char *sm_client_id;
 	struct cmdlineopt options;
@@ -4443,20 +4445,26 @@ int main(int argc, char **argv)
 
 	sm_client_id = sm_init(argc, argv, options.previous_session_id);
 	gdk_set_sm_client_id(sm_client_id);
-	/* Adopt a larger skin scale when the display is big enough that
-	 * the classic 1x UI is too small: either the resolution is well
-	 * above the QHD baseline (e.g. a 32" 4K panel) or Xft.dpi
-	 * reports a desktop scale that the compositor leaves XWayland
-	 * unscaled for (GNOME/mutter). Done before window creation,
-	 * exactly like the persisted DoubleSize startup path;
+	/* Adopt the scale the display calls for: either the resolution
+	 * is well above the QHD baseline (e.g. a 32" 4K panel) or
+	 * Xft.dpi reports a desktop scale that the compositor leaves
+	 * XWayland unscaled for (GNOME/mutter). When a decision signal
+	 * exists it is authoritative in both directions — a scale of 2
+	 * doubles the windows before creation exactly like the
+	 * persisted DoubleSize startup path, and a scale of 1 clears a
+	 * stale doublesize=TRUE saved by an earlier doubled session.
+	 * Only with no signal at all (skin_autoscale=FALSE and no
+	 * skin_scale override) is the persisted bit honored unchanged.
 	 * skin_autoscale=FALSE opts out of the automatic signals
 	 * persistently (e.g. under KWin, which already upscales X11
 	 * clients), while an explicit skin_scale coefficient wins over
-	 * both. */
-	if (startup_skin_scale() >= 2)
+	 * both. Done before window creation. */
+	scale = startup_skin_scale();
+	if (scale > 0)
 	{
-		cfg.doublesize = TRUE;
-		skin_autoscaled = TRUE;
+		cfg.doublesize = (scale >= 2);
+		if (scale >= 2)
+			skin_autoscaled = TRUE;
 	}
 	mainwin_create();
 

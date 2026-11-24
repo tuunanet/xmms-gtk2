@@ -38,6 +38,20 @@ Startup decision in `main.c` (`startup_skin_scale()`):
    (`cfg.doublesize = TRUE` before `mainwin_create()`; the existing
    dock-group resnap reconstruction handles geometry).
 
+When a decision signal exists (1 or 2) it is **authoritative in both
+directions**: `cfg.doublesize` is set to `scale >= 2`, clearing a stale
+`doublesize=TRUE` that an earlier doubled session wrote. Without that,
+the persisted bit masks every new decision — UAT hit exactly this: the
+first autoscaled session saved `doublesize=TRUE`, and from then on
+`skin_scale=1.0` (and `skin_autoscale` flips) appeared to do nothing
+because `mainwin_create()` sizes the windows straight from the stale
+bit. Only `skin_autoscale=FALSE` with no `skin_scale` override keeps
+the historical persisted-bit startup path. Ctrl+D still wins for the
+running session; a persistent non-default size is expressed with
+`skin_scale`. Regression tests:
+`/hidpi-startup/skin-scale-override-wins-over-persisted-doublesize` and
+`/hidpi-startup/autoscale-clears-persisted-doublesize`.
+
 ## Rejected alternatives
 
 - **True fractional rendering (1.5x):** the whole skinned stack
