@@ -84,7 +84,7 @@ test-outputplugin: $(srcdir)/test-outputplugin.c $(top_srcdir)/xmms/outputplugin
 
 test-output-pacing: LDFLAGS += -Wl,--export-dynamic -Wl,--no-as-needed -Wl,-rpath,$(top_builddir)/libxmms/.libs
 test-output-pacing: $(srcdir)/test-output-pacing.c $(top_srcdir)/xmms/plugin.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-output-pacing.c $(LDLIBS) -L$(top_builddir)/libxmms/.libs -lxmms -ldl
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-output-pacing.c $(LDLIBS) -L$(top_builddir)/libxmms/.libs -lxmms $(wildcard $(top_builddir)/intl/libintl.a) -ldl
 
 test-outputplugin-plugins/Output/alsa/.libs/libALSA.so:
 	mkdir -p test-outputplugin-plugins/Output/alsa/.libs

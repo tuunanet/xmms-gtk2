@@ -58,3 +58,12 @@ headers still pass. Verified:
 2. The disk_writer `output_time()` racing behavior also breaks the vis
    queue timestamp contract; if disk rendering is ever used deliberately
    it should pace `written_time()` to the decode rate at minimum.
+3. `Makefile.in` cannot be regenerated on modern autotools (`configure.in`
+   pins an old AM_INIT_AUTOMAKE; automake 1.18 refuses it), so the
+   generated files are maintained by hand — `EXTRA_DIST` additions must be
+   mirrored into both `Makefile.am` and `Makefile.in`. The `missing` shim
+   masks the failure by silently touching stale targets. Also note the
+   release-tarball configure decides to bundle gettext (builds
+   `intl/libintl.a`, leaves `libintl_gettext` undefined in
+   `libxmms.so`), so anything linking `-lxmms` outside the xmms binary
+   must append that archive.
