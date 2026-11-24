@@ -1,6 +1,7 @@
-/* Unit tests for the Xft.dpi helpers used by the HiDPI startup
- * decision: strict parsing with a 96 DPI fallback, RESOURCE_MANAGER
- * database lookup, and the skin scale threshold. */
+/* Unit tests for the display signals behind the HiDPI startup
+ * decision: strict Xft.dpi parsing with a 96 DPI fallback,
+ * RESOURCE_MANAGER database lookup, and the skin scale mapping from
+ * the QHD resolution baseline and DPI coefficients. */
 #include <glib.h>
 #include <gtk/gtk.h>
 
@@ -62,6 +63,48 @@ static void test_skin_scale_threshold(void)
 	g_assert_cmpint(util_skin_scale_for_dpi(XMMS_MAX_SANE_DPI), ==, 2);
 }
 
+static void test_coefficient_resolution_baseline(void)
+{
+	/* QHD is the accepted default: the classic 1x UI keeps the
+	 * coefficient at exactly 1. */
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(2560, 1440), ==, 1.0);
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(2560, 1600), ==, 1.0);
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(3440, 1440), ==, 1.0);
+	/* Larger displays scale proportionally. */
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(1920, 1080), ==, 0.75);
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(1280, 1024), ==, 0.5);
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(3840, 2160), ==, 1.5);
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(5120, 2880), ==, 2.0);
+	/* The tighter axis wins so ultrawide panels do not over-scale. */
+	g_assert_cmpfloat(util_skin_coefficient_for_resolution(2880, 1620), ==, 1.125);
+}
+
+static void test_skin_scale_coefficient_mapping(void)
+{
+	g_assert_cmpint(util_skin_scale_for_coefficient(0.0), ==, 1);
+	g_assert_cmpint(util_skin_scale_for_coefficient(0.75), ==, 1);
+	g_assert_cmpint(util_skin_scale_for_coefficient(1.0), ==, 1);
+	g_assert_cmpint(util_skin_scale_for_coefficient(1.49), ==, 1);
+	/* 1.5 rounds up to the supported DoubleSize. */
+	g_assert_cmpint(util_skin_scale_for_coefficient(1.5), ==, 2);
+	g_assert_cmpint(util_skin_scale_for_coefficient(2.0), ==, 2);
+	/* The renderer has no scale beyond DoubleSize yet. */
+	g_assert_cmpint(util_skin_scale_for_coefficient(3.0), ==, XMMS_SKIN_MAX_SCALE);
+}
+
+static void test_skin_scale_display_combination(void)
+{
+	/* The strongest of resolution and DPI decides. */
+	g_assert_cmpint(util_skin_scale_for_display(1920, 1080, 96), ==, 1);
+	g_assert_cmpint(util_skin_scale_for_display(2560, 1440, 96), ==, 1);
+	g_assert_cmpint(util_skin_scale_for_display(3440, 1440, 96), ==, 1);
+	g_assert_cmpint(util_skin_scale_for_display(3840, 2160, 96), ==, 2);
+	g_assert_cmpint(util_skin_scale_for_display(3840, 2160, 143), ==, 2);
+	g_assert_cmpint(util_skin_scale_for_display(2560, 1440, 143), ==, 1);
+	g_assert_cmpint(util_skin_scale_for_display(2560, 1440, 144), ==, 2);
+	g_assert_cmpint(util_skin_scale_for_display(1920, 1080, 192), ==, 2);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -79,6 +122,12 @@ int main(int argc, char **argv)
 			test_rdb_falls_back_to_default);
 	g_test_add_func("/hidpi-scale/skin-scale-threshold",
 			test_skin_scale_threshold);
+	g_test_add_func("/hidpi-scale/coefficient-resolution-baseline",
+			test_coefficient_resolution_baseline);
+	g_test_add_func("/hidpi-scale/skin-scale-coefficient-mapping",
+			test_skin_scale_coefficient_mapping);
+	g_test_add_func("/hidpi-scale/skin-scale-display-combination",
+			test_skin_scale_display_combination);
 
 	return g_test_run();
 }

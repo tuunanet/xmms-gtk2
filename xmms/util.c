@@ -1058,7 +1058,42 @@ gint util_get_xft_dpi(void)
 	return dpi;
 }
 
+/* Continuous size coefficient for a display resolution relative to
+ * the QHD baseline, where the classic 1x skinned UI is the accepted
+ * default (3840x2160 yields 1.5, 2560x1440 yields 1.0). The tighter
+ * axis wins so unusual aspect ratios do not over-scale. */
+gdouble util_skin_coefficient_for_resolution(gint width, gint height)
+{
+	gdouble by_width = width / (gdouble) XMMS_SKIN_BASE_WIDTH;
+	gdouble by_height = height / (gdouble) XMMS_SKIN_BASE_HEIGHT;
+
+	return MIN(by_width, by_height);
+}
+
+/* Maps a size coefficient onto the integer skin scale the skinned
+ * renderer supports (1x or DoubleSize), so 1.5 rounds up to 2 and
+ * anything below stays at 1x; coefficients beyond the renderer cap
+ * saturate at XMMS_SKIN_MAX_SCALE. */
+gint util_skin_scale_for_coefficient(gdouble coefficient)
+{
+	gint scale = (gint) (coefficient + 0.5);
+
+	return CLAMP(scale, 1, XMMS_SKIN_MAX_SCALE);
+}
+
 gint util_skin_scale_for_dpi(gint dpi)
 {
-	return (dpi >= XMMS_HIDPI_DOUBLE_DPI) ? 2 : 1;
+	return util_skin_scale_for_coefficient(dpi / (gdouble) XMMS_DEFAULT_DPI);
+}
+
+/* Automatic startup scale for a display: the strongest of the
+ * display-resolution and Xft.dpi signals decides, so a desktop that
+ * reports no (or too low a) DPI still scales up on a framebuffer
+ * well above the QHD baseline. */
+gint util_skin_scale_for_display(gint width, gint height, gint dpi)
+{
+	gdouble resolution = util_skin_coefficient_for_resolution(width, height);
+	gdouble by_dpi = dpi / (gdouble) XMMS_DEFAULT_DPI;
+
+	return util_skin_scale_for_coefficient(MAX(resolution, by_dpi));
 }

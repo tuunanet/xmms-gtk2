@@ -359,6 +359,7 @@ static void read_config(void)
 	cfg.get_info_on_demand = TRUE;
 	cfg.eq_doublesize_linked = TRUE;
 	cfg.skin_autoscale = TRUE;
+	cfg.skin_scale = 0;
 	cfg.player_visible = TRUE;
 	cfg.no_playlist_advance = FALSE;
 	cfg.smooth_title_scroll = TRUE;
@@ -425,6 +426,7 @@ static void read_config(void)
 		xmms_cfg_read_boolean(cfgfile, "xmms", "repeat", &cfg.repeat);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "doublesize", &cfg.doublesize);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "skin_autoscale", &cfg.skin_autoscale);
+		xmms_cfg_read_float(cfgfile, "xmms", "skin_scale", &cfg.skin_scale);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "autoscroll_songname", &cfg.autoscroll);
 		xmms_cfg_read_int(cfgfile, "xmms", "timer_mode", &cfg.timer_mode);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "timer_minutes_only", &cfg.timer_minutes_only);
@@ -621,6 +623,7 @@ void save_config(void)
 	xmms_cfg_write_boolean(cfgfile, "xmms", "repeat", mainwin_repeat->tb_selected);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "doublesize", cfg.doublesize);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "skin_autoscale", cfg.skin_autoscale);
+	xmms_cfg_write_float(cfgfile, "xmms", "skin_scale", cfg.skin_scale);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "autoscroll_songname", cfg.autoscroll);
 	xmms_cfg_write_int(cfgfile, "xmms", "timer_mode", cfg.timer_mode);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "timer_minutes_only", cfg.timer_minutes_only);
@@ -4336,6 +4339,21 @@ static void enable_x11r5_session_management(int argc, char **argv)
 #endif
 }
 
+/* Startup skin scale for this session. An explicit skin_scale
+ * coefficient (>= 1) in the config overrides every automatic signal;
+ * otherwise the strongest automatic signal (display resolution vs.
+ * Xft.dpi) decides, and only when skin_autoscale has not opted out. */
+static gint startup_skin_scale(void)
+{
+	if (cfg.skin_scale >= 1.0)
+		return util_skin_scale_for_coefficient(cfg.skin_scale);
+	if (cfg.skin_autoscale)
+		return util_skin_scale_for_display(gdk_screen_width(),
+						   gdk_screen_height(),
+						   util_get_xft_dpi());
+	return 1;
+}
+
 int main(int argc, char **argv)
 {
 	gboolean skin_autoscaled = FALSE;
@@ -4425,13 +4443,17 @@ int main(int argc, char **argv)
 
 	sm_client_id = sm_init(argc, argv, options.previous_session_id);
 	gdk_set_sm_client_id(sm_client_id);
-	/* Adopt the desktop scale on HiDPI screens where the compositor
-	 * leaves XWayland unscaled (GNOME/mutter). Done before window
-	 * creation, exactly like the persisted DoubleSize startup path;
-	 * skin_autoscale=FALSE opts out persistently (e.g. under KWin,
-	 * which already upscales X11 clients). */
-	if (cfg.skin_autoscale &&
-	    util_skin_scale_for_dpi(util_get_xft_dpi()) >= 2)
+	/* Adopt a larger skin scale when the display is big enough that
+	 * the classic 1x UI is too small: either the resolution is well
+	 * above the QHD baseline (e.g. a 32" 4K panel) or Xft.dpi
+	 * reports a desktop scale that the compositor leaves XWayland
+	 * unscaled for (GNOME/mutter). Done before window creation,
+	 * exactly like the persisted DoubleSize startup path;
+	 * skin_autoscale=FALSE opts out of the automatic signals
+	 * persistently (e.g. under KWin, which already upscales X11
+	 * clients), while an explicit skin_scale coefficient wins over
+	 * both. */
+	if (startup_skin_scale() >= 2)
 	{
 		cfg.doublesize = TRUE;
 		skin_autoscaled = TRUE;

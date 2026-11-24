@@ -46,6 +46,7 @@ typedef struct
 	gboolean random_skin_on_play, use_fontsets;
 	gboolean mainwin_use_xfont, timer_minutes_only;
 	gfloat equalizer_preamp, equalizer_bands[10];
+	gfloat skin_scale;
 	gchar *skin, *outputplugin, *filesel_path, *playlist_path;
 	gchar *playlist_font, *mainwin_font;
 	gchar *disabled_iplugins, *enabled_gplugins, *enabled_vplugins, *enabled_eplugins;

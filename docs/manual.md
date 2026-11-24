@@ -513,10 +513,18 @@ Here you change most of XMMS's behavior and settings.
   you make XMMS doublesize.
 - On desktops that report a HiDPI scale through `Xft.dpi` (150% or more),
   XMMS starts in doublesize automatically so the skinned windows stay
-  readable where the compositor leaves XWayland unscaled. Set
+  readable where the compositor leaves XWayland unscaled. The same
+  happens on displays whose resolution is well above QHD (2560x1440) —
+  for example a 32" 4K monitor, where the automatic coefficient is
+  1.5 and rounds up to doublesize — even when no DPI is reported. The
+  automatic scale is whichever signal is stronger: the screen size
+  relative to 2560x1440, or `Xft.dpi` relative to 96 DPI. Set
   `skin_autoscale=FALSE` in the `[xmms]` section of `~/.xmms/config` to
-  disable this (for example under KWin, which already upscales X11
-  windows itself).
+  disable both automatic signals (for example under KWin, which already
+  upscales X11 windows itself), or set `skin_scale=<coefficient>` to
+  choose the size yourself: `skin_scale=1.0` keeps the classic size on
+  a 4K screen, `skin_scale=1.5` (or higher) forces doublesize, and `0`
+  (the default) restores the automatic choice.
 - **Smooth title scroll** — Makes the title scroll go smoother.
 - **Snap window at [ ] pixels** — Tells XMMS how close you can position the
   three windows until they dock / snap together with each other.

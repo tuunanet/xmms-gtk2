@@ -48,6 +48,13 @@
 /* 1.5x or more of the default 96 DPI counts as HiDPI and starts the
  * skin doubled (covers GNOME fractional scales of 150% and up). */
 #define XMMS_HIDPI_DOUBLE_DPI 144
+/* Display-resolution baseline for the automatic skin scale: QHD
+ * (2560x1440) keeps the classic 1x skinned UI, larger displays scale
+ * up proportionally. The skinned renderer supports integer scales
+ * only (1x/DoubleSize), so the coefficient saturates at 2. */
+#define XMMS_SKIN_BASE_WIDTH 2560
+#define XMMS_SKIN_BASE_HEIGHT 1440
+#define XMMS_SKIN_MAX_SCALE 2
 
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);
@@ -73,6 +80,9 @@ gint util_xft_dpi_parse(const gchar *value);
 gint util_xft_dpi_from_rdb(const gchar *rdb);
 gint util_get_xft_dpi(void);
 gint util_skin_scale_for_dpi(gint dpi);
+gdouble util_skin_coefficient_for_resolution(gint width, gint height);
+gint util_skin_scale_for_coefficient(gdouble coefficient);
+gint util_skin_scale_for_display(gint width, gint height, gint dpi);
 
 #if ENABLE_NLS
     gchar* util_menu_translate(const gchar *path, gpointer func_data);

@@ -154,11 +154,17 @@ flowchart LR
 
 Window positions, visibility, shade mode, and doublesize live in **`Config
 cfg`** ([`main.h`](../../xmms/main.h)) and are saved on exit. Before the
-windows are created, `main.c` consults `Xft.dpi` from the X
-`RESOURCE_MANAGER` property (`util_get_xft_dpi()`, threshold
-`XMMS_HIDPI_DOUBLE_DPI`) and starts in doublesize on HiDPI desktops whose
-compositors leave XWayland unscaled; the `skin_autoscale` config key
-(default TRUE) opts out persistently.
+windows are created, `main.c` computes a startup skin scale
+(`startup_skin_scale()`): an explicit `skin_scale` coefficient in the
+config wins; otherwise the strongest automatic signal decides — the
+display resolution relative to the QHD baseline
+(`util_skin_scale_for_display()`, 2560x1440 = 1x, 3840x2160 = 1.5 →
+doublesize) versus `Xft.dpi` from the X `RESOURCE_MANAGER` property
+(`util_get_xft_dpi()`), for HiDPI desktops whose compositors leave
+XWayland unscaled. A mapped scale of 2 starts the skinned windows in
+doublesize; `skin_autoscale` (default TRUE) opts out of the automatic
+signals persistently, while an explicit `skin_scale` value is honored
+regardless.
 
 The three skinned windows are registered with **`dock.c`** so they can snap
 together and move as a group — that is UI chrome only; it does not affect

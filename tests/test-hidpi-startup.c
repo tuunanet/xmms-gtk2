@@ -1,7 +1,8 @@
 /* End-to-end regression test for HiDPI startup scaling: spawn the real
- * binary on the ambient X display with Xft.dpi injected through the
- * RESOURCE_MANAGER property (what desktops write at scaled
- * configurations) and assert the mapped main window geometry. */
+ * binary with Xft.dpi injected through the RESOURCE_MANAGER property
+ * (what desktops write at scaled configurations) and assert the mapped
+ * main window geometry — on the ambient X display and on private Xvfb
+ * screens exercising the display-resolution default. */
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <glib.h>
@@ -9,6 +10,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #ifndef XMMS_BINARY
 #define XMMS_BINARY "../xmms/xmms"
@@ -203,52 +205,11 @@ static void write_config(const gchar *home, const gchar *extra)
 	g_free(directory);
 }
 
-/* Launches XMMS with an isolated HOME and the given Xft.dpi injected
- * (NULL removes the property), measures the stable main window size,
- * and always restores the previous RESOURCE_MANAGER value. */
-static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
-			       guint *width, guint *height)
+/* Stops a spawned child (XMMS or Xvfb) reliably on tear-down. */
+static void terminate_child(GPid child)
 {
-	gchar *runtime_directory;
-	gchar *resource_backup;
-	gchar *resource_dpi;
-	gchar **environment;
-	gchar *arguments[] = { (gchar *) XMMS_BINARY, NULL };
-	GError *error = NULL;
-	GPid child = 0;
-	Display *display;
-	Window main_window;
 	gint status = 0;
 	guint attempt;
-
-	runtime_directory = g_dir_make_tmp("xmms-hidpi-startup-XXXXXX", &error);
-	g_assert_no_error(error);
-	g_assert_nonnull(runtime_directory);
-	write_config(runtime_directory, config_extra);
-
-	display = XOpenDisplay(NULL);
-	g_assert_nonnull(display);
-	XSetErrorHandler(record_x_error);
-	resource_backup = read_resource_manager(display);
-	resource_dpi = dpi ? g_strdup_printf("Xft.dpi: %s\n", dpi) : NULL;
-	write_resource_manager(display, resource_dpi);
-
-	environment = g_get_environ();
-	environment = g_environ_setenv(environment, "HOME", runtime_directory,
-				       TRUE);
-	environment = g_environ_setenv(environment, "TMPDIR", runtime_directory,
-				       TRUE);
-	g_assert_true(g_spawn_async(NULL, arguments, environment,
-				    G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
-				    &child, &error));
-	g_assert_no_error(error);
-	g_strfreev(environment);
-
-	main_window = wait_for_window(display, "XMMS");
-	if (main_window != None)
-		wait_for_stable_size(display, main_window, width, height);
-
-	write_resource_manager(display, resource_backup);
 
 	kill(child, SIGTERM);
 	for (attempt = 0; attempt < WINDOW_WAIT_ATTEMPTS; attempt++)
@@ -263,11 +224,145 @@ static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 		waitpid(child, &status, 0);
 	}
 	g_spawn_close_pid(child);
+}
+
+/* Duplicates the pipe write end onto fd 3 for Xvfb's -displayfd. */
+static void x11_displayfd_child_setup(gpointer data)
+{
+	dup2(GPOINTER_TO_INT(data), 3);
+}
+
+/* Spawns a private Xvfb with the given screen geometry; on success the
+ * caller receives the pid and a display name (":N") that the server
+ * picked via -displayfd. Returns FALSE when Xvfb is unavailable. */
+static gboolean start_xvfb(const gchar *geometry, GPid *xvfb_pid,
+			   gchar **display_name)
+{
+	gint fds[2];
+	gchar *arguments[] = { (gchar *) "Xvfb", (gchar *) "-displayfd",
+			       (gchar *) "3", (gchar *) "-screen",
+			       (gchar *) "0", (gchar *) geometry,
+			       (gchar *) "-nolisten", (gchar *) "tcp", NULL };
+	gchar buffer[16];
+	gssize length = 0;
+	GError *error = NULL;
+
+	if (pipe(fds) != 0)
+		return FALSE;
+	if (!g_spawn_async(NULL, arguments, NULL,
+			   G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH,
+			   x11_displayfd_child_setup,
+			   GINT_TO_POINTER(fds[1]), xvfb_pid, &error))
+	{
+		g_error_free(error);
+		close(fds[0]);
+		close(fds[1]);
+		return FALSE;
+	}
+	close(fds[1]);
+
+	/* Xvfb writes the display number once it accepts connections. */
+	while (length < (gssize) sizeof(buffer) - 1)
+	{
+		gssize got = read(fds[0], buffer + length, 1);
+
+		if (got <= 0 || buffer[length] == '\n')
+			break;
+		length++;
+	}
+	close(fds[0]);
+
+	if (length <= 0 || !g_ascii_isdigit(buffer[0]))
+	{
+		terminate_child(*xvfb_pid);
+		return FALSE;
+	}
+	buffer[length] = '\0';
+	*display_name = g_strdup_printf(":%s", buffer);
+	return TRUE;
+}
+
+/* Mirrors the startup decision in xmms/util.c
+ * (util_skin_scale_for_display) for the ambient screen so assertions
+ * stay correct whatever geometry `make check` runs under. */
+static gint expected_startup_scale(const gchar *dpi)
+{
+	Display *display = XOpenDisplay(NULL);
+	gdouble coefficient;
+
+	g_assert_nonnull(display);
+	coefficient = MIN(DisplayWidth(display, DefaultScreen(display)) / 2560.0,
+			  DisplayHeight(display, DefaultScreen(display)) / 1440.0);
+	if (dpi)
+		coefficient = MAX(coefficient,
+				  g_ascii_strtod(dpi, NULL) / 96.0);
+	XCloseDisplay(display);
+	return CLAMP((gint) (coefficient + 0.5), 1, 2);
+}
+
+/* Launches XMMS with an isolated HOME on the given display (NULL for
+ * the ambient one) and the given Xft.dpi injected (NULL removes the
+ * property), measures the stable main window size, and always restores
+ * the previous RESOURCE_MANAGER value. */
+static void launch_and_measure_on(const gchar *display_name,
+				  const gchar *config_extra,
+				  const gchar *dpi, guint *width,
+				  guint *height)
+{
+	gchar *runtime_directory;
+	gchar *resource_backup;
+	gchar *resource_dpi;
+	gchar **environment;
+	gchar *arguments[] = { (gchar *) XMMS_BINARY, NULL };
+	GError *error = NULL;
+	GPid child = 0;
+	Display *display;
+	Window main_window;
+
+	runtime_directory = g_dir_make_tmp("xmms-hidpi-startup-XXXXXX", &error);
+	g_assert_no_error(error);
+	g_assert_nonnull(runtime_directory);
+	write_config(runtime_directory, config_extra);
+
+	display = XOpenDisplay(display_name);
+	g_assert_nonnull(display);
+	XSetErrorHandler(record_x_error);
+	resource_backup = read_resource_manager(display);
+	resource_dpi = dpi ? g_strdup_printf("Xft.dpi: %s\n", dpi) : NULL;
+	write_resource_manager(display, resource_dpi);
+
+	environment = g_get_environ();
+	environment = g_environ_setenv(environment, "HOME", runtime_directory,
+				       TRUE);
+	environment = g_environ_setenv(environment, "TMPDIR", runtime_directory,
+				       TRUE);
+	if (display_name)
+		environment = g_environ_setenv(environment, "DISPLAY",
+					       display_name, TRUE);
+	g_assert_true(g_spawn_async(NULL, arguments, environment,
+				    G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
+				    &child, &error));
+	g_assert_no_error(error);
+	g_strfreev(environment);
+
+	main_window = wait_for_window(display, "XMMS");
+	if (main_window != None)
+		wait_for_stable_size(display, main_window, width, height);
+
+	write_resource_manager(display, resource_backup);
+
+	terminate_child(child);
 	XCloseDisplay(display);
 	remove_tree(runtime_directory);
 	g_free(runtime_directory);
 	g_free(resource_backup);
 	g_free(resource_dpi);
+}
+
+static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
+			       guint *width, guint *height)
+{
+	launch_and_measure_on(NULL, config_extra, dpi, width, height);
 }
 
 static void test_dpi_192_starts_doublesize(void)
@@ -282,24 +377,29 @@ static void test_dpi_192_starts_doublesize(void)
 	g_assert_cmpuint(height, ==, DOUBLE_SIZE_HEIGHT);
 }
 
-static void test_dpi_96_starts_single_size(void)
+static void test_dpi_96_matches_scale_rule(void)
 {
 	guint width = 0, height = 0;
+	gint expected = expected_startup_scale("96");
 
 	launch_and_measure(NULL, "96", &width, &height);
 	g_assert_cmpint(unexpected_x_error, ==, 0);
-	g_assert_cmpuint(width, ==, SINGLE_SIZE_WIDTH);
-	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
+	/* 96 DPI never forces DoubleSize by itself; on an unusually
+	 * large `make check` screen only the resolution rule may. */
+	g_assert_cmpuint(width, ==, (guint) expected * SINGLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, (guint) expected * SINGLE_SIZE_HEIGHT);
 }
 
-static void test_dpi_unset_starts_single_size(void)
+static void test_dpi_unset_matches_scale_rule(void)
 {
 	guint width = 0, height = 0;
+	gint expected = expected_startup_scale(NULL);
 
 	launch_and_measure(NULL, NULL, &width, &height);
 	g_assert_cmpint(unexpected_x_error, ==, 0);
-	g_assert_cmpuint(width, ==, SINGLE_SIZE_WIDTH);
-	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
+	/* No DPI signal: the resolution coefficient decides. */
+	g_assert_cmpuint(width, ==, (guint) expected * SINGLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, (guint) expected * SINGLE_SIZE_HEIGHT);
 }
 
 static void test_autoscale_opt_out_starts_single_size(void)
@@ -314,17 +414,94 @@ static void test_autoscale_opt_out_starts_single_size(void)
 	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
 }
 
+static void test_skin_scale_override_pins_single_size(void)
+{
+	guint width = 0, height = 0;
+
+	launch_and_measure("skin_scale=1.0\n", "192", &width, &height);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	/* An explicit coefficient wins over the DPI autoscale. */
+	g_assert_cmpuint(width, ==, SINGLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
+}
+
+static void test_skin_scale_override_forces_doublesize(void)
+{
+	guint width = 0, height = 0;
+
+	launch_and_measure("skin_scale=1.5\n", NULL, &width, &height);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	/* An explicit coefficient wins even with no DPI signal; 1.5
+	 * rounds up to DoubleSize on any screen. */
+	g_assert_cmpuint(width, ==, DOUBLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, DOUBLE_SIZE_HEIGHT);
+}
+
+/* Runs XMMS on a private Xvfb screen of the given geometry with no
+ * Xft.dpi signal so the display resolution alone decides the startup
+ * scale. Marks the test skipped when Xvfb is unavailable. */
+static void run_on_private_screen(const gchar *geometry, guint *width,
+				  guint *height)
+{
+	GPid xvfb_pid = 0;
+	gchar *display_name = NULL;
+
+	if (!start_xvfb(geometry, &xvfb_pid, &display_name))
+	{
+		g_test_skip("Xvfb is not available");
+		return;
+	}
+	launch_and_measure_on(display_name, NULL, NULL, width, height);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	terminate_child(xvfb_pid);
+	g_free(display_name);
+}
+
+static void test_resolution_4k_starts_doublesize(void)
+{
+	guint width = 0, height = 0;
+
+	/* 3840x2160 is 1.5x the QHD baseline, which rounds up to
+	 * DoubleSize even without any DPI signal (for example a 32" 4K
+	 * panel on plain X11). */
+	run_on_private_screen("3840x2160x24", &width, &height);
+	if (width == 0)
+		return; /* skipped above */
+	g_assert_cmpuint(width, ==, DOUBLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, DOUBLE_SIZE_HEIGHT);
+}
+
+static void test_resolution_qhd_starts_single_size(void)
+{
+	guint width = 0, height = 0;
+
+	/* QHD is the accepted default: the classic 1x UI. */
+	run_on_private_screen("2560x1440x24", &width, &height);
+	if (width == 0)
+		return; /* skipped above */
+	g_assert_cmpuint(width, ==, SINGLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
 	g_test_add_func("/hidpi-startup/dpi-192-starts-doublesize",
 			test_dpi_192_starts_doublesize);
-	g_test_add_func("/hidpi-startup/dpi-96-starts-single-size",
-			test_dpi_96_starts_single_size);
-	g_test_add_func("/hidpi-startup/dpi-unset-starts-single-size",
-			test_dpi_unset_starts_single_size);
+	g_test_add_func("/hidpi-startup/dpi-96-matches-scale-rule",
+			test_dpi_96_matches_scale_rule);
+	g_test_add_func("/hidpi-startup/dpi-unset-matches-scale-rule",
+			test_dpi_unset_matches_scale_rule);
 	g_test_add_func("/hidpi-startup/opt-out-starts-single-size",
 			test_autoscale_opt_out_starts_single_size);
+	g_test_add_func("/hidpi-startup/skin-scale-override-pins-single-size",
+			test_skin_scale_override_pins_single_size);
+	g_test_add_func("/hidpi-startup/skin-scale-override-forces-doublesize",
+			test_skin_scale_override_forces_doublesize);
+	g_test_add_func("/hidpi-startup/resolution-4k-starts-doublesize",
+			test_resolution_4k_starts_doublesize);
+	g_test_add_func("/hidpi-startup/resolution-qhd-starts-single-size",
+			test_resolution_qhd_starts_single_size);
 
 	return g_test_run();
 }

@@ -15,6 +15,18 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+### Added
+- Automatic skin scale from the display resolution: XMMS now picks its
+  startup size from a size coefficient relative to the QHD baseline —
+  2560x1440 keeps the classic 1x UI, while larger screens scale up
+  (a 32" 4K panel at 1.5 rounds up to DoubleSize) even when the desktop
+  reports no `Xft.dpi`. The automatic scale is the stronger of the
+  resolution ratio and the existing DPI signal. The new `skin_scale`
+  float key in `[xmms]` (default 0 = automatic) overrides the
+  coefficient explicitly; `skin_autoscale=FALSE` still opts out of the
+  automatic signals. Covered by `tests/test-hidpi-scale.c` (coefficient
+  math) and new end-to-end startup tests on private Xvfb 4K/QHD screens.
+
 ### Fixed
 - Kept the docked skinned windows flush and fully visible across HiDPI
   autoscale and DoubleSize toggles on XWayland compositors that apply
