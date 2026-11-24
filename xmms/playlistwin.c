@@ -408,7 +408,7 @@ void playlistwin_set_shade_menu_cb(gboolean shaded)
 		dock_shade(dock_window_list, playlistwin, PLAYLIST_HEIGHT);
 	else
 		gtk_window_set_default_size(GTK_WINDOW(playlistwin),
-					    cfg.playlist_width, PLAYLIST_HEIGHT);
+					    PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
 
 	if (shaded)
 	{
@@ -629,13 +629,13 @@ static void playlistwin_motion(GtkWidget * widget, GdkEventMotion * event, gpoin
 		playlistwin_resize(event->x + playlistwin_resize_x,
 				   event->y + playlistwin_resize_y);
 		gdk_window_set_hints(playlistwin->window, 0, 0,
-				     cfg.playlist_width, PLAYLIST_HEIGHT,
-				     cfg.playlist_width, PLAYLIST_HEIGHT,
+				     PLAYLIST_WIDTH, PLAYLIST_HEIGHT,
+				     PLAYLIST_WIDTH, PLAYLIST_HEIGHT,
 				     GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
 		gdk_window_resize(playlistwin->window,
-				  cfg.playlist_width, PLAYLIST_HEIGHT);
+				  PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
 		gtk_widget_set_usize(playlistwin,
-				     cfg.playlist_width, PLAYLIST_HEIGHT);
+				     PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
 		/* playlistwin_resize() applied the shape mask before this
 		 * resize; re-apply mask and back pixmap afterwards so
 		 * XWayland compositors do not keep clipping to the

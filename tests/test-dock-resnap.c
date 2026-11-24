@@ -5,6 +5,7 @@
  * Ctrl+D toggles. */
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/extensions/XTest.h>
 #include <X11/keysym.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -423,6 +424,35 @@ static void launch_and_measure(const gchar *config_content, const gchar *dpi,
 			      eq_out, playlist_out, runtime_dir_out);
 }
 
+/* Injects the drag through XTEST so the server routes it like real
+ * pointer input (XSendEvent'ed button events never reach GDK). */
+static void drag_playlist_resize_grip(Display *display, Window playlist_window)
+{
+	Window root = DefaultRootWindow(display);
+	Window child_return;
+	gint screen = DefaultScreen(display);
+	gint win_x, win_y, root_x, root_y;
+	guint win_w = 0, win_h = 0, border, depth;
+
+	XGetGeometry(display, playlist_window, &root, &win_x, &win_y,
+		     &win_w, &win_h, &border, &depth);
+	XTranslateCoordinates(display, playlist_window, root, 0, 0,
+			      &win_x, &win_y, &child_return);
+
+	/* Grab point: bottom-right grip; device coords chosen divisible
+	 * by the scale so the logical coordinates are integral. Drag
+	 * +150x+87 device pixels = one +50x+29 logical quantized step
+	 * (300x232 -> 350x261, i.e. 1050x783 at 3x). */
+	XTestFakeMotionEvent(display, screen, win_x + (gint) win_w - 12,
+			     win_y + (gint) win_h - 12, CurrentTime);
+	XTestFakeButtonEvent(display, Button1, True, CurrentTime);
+	XTestFakeMotionEvent(display, screen, win_x + (gint) win_w + 138,
+			     win_y + (gint) win_h + 75, CurrentTime);
+	g_usleep(300000);
+	XTestFakeButtonEvent(display, Button1, False, CurrentTime);
+	g_usleep(200000);
+}
+
 static void finish_child(GPid child, Display *display,
 			 gchar *runtime_directory)
 {
@@ -599,6 +629,49 @@ static void test_triple_start_and_toggle_stay_flush(void)
 	g_free(display_name);
 }
 
+static void test_playlist_drag_resize_stays_flush_at_triple_scale(void)
+{
+	WindowBox main_box, eq_box, playlist_box;
+	GPid child, xvfb_pid = 0;
+	Display *display;
+	Window main_window, eq_window, playlist_window;
+	gchar *runtime_directory, *display_name = NULL;
+
+	/* The 3x stack plus the drag's downward growth needs more than
+	 * the ambient Xvfb screen provides. */
+	if (!start_xvfb("2560x1600x24", &xvfb_pid, &display_name))
+	{
+		g_test_skip("Xvfb is not available");
+		return;
+	}
+	launch_and_measure_on(display_name, TRIPLE_CHAIN_CONFIG, NULL,
+			      &main_box, &eq_box, &playlist_box, &child,
+			      &display, &main_window, &eq_window,
+			      &playlist_window, &runtime_directory);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	assert_flush_triple_stack(&main_box, &eq_box, &playlist_box);
+
+	/* Drag the resize grip one 1x step (50x29 = 150x87 device
+	 * pixels at 3x). The window must end at the fully scaled size
+	 * (1050x783, quantized from 350x261 logical), not clipped to a
+	 * 1x width, and stay flush below the equalizer. */
+	drag_playlist_resize_grip(display, playlist_window);
+	wait_for_settled_layout(display, main_window, eq_window,
+				playlist_window, &main_box, &eq_box,
+				&playlist_box);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	g_assert_cmpint(playlist_box.width, ==, 1050);
+	g_assert_cmpint(playlist_box.height, ==, 783);
+	g_assert_cmpint(playlist_box.x, ==, 20);
+	g_assert_cmpint(playlist_box.y, ==, eq_box.y + eq_box.height);
+	g_assert_cmpint(main_box.width, ==, 825);
+	g_assert_cmpint(main_box.height, ==, 348);
+
+	finish_child(child, display, runtime_directory);
+	terminate_child(xvfb_pid);
+	g_free(display_name);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -608,6 +681,8 @@ int main(int argc, char **argv)
 			test_double_toggle_stays_flush);
 	g_test_add_func("/dock-resnap/triple-start-and-toggle-stay-flush",
 			test_triple_start_and_toggle_stay_flush);
+	g_test_add_func("/dock-resnap/playlist-drag-resize-at-triple-scale",
+			test_playlist_drag_resize_stays_flush_at_triple_scale);
 
 	return g_test_run();
 }

@@ -54,7 +54,7 @@ test-hidpi-startup: $(srcdir)/test-hidpi-startup.c $(top_builddir)/xmms/xmms
 
 test-dock-resnap: override CFLAGS += -DXMMS_BINARY=\"$(top_builddir)/xmms/xmms\"
 test-dock-resnap: $(srcdir)/test-dock-resnap.c $(top_builddir)/xmms/xmms
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-dock-resnap.c $(LDLIBS) -lX11
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-dock-resnap.c $(LDLIBS) -lX11 -lXtst
 
 test-popup-position: override CFLAGS += -ffunction-sections -fdata-sections
 test-popup-position: LDFLAGS += -Wl,--gc-sections
