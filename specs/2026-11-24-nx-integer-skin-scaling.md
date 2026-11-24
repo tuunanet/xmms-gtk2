@@ -1,0 +1,94 @@
+# Plan: N× integer skin scaling (generalize DoubleSize to 1×/2×/3×)
+
+Date: 2026-11-24
+Status: Implemented on `feat/resolution-skin-scale`.
+Follow-up to `specs/2026-11-24-resolution-skin-scaling.md`: that feature capped
+the skin scale at 2× because the renderer only had two sizes. This removes the
+cap.
+
+## Renderer architecture (from the codebase inventory)
+
+Doubling is **window-level**, not widget-level:
+
+- Widgets always draw at 1× into a window-sized backing pixmap
+  (`mainwin_bg` / `equalizerwin_bg`, 275×116).
+- A second **scaled backing pixmap** (`mainwin_bg_dblsize`, 550×232) is
+  maintained: on force redraws the whole 1× background is pixel-replicated
+  (`create_dblsize_image`, 2×2), incrementally per-widget rect at `<< 1`
+  offsets.
+- The X window is resized (275×116 ↔ 550×232 literals); the back pixmap is
+  switched between the two.
+- Window input handlers divide event coordinates by 2 so widgets keep operating
+  in 1× space.
+- Shape masks exist as 8 pre-built GdkBitmaps (1×/2× × shade × main/eq) in the
+  `Skin` struct; `skin_create_transparent_mask` already multiplies region.txt
+  points by `(1 + doublesize)` (arithmetic-ready).
+- `vis`/`svis` draw **directly to the window** with hardcoded 2×2 replication
+  and strides (vis: 304/152; svis: `DRAW_DS_PIXEL`, 76/152).
+- The playlist never scales (always 1×) — unchanged.
+
+## Design
+
+**Scale state.** `Config.doublesize` becomes `gint`: the **extra scale factor**
+(0 = 1×, 1 = 2×, 2 = 3×). This preserves every existing site verbatim:
+`if (cfg.doublesize)` still means "scaled", `cfg.doublesize + 1` still is the
+scale. The config key `doublesize` stays boolean on disk (TRUE = legacy 2×).
+
+**Cap.** `XMMS_SKIN_MAX_SCALE` 2 → 3; `util_skin_scale_for_coefficient()`
+already CLAMPs, so 8K-class resolutions (coefficient ≥ 2.5) and
+`skin_scale=2.5`/`3.0` configs now select 3×.
+
+**Scaled backing pixmap.** One per window, renamed `*_bg_scaled`, allocated at
+`275·s × 116·s` for the active scale `s` (created lazily / re-created on scale
+change via `*_ensure_scaled_bg()`; shaded mode reuses the top `14·s` rows).
+`create_dblsize_image()` → `create_scaled_image(img, scale)` with generalized
+n×n replication (per-bpp, same strategy).
+
+**Input.** Event handlers divide by `cfg.doublesize + 1`. `mainwin_release()`
+switches from the `menurow` LED flag to `cfg.doublesize` so there is one source
+of truth (same value, always in sync).
+
+**Masks.** `Skin` mask fields become arrays indexed by scale (1..MAX);
+`skin_get_mask(mi, gint scale, gboolean shaded)` (CLAMPed);
+`skin_create_transparent_mask(..., gint scale)` multiplies points by `scale`;
+default rect masks built per scale. Built for all scales at skin load.
+
+**Vis/svis.** Restructured to always compute a 1× 76×16 (vis) / 38×19 (svis)
+indexed frame, then either draw it directly (scale 1) or expand n× via
+`util_expand_indexed_frame()` and draw at `widget.x·s` with rowstride `width·s`.
+`Vis.vs_doublesize` → `gint vs_scale`; `create_vis(..., gint scale)`;
+`vis_set_doublesize()` → `vis_set_scale()`. svis keeps its scaled-mode VU
+formula (`data·8/37` for scale > 1, `data·7/37` at 1×) and its DITHER_NONE for
+scale > 1.
+
+**Equalizer link.** `EQUALIZER_DOUBLESIZE` → `EQUALIZER_SCALE`
+(`cfg.doublesize * cfg.eq_doublesize_linked`, value 0..2); mask calls pass
+`EQUALIZER_SCALE + 1`. `equalizerwin_set_doublesize(bool)` →
+`equalizerwin_set_scale(gint extra_scale)`.
+
+**Runtime toggle (Ctrl+D / DoubleSize menu).** Stays boolean: off = 1×, on =
+the session target scale (the startup-decided scale, or 2× if startup was 1×).
+The menu checkbox and menurow LED mean "scaled" exactly as before. A legacy
+persisted `doublesize=TRUE` still starts at 2× (never 3×).
+
+## Explicitly unchanged
+
+- Playlist window rendering, resize steps, and hints (always 1×).
+- `dock.c` (takes explicit pixel sizes), `resnap_dock_group` (`ms` arithmetic).
+- Widgets themselves (draw at 1×, receive pre-translated coordinates).
+- Config key names and formats.
+- Mask-after-resize ordering (XWayland workaround).
+
+## Known gap retained
+
+`equalizerwin_release()` does not translate event coordinates (historical,
+harmless today because release callbacks ignore coordinates).
+
+## Tests
+
+- `tests/test-hidpi-scale.c`: mapping cap moves to 3 (3.0 → 3, 2.5 → 3,
+  2.4 → 2); display combination at 7680×4320 → 3.
+- `tests/test-hidpi-startup.c`: `skin_scale=3.0` (ambient) → 825×348; private
+  Xvfb 7680×4320 with no DPI → 825×348; 4K/QHD expectations unchanged.
+- `tests/test-dock-resnap.c`: new 3× autoscaled-start case with a matching
+  playlist height (348) so the docked stack stays flush.

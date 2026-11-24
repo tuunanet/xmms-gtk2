@@ -60,7 +60,10 @@ static void test_skin_scale_threshold(void)
 	g_assert_cmpint(util_skin_scale_for_dpi(143), ==, 1);
 	g_assert_cmpint(util_skin_scale_for_dpi(XMMS_HIDPI_DOUBLE_DPI), ==, 2);
 	g_assert_cmpint(util_skin_scale_for_dpi(192), ==, 2);
-	g_assert_cmpint(util_skin_scale_for_dpi(XMMS_MAX_SANE_DPI), ==, 2);
+	g_assert_cmpint(util_skin_scale_for_dpi(239), ==, 2);
+	/* 2.5x of the default DPI and beyond reach the 3x scale. */
+	g_assert_cmpint(util_skin_scale_for_dpi(240), ==, 3);
+	g_assert_cmpint(util_skin_scale_for_dpi(XMMS_MAX_SANE_DPI), ==, XMMS_SKIN_MAX_SCALE);
 }
 
 static void test_coefficient_resolution_baseline(void)
@@ -85,11 +88,16 @@ static void test_skin_scale_coefficient_mapping(void)
 	g_assert_cmpint(util_skin_scale_for_coefficient(0.75), ==, 1);
 	g_assert_cmpint(util_skin_scale_for_coefficient(1.0), ==, 1);
 	g_assert_cmpint(util_skin_scale_for_coefficient(1.49), ==, 1);
-	/* 1.5 rounds up to the supported DoubleSize. */
+	/* 1.5 rounds up to DoubleSize. */
 	g_assert_cmpint(util_skin_scale_for_coefficient(1.5), ==, 2);
 	g_assert_cmpint(util_skin_scale_for_coefficient(2.0), ==, 2);
-	/* The renderer has no scale beyond DoubleSize yet. */
+	g_assert_cmpint(util_skin_scale_for_coefficient(2.49), ==, 2);
+	/* 2.5 rounds up to the 3x the renderer supports since the N x
+	 * integer scaling work. */
+	g_assert_cmpint(util_skin_scale_for_coefficient(2.5), ==, 3);
 	g_assert_cmpint(util_skin_scale_for_coefficient(3.0), ==, XMMS_SKIN_MAX_SCALE);
+	/* Beyond the renderer cap the coefficient saturates. */
+	g_assert_cmpint(util_skin_scale_for_coefficient(4.0), ==, XMMS_SKIN_MAX_SCALE);
 }
 
 static void test_skin_scale_display_combination(void)
@@ -103,6 +111,8 @@ static void test_skin_scale_display_combination(void)
 	g_assert_cmpint(util_skin_scale_for_display(2560, 1440, 143), ==, 1);
 	g_assert_cmpint(util_skin_scale_for_display(2560, 1440, 144), ==, 2);
 	g_assert_cmpint(util_skin_scale_for_display(1920, 1080, 192), ==, 2);
+	/* 8K-class resolutions reach the 3x scale. */
+	g_assert_cmpint(util_skin_scale_for_display(7680, 4320, 96), ==, 3);
 }
 
 int main(int argc, char **argv)

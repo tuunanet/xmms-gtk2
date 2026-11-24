@@ -1918,7 +1918,7 @@ static void playlistwin_create_widgets(void)
 	playlistwin_time_min = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 82, cfg.playlist_height - 15, 15, FALSE, SKIN_TEXT);
 	playlistwin_time_sec = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 64, cfg.playlist_height - 15, 10, FALSE, SKIN_TEXT);
 	playlistwin_info = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 143, cfg.playlist_height - 28, 85, FALSE, SKIN_TEXT);
-	playlistwin_vis = create_vis(&playlistwin_wlist, playlistwin_bg, playlistwin->window, playlistwin_gc, cfg.playlist_width - 223, cfg.playlist_height - 26, 72, FALSE);
+	playlistwin_vis = create_vis(&playlistwin_wlist, playlistwin_bg, playlistwin->window, playlistwin_gc, cfg.playlist_width - 223, cfg.playlist_height - 26, 72, 1);
 	hide_widget(playlistwin_vis);
 
 	playlistwin_srew = create_sbutton(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 144, cfg.playlist_height - 16, 8, 7, playlist_prev);

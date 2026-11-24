@@ -20,11 +20,13 @@
 #ifndef EQUALIZER_H
 #define EQUALIZER_H
 
-#define EQUALIZER_DOUBLESIZE (cfg.doublesize && cfg.eq_doublesize_linked)
-#define EQUALIZER_HEIGHT ((cfg.equalizer_shaded ? 14 : 116) * (EQUALIZER_DOUBLESIZE + 1))
-#define EQUALIZER_WIDTH ( 275 * (EQUALIZER_DOUBLESIZE + 1))
+/* Extra scale factor of the equalizer window: 0 = 1x, 1 = 2x, 2 = 3x
+ * (zero unless the equalizer is linked to the player's DoubleSize). */
+#define EQUALIZER_SCALE ((cfg.doublesize) * (cfg.eq_doublesize_linked))
+#define EQUALIZER_HEIGHT ((cfg.equalizer_shaded ? 14 : 116) * (EQUALIZER_SCALE + 1))
+#define EQUALIZER_WIDTH ( 275 * (EQUALIZER_SCALE + 1))
 
-void equalizerwin_set_doublesize(gboolean ds);
+void equalizerwin_set_scale(gint extra_scale);
 void equalizerwin_set_shade_menu_cb(gboolean shaded);
 void equalizerwin_set_shade(gboolean shaded);
 void equalizerwin_shade_toggle(void);

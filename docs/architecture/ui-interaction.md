@@ -152,23 +152,27 @@ flowchart LR
 | **Preferences** | (prefswin) | Plugin lists, output selection, title format, misc options |
 | **Skin browser** | (skinwin) | Pick `.wsz` / skin directories |
 
-Window positions, visibility, shade mode, and doublesize live in **`Config
-cfg`** ([`main.h`](../../xmms/main.h)) and are saved on exit. Before the
-windows are created, `main.c` computes a startup skin scale
-(`startup_skin_scale()`): an explicit `skin_scale` coefficient in the
-config wins; otherwise the strongest automatic signal decides — the
-display resolution relative to the QHD baseline
-(`util_skin_scale_for_display()`, 2560x1440 = 1x, 3840x2160 = 1.5 →
-doublesize) versus `Xft.dpi` from the X `RESOURCE_MANAGER` property
-(`util_get_xft_dpi()`), for HiDPI desktops whose compositors leave
-XWayland unscaled. A mapped scale of 2 starts the skinned windows in
-doublesize; a mapped scale of 1 clears a stale `doublesize=TRUE` that
-an earlier doubled session saved, because the decision is authoritative
-in both directions whenever a signal exists (only `skin_autoscale=FALSE`
-with no `skin_scale` override honors the persisted bit unchanged).
+Window positions, visibility, shade mode, and the skin scale live in
+**`Config cfg`** ([`main.h`](../../xmms/main.h)) and are saved on exit
+(`doublesize` persists as "scaled vs 1x"). Before the windows are
+created, `main.c` computes a startup skin scale (`startup_skin_scale()`):
+an explicit `skin_scale` coefficient in the config wins; otherwise the
+strongest automatic signal decides — the display resolution relative to
+the QHD baseline (`util_skin_scale_for_display()`, 2560x1440 = 1x,
+3840x2160 = 2x, 7680x4320 = 3x) versus `Xft.dpi` from the X
+`RESOURCE_MANAGER` property (`util_get_xft_dpi()`), for HiDPI desktops
+whose compositors leave XWayland unscaled. `cfg.doublesize` holds the
+extra scale factor (0 = 1x, 1 = 2x, 2 = 3x); every skinned window draws
+its widgets at 1x into a backing pixmap that is pixel-replicated by the
+scale, and input handlers divide event coordinates back. The decision is
+authoritative in both directions when a signal exists (scale 2 or 3
+doubles/triples the windows before creation; scale 1 clears a stale
+scaled state saved by an earlier session). Only `skin_autoscale=FALSE`
+with no `skin_scale` override honors the persisted bit unchanged.
 `skin_autoscale` (default TRUE) opts out of the automatic signals
 persistently, while an explicit `skin_scale` value is honored
-regardless.
+regardless. The Ctrl+D / DoubleSize toggle switches between 1x and the
+session's chosen scale for the running session.
 
 The three skinned windows are registered with **`dock.c`** so they can snap
 together and move as a group — that is UI chrome only; it does not affect

@@ -50,15 +50,14 @@
 #define XMMS_HIDPI_DOUBLE_DPI 144
 /* Display-resolution baseline for the automatic skin scale: QHD
  * (2560x1440) keeps the classic 1x skinned UI, larger displays scale
- * up proportionally. The skinned renderer supports integer scales
- * only (1x/DoubleSize), so the coefficient saturates at 2. */
+ * up proportionally. The skinned renderer supports integer scales up
+ * to XMMS_SKIN_MAX_SCALE (1x..3x), so the coefficient saturates. */
 #define XMMS_SKIN_BASE_WIDTH 2560
 #define XMMS_SKIN_BASE_HEIGHT 1440
-#define XMMS_SKIN_MAX_SCALE 2
+#define XMMS_SKIN_MAX_SCALE 3
 
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);
-GdkImage *create_dblsize_image(GdkImage * img);
 char *read_ini_string(const char *filename, const char *section, const char *key);
 char *read_ini_string_no_comment(const char *filename, const char *section, const char *key);
 GArray *read_ini_array(const gchar * filename, const gchar * section, const gchar * key);
@@ -83,6 +82,9 @@ gint util_skin_scale_for_dpi(gint dpi);
 gdouble util_skin_coefficient_for_resolution(gint width, gint height);
 gint util_skin_scale_for_coefficient(gdouble coefficient);
 gint util_skin_scale_for_display(gint width, gint height, gint dpi);
+GdkImage *create_scaled_image(GdkImage * img, gint scale);
+void util_expand_indexed_frame(const guchar *frame, gint width, gint height,
+			       guchar *dest, gint scale);
 
 #if ENABLE_NLS
     gchar* util_menu_translate(const gchar *path, gpointer func_data);

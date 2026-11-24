@@ -120,14 +120,15 @@ headers. If a BMP fails to load, that layer silently falls back to default.
 
 ## 3. Canvas sizes (hard layout)
 
-Windows are fixed; doublesize scales **2×** in the player (you still author at
-1× coordinates).
+Windows are fixed; the scale multiplies them (you still author at 1×
+coordinates). XMMS supports integer scales 1×–3× (DoubleSize/triple
+size).
 
-| Window | Normal | Windowshade | Doublesize normal |
-| --- | --- | --- | --- |
-| Main player | **275×116** | **275×14** | 550×232 |
-| Equalizer | **275×116** | **275×14** | 550×232 |
-| Playlist | **≥275×116**, width steps of **25 px** from 275 | shaded height 14 | scaled similarly |
+| Window | Normal | Windowshade | 2× normal | 3× normal |
+| --- | --- | --- | --- | --- |
+| Main player | **275×116** | **275×14** | 550×232 | 825×348 |
+| Equalizer | **275×116** | **275×14** | 550×232 | 825×348 |
+| Playlist | **≥275×116**, width steps of **25 px** from 275 | shaded height 14 | (always rendered at 1×) | (always rendered at 1×) |
 
 `main.bmp` should be **at least 275×116**. Larger images are clipped to the
 default pixmap size when blitting; smaller images only cover part of the
@@ -435,10 +436,15 @@ Widget positions live in C (`create_pbutton`, `create_hslider`, …). Skins
 **cannot** move the Play button. Changing layout requires code changes, not
 skin format extensions.
 
-### 8.3 Doublesize
+### 8.3 Scale (DoubleSize / triple size)
 
-UI allocates 2× backing pixmaps and scales coordinates. Masks from
-`region.txt` are generated twice (1× and 2×). Authors still deliver 1× BMPs.
+The UI supports integer scales 1×–3× (`cfg.doublesize` holds the extra
+scale factor 0/1/2). At scale > 1 the windows allocate an n×-sized
+backing pixmap; every widget still draws at 1× and its rectangle is
+pixel-replicated (`create_scaled_image`), and window input handlers
+divide event coordinates by the scale. Shape masks are generated per
+scale (points from `region.txt` multiply by the scale). Authors still
+deliver 1× BMPs; hit testing never changes.
 
 ### 8.4 Compatibility priority
 

@@ -16,6 +16,20 @@ for XMMS GTK2.
 ## [Unreleased]
 
 ### Added
+- N x integer skin scaling: the skinned UI now supports 1x, 2x, and 3x
+  (main/equalizer at 825x348 in triple size). The scale selector is the
+  same `skin_scale` coefficient — values from 2.5 (and 8K-class
+  resolutions, e.g. 7680x4320) select 3x — and the Ctrl+D / DoubleSize
+  toggle switches between 1x and the session's chosen scale. Every
+  scaled component was generalized from the hardcoded 2x: backing
+  pixmaps (`create_scaled_image`), region.txt shape masks (generated
+  per scale), event coordinate translation, window hints and dock
+  geometry, and the analyzer/vis renderers (now computed at 1x and
+  expanded by pixel replication). The playlist stays 1x by design; all
+  1x and 2x behavior is unchanged. Covered by unit tests (coefficient
+  mapping to 3), end-to-end startup tests (`skin_scale=3.0` and a
+  private-Xvfb 8K screen both render 825x348), and a dock-resnap case
+  exercising the 3x start plus the 3x-to-1x-to-3x toggle cycle.
 - Automatic skin scale from the display resolution: XMMS now picks its
   startup size from a size coefficient relative to the QHD baseline —
   2560x1440 keeps the classic 1x UI, while larger screens scale up

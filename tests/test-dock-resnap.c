@@ -34,6 +34,23 @@
 	"playlist_visible=TRUE\n" \
 	"equalizer_visible=TRUE\n"
 
+/* Same vertical chain, but started at the 3x scale via a skin_scale
+ * override. The playlist keeps a stepped height (58 + 29 * 8 = 290)
+ * short enough that the 3x stack fits on the ambient Xvfb screen. */
+#define TRIPLE_CHAIN_CONFIG \
+	"[xmms]\n" \
+	"player_x=20\n" \
+	"player_y=20\n" \
+	"equalizer_x=20\n" \
+	"equalizer_y=136\n" \
+	"playlist_x=20\n" \
+	"playlist_y=252\n" \
+	"playlist_width=300\n" \
+	"playlist_height=290\n" \
+	"skin_scale=3.0\n" \
+	"playlist_visible=TRUE\n" \
+	"equalizer_visible=TRUE\n"
+
 static gint unexpected_x_error;
 
 static int record_x_error(Display *display, XErrorEvent *event)
@@ -375,6 +392,27 @@ static void assert_flush_single_stack(const WindowBox *main_box,
 	g_assert_cmpint(playlist_box->height, ==, 232);
 }
 
+static void assert_flush_triple_stack(const WindowBox *main_box,
+				       const WindowBox *eq_box,
+				       const WindowBox *playlist_box)
+{
+	/* Triple player at (20,20); equalizer flush below it; playlist
+	 * flush below the equalizer, still 1x sized. */
+	g_assert_cmpint(main_box->x, ==, 20);
+	g_assert_cmpint(main_box->y, ==, 20);
+	g_assert_cmpint(main_box->width, ==, 825);
+	g_assert_cmpint(main_box->height, ==, 348);
+	g_assert_cmpint(eq_box->x, ==, 20);
+	g_assert_cmpint(eq_box->y, ==, main_box->y + main_box->height);
+	g_assert_cmpint(eq_box->width, ==, 825);
+	g_assert_cmpint(eq_box->height, ==, 348);
+	g_assert_cmpint(playlist_box->x, ==, 20);
+	g_assert_cmpint(playlist_box->y,
+			==, eq_box->y + eq_box->height);
+	g_assert_cmpint(playlist_box->width, ==, 300);
+	g_assert_cmpint(playlist_box->height, ==, 290);
+}
+
 static void test_autoscaled_start_is_flush(void)
 {
 	WindowBox main_box, eq_box, playlist_box;
@@ -422,6 +460,53 @@ static void test_double_toggle_stays_flush(void)
 	finish_child(child, display, runtime_directory);
 }
 
+static void test_triple_start_and_toggle_stay_flush(void)
+{
+	WindowBox main_box, eq_box, playlist_box;
+	GPid child;
+	Display *display;
+	Window main_window, eq_window, playlist_window;
+	gchar *runtime_directory;
+
+	launch_and_measure(TRIPLE_CHAIN_CONFIG, NULL, &main_box, &eq_box,
+			   &playlist_box, &child, &display, &main_window,
+			   &eq_window, &playlist_window, &runtime_directory);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	assert_flush_triple_stack(&main_box, &eq_box, &playlist_box);
+
+	/* The DoubleSize toggle switches between 1x and the session
+	 * target (3x here); both ends of the cycle must stay flush. */
+	send_ctrl_d(display, main_window);
+	wait_for_settled_layout(display, main_window, eq_window,
+				playlist_window, &main_box, &eq_box,
+				&playlist_box);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	/* At 1x the playlist keeps its configured height (it never
+	 * rescales). */
+	g_assert_cmpint(main_box.x, ==, 20);
+	g_assert_cmpint(main_box.y, ==, 20);
+	g_assert_cmpint(main_box.width, ==, 275);
+	g_assert_cmpint(main_box.height, ==, 116);
+	g_assert_cmpint(eq_box.x, ==, 20);
+	g_assert_cmpint(eq_box.y, ==, main_box.y + main_box.height);
+	g_assert_cmpint(eq_box.width, ==, 275);
+	g_assert_cmpint(eq_box.height, ==, 116);
+	g_assert_cmpint(playlist_box.x, ==, 20);
+	g_assert_cmpint(playlist_box.y,
+			==, eq_box.y + eq_box.height);
+	g_assert_cmpint(playlist_box.width, ==, 300);
+	g_assert_cmpint(playlist_box.height, ==, 290);
+
+	send_ctrl_d(display, main_window);
+	wait_for_settled_layout(display, main_window, eq_window,
+				playlist_window, &main_box, &eq_box,
+				&playlist_box);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	assert_flush_triple_stack(&main_box, &eq_box, &playlist_box);
+
+	finish_child(child, display, runtime_directory);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -429,6 +514,8 @@ int main(int argc, char **argv)
 			test_autoscaled_start_is_flush);
 	g_test_add_func("/dock-resnap/double-toggle-stays-flush",
 			test_double_toggle_stays_flush);
+	g_test_add_func("/dock-resnap/triple-start-and-toggle-stay-flush",
+			test_triple_start_and_toggle_stay_flush);
 
 	return g_test_run();
 }

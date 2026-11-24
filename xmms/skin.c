@@ -75,10 +75,10 @@ static void setup_skin_masks(void)
 		return;
 	if (cfg.player_visible)
 	{
-		gtk_widget_shape_combine_mask(mainwin, skin_get_mask(SKIN_MASK_MAIN, cfg.doublesize, cfg.player_shaded), 0, 0);
+		gtk_widget_shape_combine_mask(mainwin, skin_get_mask(SKIN_MASK_MAIN, cfg.doublesize + 1, cfg.player_shaded), 0, 0);
 	}
 
-	gtk_widget_shape_combine_mask(equalizerwin, skin_get_mask(SKIN_MASK_EQ, EQUALIZER_DOUBLESIZE, cfg.equalizer_shaded), 0, 0);
+	gtk_widget_shape_combine_mask(equalizerwin, skin_get_mask(SKIN_MASK_EQ, EQUALIZER_SCALE + 1, cfg.equalizer_shaded), 0, 0);
 }
 
 static GdkBitmap *create_default_mask(GdkWindow * parent, gint w, gint h)
@@ -207,10 +207,11 @@ void init_skins(void)
 		skin->vis_color[i][1] = skin_default_viscolor[i][1];
 		skin->vis_color[i][2] = skin_default_viscolor[i][2];
 	}
-	skin->def_mask = create_default_mask(mainwin->window, 275, 116);
-	skin->def_mask_ds = create_default_mask(mainwin->window, 550, 232);
-	skin->def_mask_shade = create_default_mask(mainwin->window, 275, 14);
-	skin->def_mask_shade_ds = create_default_mask(mainwin->window, 550, 28);
+	for (i = 1; i <= XMMS_SKIN_MAX_SCALE; i++)
+	{
+		skin->def_mask[i] = create_default_mask(mainwin->window, 275 * i, 116 * i);
+		skin->def_mask_shade[i] = create_default_mask(mainwin->window, 275 * i, 14 * i);
+	}
 
 	setup_skin_masks();
 
@@ -303,7 +304,7 @@ static void load_skin_pixmap(SkinPixmap *skinpixmap,
 	skinpixmap->current_height = MIN(h, skinpixmap->height);
 }
 
-GdkBitmap *skin_create_transparent_mask(const gchar * path, const gchar * file, const gchar * section, GdkWindow * window, gint width, gint height, gboolean doublesize)
+GdkBitmap *skin_create_transparent_mask(const gchar * path, const gchar * file, const gchar * section, GdkWindow * window, gint width, gint height, gint scale)
 {
 	gchar *filename;
 
@@ -353,8 +354,8 @@ GdkBitmap *skin_create_transparent_mask(const gchar * path, const gchar * file, 
 			gpoints = g_malloc(g_array_index(num, gint, i) * sizeof (GdkPoint));
 			for (k = 0; k < g_array_index(num, gint, i); k++)
 			{
-				gpoints[k].x = g_array_index(point, gint, j + k * 2) * (1 + doublesize);
-				gpoints[k].y = g_array_index(point, gint, j + k * 2 + 1) * (1 + doublesize);
+				gpoints[k].x = g_array_index(point, gint, j + k * 2) * scale;
+				gpoints[k].y = g_array_index(point, gint, j + k * 2 + 1) * scale;
 			}
 			j += k * 2;
 			gdk_draw_polygon(mask, gc, TRUE, gpoints, g_array_index(num, gint, i));
@@ -469,31 +470,22 @@ void free_skin(void)
 	skin_free_pixmap(&skin->eqmain);
 	skin_free_pixmap(&skin->eq_ex);
 
-	if (skin->mask_main)
-		gdk_bitmap_unref(skin->mask_main);
-	if (skin->mask_main_ds)
-		gdk_bitmap_unref(skin->mask_main_ds);
-	if (skin->mask_shade)
-		gdk_bitmap_unref(skin->mask_shade);
-	if (skin->mask_shade_ds)
-		gdk_bitmap_unref(skin->mask_shade_ds);
-	if (skin->mask_eq)
-		gdk_bitmap_unref(skin->mask_eq);
-	if (skin->mask_eq_ds)
-		gdk_bitmap_unref(skin->mask_eq_ds);
-	if (skin->mask_eq_shade)
-		gdk_bitmap_unref(skin->mask_eq_shade);
-	if (skin->mask_eq_shade_ds)
-		gdk_bitmap_unref(skin->mask_eq_shade_ds);
+	for (i = 1; i <= XMMS_SKIN_MAX_SCALE; i++)
+	{
+		if (skin->mask_main[i])
+			gdk_bitmap_unref(skin->mask_main[i]);
+		if (skin->mask_shade[i])
+			gdk_bitmap_unref(skin->mask_shade[i]);
+		if (skin->mask_eq[i])
+			gdk_bitmap_unref(skin->mask_eq[i]);
+		if (skin->mask_eq_shade[i])
+			gdk_bitmap_unref(skin->mask_eq_shade[i]);
 
-	skin->mask_main = NULL;
-	skin->mask_main_ds = NULL;
-	skin->mask_shade = NULL;
-	skin->mask_shade_ds = NULL;
-	skin->mask_eq = NULL;
-	skin->mask_eq_ds = NULL;
-	skin->mask_eq_shade = NULL;
-	skin->mask_eq_shade_ds = NULL;
+		skin->mask_main[i] = NULL;
+		skin->mask_shade[i] = NULL;
+		skin->mask_eq[i] = NULL;
+		skin->mask_eq_shade[i] = NULL;
+	}
 
 	if (skin->pledit_normal)
 		g_free(skin->pledit_normal);
@@ -518,6 +510,8 @@ void free_skin(void)
 
 static void skin_load_pixmaps(const char *path)
 {
+	gint i;
+
 	load_skin_pixmap(&skin->main, path, "main.bmp");
 	load_skin_pixmap(&skin->cbuttons, path, "cbuttons.bmp");
 	load_skin_pixmap(&skin->titlebar, path, "titlebar.bmp");
@@ -549,14 +543,13 @@ static void skin_load_pixmaps(const char *path)
 	skin->pledit_current = load_skin_color(path, "pledit.txt", "text", "current");
 	skin->pledit_normalbg = load_skin_color(path, "pledit.txt", "text", "normalbg");
 	skin->pledit_selectedbg = load_skin_color(path, "pledit.txt", "text", "selectedbg");
-	skin->mask_main = skin_create_transparent_mask(path, "region.txt", "Normal", mainwin->window, 275, 116, FALSE);
-	skin->mask_main_ds = skin_create_transparent_mask(path, "region.txt", "Normal", mainwin->window, 550, 232, TRUE);
-	skin->mask_shade = skin_create_transparent_mask(path, "region.txt", "WindowShade", mainwin->window, 275, 14, FALSE);
-	skin->mask_shade_ds = skin_create_transparent_mask(path, "region.txt", "WindowShade", mainwin->window, 550, 28, TRUE);
-	skin->mask_eq = skin_create_transparent_mask(path, "region.txt", "Equalizer", equalizerwin->window, 275, 116, FALSE);
-	skin->mask_eq_ds = skin_create_transparent_mask(path, "region.txt", "Equalizer", equalizerwin->window, 550, 232, TRUE);
-	skin->mask_eq_shade = skin_create_transparent_mask(path, "region.txt", "EqualizerWS", equalizerwin->window, 275, 14, FALSE);
-	skin->mask_eq_shade_ds = skin_create_transparent_mask(path, "region.txt", "EqualizerWS", equalizerwin->window, 550, 28, TRUE);
+	for (i = 1; i <= XMMS_SKIN_MAX_SCALE; i++)
+	{
+		skin->mask_main[i] = skin_create_transparent_mask(path, "region.txt", "Normal", mainwin->window, 275 * i, 116 * i, i);
+		skin->mask_shade[i] = skin_create_transparent_mask(path, "region.txt", "WindowShade", mainwin->window, 275 * i, 14 * i, i);
+		skin->mask_eq[i] = skin_create_transparent_mask(path, "region.txt", "Equalizer", equalizerwin->window, 275 * i, 116 * i, i);
+		skin->mask_eq_shade[i] = skin_create_transparent_mask(path, "region.txt", "EqualizerWS", equalizerwin->window, 275 * i, 14 * i, i);
+	}
 	
 	load_skin_viscolor(path, "viscolor.txt");
 }
@@ -738,76 +731,40 @@ static SkinPixmap *get_skin_pixmap(SkinIndex si)
 	return NULL;
 }
 
-GdkBitmap* skin_get_mask(MaskIndex mi, gboolean doublesize, gboolean shaded)
+GdkBitmap *skin_get_mask(MaskIndex mi, gint scale, gboolean shaded)
 {
 	GdkBitmap *ret = NULL;
-	
+
+	scale = CLAMP(scale, 1, XMMS_SKIN_MAX_SCALE);
+
 	switch (mi)
 	{
 		case SKIN_MASK_MAIN:
 			if (!shaded)
 			{
-				if (!doublesize)
-				{
-					ret = skin->mask_main;
-					if (!ret)
-						ret = skin->def_mask;
-				}
-				else
-				{
-					ret = skin->mask_main_ds;
-					if (!ret)
-						ret = skin->def_mask_ds;
-					break;
-				}
+				ret = skin->mask_main[scale];
+				if (!ret)
+					ret = skin->def_mask[scale];
 			}
 			else
 			{
-				if (!doublesize)
-				{
-					ret = skin->mask_shade;
-					if (!ret)
-						ret = skin->def_mask_shade;
-				}
-				else
-				{
-					ret = skin->mask_shade_ds;
-					if (!ret)
-						ret = skin->def_mask_shade_ds;
-					break;
-				}
+				ret = skin->mask_shade[scale];
+				if (!ret)
+					ret = skin->def_mask_shade[scale];
 			}
 			break;
 		case SKIN_MASK_EQ:
 			if (!shaded)
 			{
-				if (!doublesize)
-				{
-					ret = skin->mask_eq;
-					if (!ret)
-						ret = skin->def_mask;
-				}
-				else
-				{
-					ret = skin->mask_eq_ds;
-					if (!ret)
-						ret = skin->def_mask_ds;
-				}
+				ret = skin->mask_eq[scale];
+				if (!ret)
+					ret = skin->def_mask[scale];
 			}
 			else
 			{
-				if (!doublesize)
-				{
-					ret = skin->mask_eq_shade;
-					if (!ret)
-						ret = skin->def_mask_shade;
-				}
-				else
-				{
-					ret = skin->mask_eq_shade_ds;
-					if (!ret)
-						ret = skin->def_mask_shade_ds;
-				}
+				ret = skin->mask_eq_shade[scale];
+				if (!ret)
+					ret = skin->def_mask_shade[scale];
 			}
 			break;
 	}

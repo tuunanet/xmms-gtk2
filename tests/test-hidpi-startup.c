@@ -24,6 +24,8 @@
 #define SINGLE_SIZE_HEIGHT 116
 #define DOUBLE_SIZE_WIDTH 550
 #define DOUBLE_SIZE_HEIGHT 232
+#define TRIPLE_SIZE_WIDTH 825
+#define TRIPLE_SIZE_HEIGHT 348
 
 static gint unexpected_x_error;
 
@@ -297,7 +299,7 @@ static gint expected_startup_scale(const gchar *dpi)
 		coefficient = MAX(coefficient,
 				  g_ascii_strtod(dpi, NULL) / 96.0);
 	XCloseDisplay(display);
-	return CLAMP((gint) (coefficient + 0.5), 1, 2);
+	return CLAMP((gint) (coefficient + 0.5), 1, 3);
 }
 
 /* Launches XMMS with an isolated HOME on the given display (NULL for
@@ -437,6 +439,18 @@ static void test_skin_scale_override_forces_doublesize(void)
 	g_assert_cmpuint(height, ==, DOUBLE_SIZE_HEIGHT);
 }
 
+static void test_skin_scale_override_triple_size(void)
+{
+	guint width = 0, height = 0;
+
+	launch_and_measure("skin_scale=3.0\n", NULL, &width, &height);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	/* skin_scale coefficients beyond 2.5 map onto the renderer's 3x
+	 * scale (825x348), independent of the screen. */
+	g_assert_cmpuint(width, ==, TRIPLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, TRIPLE_SIZE_HEIGHT);
+}
+
 /* Runs XMMS on a private Xvfb screen of the given geometry with no
  * Xft.dpi signal so the display resolution alone decides the startup
  * scale. Marks the test skipped when Xvfb is unavailable. */
@@ -481,6 +495,19 @@ static void test_resolution_qhd_starts_single_size(void)
 		return; /* skipped above */
 	g_assert_cmpuint(width, ==, SINGLE_SIZE_WIDTH);
 	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
+}
+
+static void test_resolution_8k_starts_triple_size(void)
+{
+	guint width = 0, height = 0;
+
+	/* 7680x4320 is 3x the QHD baseline: the coefficient rounds up
+	 * to the renderer's 3x scale even without any DPI signal. */
+	run_on_private_screen("7680x4320x24", &width, &height);
+	if (width == 0)
+		return; /* skipped above */
+	g_assert_cmpuint(width, ==, TRIPLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, TRIPLE_SIZE_HEIGHT);
 }
 
 static void test_skin_scale_override_wins_over_persisted_doublesize(void)
@@ -529,6 +556,10 @@ int main(int argc, char **argv)
 			test_resolution_4k_starts_doublesize);
 	g_test_add_func("/hidpi-startup/resolution-qhd-starts-single-size",
 			test_resolution_qhd_starts_single_size);
+	g_test_add_func("/hidpi-startup/skin-scale-override-triple-size",
+			test_skin_scale_override_triple_size);
+	g_test_add_func("/hidpi-startup/resolution-8k-starts-triple-size",
+			test_resolution_8k_starts_triple_size);
 	g_test_add_func("/hidpi-startup/skin-scale-override-wins-over-persisted-doublesize",
 			test_skin_scale_override_wins_over_persisted_doublesize);
 	g_test_add_func("/hidpi-startup/autoscale-clears-persisted-doublesize",
