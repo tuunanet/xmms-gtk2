@@ -233,8 +233,6 @@ void vis_draw(Widget * w)
 				}
 			}
 		}
-
-		gdk_draw_indexed_image(vis->vs_window, vis->vs_widget.gc, vis->vs_widget.x, vis->vs_widget.y, vis->vs_widget.width, vis->vs_widget.height, GDK_RGB_DITHER_NORMAL, (guchar *) frame, 76, cmap);
 	}
 
 	/* A scale above 1x expands the frame through pixel replication

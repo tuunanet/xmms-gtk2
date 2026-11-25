@@ -49,6 +49,11 @@ for XMMS GTK2.
   math) and new end-to-end startup tests on private Xvfb 4K/QHD screens.
 
 ### Fixed
+- Removed a leftover unconditional 1x visualization draw from the N x
+  scaling rework: every vis_draw call painted the analyzer twice — once
+  at the 1x device position and once at the scaled position — so at
+  2x/3x two spectrum displays animated in the main panel at once. The
+  frame is now drawn exactly once, through the scaled path.
 - Kept the docked skinned windows flush and fully visible across HiDPI
   autoscale and DoubleSize toggles on XWayland compositors that apply
   shape masks (mutter): the player and equalizer now apply their shape

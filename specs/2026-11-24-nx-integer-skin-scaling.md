@@ -104,6 +104,20 @@ as broken. The playlist now follows the player's scale:
 `equalizerwin_release()` does not translate event coordinates (historical,
 harmless today because release callbacks ignore coordinates).
 
+## Post-review fix: duplicate analyzer draw
+
+After the playlist was scaled, UAT showed **two visualizations animating
+in the main panel**. Root cause (confirmed by instrumenting vis_draw and
+stub experiments): the N x rewrite of `vis_draw()` kept the ORIGINAL
+unconditional 1x `gdk_draw_indexed_image(... frame ...)` inside the
+frame-computation block, so every call painted the analyzer at the 1x
+device rect (24,43 76x16) *and* at the scaled rect — the 1x copy looked
+like a second, small visualization animating above the menurow. The fix
+removes the leftover 1x draw; the scaled path is the only painter.
+Verified on a private Xvfb at 3x with playback: per-region frame diffs
+show animation only in the scaled vis rect (891-3456 changing pixels)
+and zero changes at the 1x rect (previously 99-372).
+
 ## Tests
 
 - `tests/test-hidpi-scale.c`: mapping cap moves to 3 (3.0 → 3, 2.5 → 3,
