@@ -1173,6 +1173,7 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 {
 	gboolean grab = TRUE;
 	int xpos, ypos;
+	int scale = cfg.doublesize + 1;
 
 	if (cfg.doublesize)
 	{
@@ -1208,8 +1209,8 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 		int sx[] = {23, 23, 23}, sy[] = {111, 130, 149};
 		int barx = 48, bary = 111;
 
-		playlist_popup(xpos + 12,
-			       ypos + cfg.playlist_height - (3 * 18) - 11, 3,
+		playlist_popup(xpos + 12 * scale,
+			       ypos + (cfg.playlist_height - (3 * 18) - 11) * scale, 3,
 			       nx, ny, sx, sy, barx, bary,
 			       ADD_URL, playlistwin_popup_handler);
 		grab = FALSE;
@@ -1220,8 +1221,8 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 		int sx[] = {77, 77, 77, 77}, sy[] = {168, 111, 130, 149};
 		int barx = 100, bary = 111;
 
-		playlist_popup(xpos + 41,
-			       ypos + cfg.playlist_height - (4 * 18) - 11,  4,
+		playlist_popup(xpos + 41 * scale,
+			       ypos + (cfg.playlist_height - (4 * 18) - 11) * scale,  4,
 			       nx, ny, sx, sy, barx, bary,
 			       SUB_MISC, playlistwin_popup_handler);
 		grab = FALSE;
@@ -1232,8 +1233,8 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 		int sx[] = {127, 127, 127}, sy[] = {111, 130, 149};
 		int barx = 150, bary = 111;
 
-		playlist_popup(xpos + 70,
-			       ypos + cfg.playlist_height - (3 * 18) - 11, 3,
+		playlist_popup(xpos + 70 * scale,
+			       ypos + (cfg.playlist_height - (3 * 18) - 11) * scale, 3,
 			       nx, ny, sx, sy, barx, bary,
 			       SEL_INV, playlistwin_popup_handler);
 		grab = FALSE;
@@ -1244,8 +1245,8 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 		int sx[] = {177, 177, 177}, sy[] = {111, 130, 149};
 		int barx = 200, bary = 111;
 
-		playlist_popup(xpos + 99,
-			       ypos + cfg.playlist_height - (3 * 18) - 11, 3,
+		playlist_popup(xpos + 99 * scale,
+			       ypos + (cfg.playlist_height - (3 * 18) - 11) * scale, 3,
 			       nx, ny, sx, sy, barx, bary,
 			       MISC_SORT, playlistwin_popup_handler);
 		grab = FALSE;
@@ -1256,8 +1257,8 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 		int sx[] = {227, 227, 227}, sy[] = {111, 130, 149};
 		int barx = 250, bary = 111;
 
-		playlist_popup(xpos + cfg.playlist_width - 46,
-			       ypos + cfg.playlist_height - (3 * 18) - 11, 3,
+		playlist_popup(xpos + (cfg.playlist_width - 46) * scale,
+			       ypos + (cfg.playlist_height - (3 * 18) - 11) * scale, 3,
 			       nx, ny, sx, sy, barx, bary,
 			       PLIST_NEW, playlistwin_popup_handler);
 		grab = FALSE;

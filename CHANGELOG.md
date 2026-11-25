@@ -49,6 +49,17 @@ for XMMS GTK2.
   math) and new end-to-end startup tests on private Xvfb 4K/QHD screens.
 
 ### Fixed
+- Scaled the playlist's hold-to-popup skinned menus (the submenus that
+  pop up while holding the file+, file-, select-all, misc-options, and
+  load-list buttons): the popup window was still created at 1x with
+  1x skin blits and 1x motion hit-testing, and its anchor mixed the
+  window's device origin with logical widget offsets — at 2x/3x the
+  menu appeared tiny and detached from the pressed button, and the
+  item highlight never tracked the pointer because the popup window
+  was not under it. The menu is now composed at 1x and replicated
+  into a scaled popup window (25xnum_items*18 at 1x), pointer motion
+  is translated by the scale, and the anchors are scaled offsets; 1x
+  geometry is pixel-identical to the stock behavior.
 - Removed a leftover unconditional 1x visualization draw from the N x
   scaling rework: every vis_draw call painted the analyzer twice — once
   at the 1x device position and once at the scaled position — so at

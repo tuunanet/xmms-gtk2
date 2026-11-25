@@ -36,19 +36,56 @@ static PlaylistPopup *popup = NULL;
 static void playlist_popup_draw(PlaylistPopup * popup)
 {
 	gint i;
+	gint scale = cfg.doublesize + 1;
 
-	skin_draw_pixmap(popup->window->window, popup->gc, SKIN_PLEDIT,
-			 popup->barx, popup->bary, 0, 0, 3, popup->num_items * 18);
-	for (i = 0; i < popup->num_items; i++)
+	if (scale == 1)
 	{
-		if (i == popup->active)
-			skin_draw_pixmap(popup->window->window, popup->gc,
-					 SKIN_PLEDIT, popup->sx[i], popup->sy[i],
-					 3, i * 18, 22, 18);
-		else
-			skin_draw_pixmap(popup->window->window, popup->gc,
-					 SKIN_PLEDIT, popup->nx[i], popup->ny[i],
-					 3, i * 18, 22, 18);
+		skin_draw_pixmap(popup->window->window, popup->gc, SKIN_PLEDIT,
+				 popup->barx, popup->bary, 0, 0, 3, popup->num_items * 18);
+		for (i = 0; i < popup->num_items; i++)
+		{
+			if (i == popup->active)
+				skin_draw_pixmap(popup->window->window, popup->gc,
+						 SKIN_PLEDIT, popup->sx[i], popup->sy[i],
+						 3, i * 18, 22, 18);
+			else
+				skin_draw_pixmap(popup->window->window, popup->gc,
+						 SKIN_PLEDIT, popup->nx[i], popup->ny[i],
+						 3, i * 18, 22, 18);
+		}
+	}
+	else
+	{
+		/* The skinned menu is composed at 1x and replicated into
+		 * the popup window, like the skinned window backing
+		 * pixmaps. */
+		GdkPixmap *tmp;
+		GdkGC *tmpgc;
+		GdkImage *img, *img2;
+
+		tmp = gdk_pixmap_new(popup->window->window, 25, popup->num_items * 18, -1);
+		tmpgc = gdk_gc_new(tmp);
+		skin_draw_pixmap(tmp, tmpgc, SKIN_PLEDIT,
+				 popup->barx, popup->bary, 0, 0, 3, popup->num_items * 18);
+		for (i = 0; i < popup->num_items; i++)
+		{
+			if (i == popup->active)
+				skin_draw_pixmap(tmp, tmpgc, SKIN_PLEDIT,
+						 popup->sx[i], popup->sy[i],
+						 3, i * 18, 22, 18);
+			else
+				skin_draw_pixmap(tmp, tmpgc, SKIN_PLEDIT,
+						 popup->nx[i], popup->ny[i],
+						 3, i * 18, 22, 18);
+		}
+		img = gdk_image_get(tmp, 0, 0, 25, popup->num_items * 18);
+		img2 = create_scaled_image(img, scale);
+		gdk_draw_image(popup->window->window, popup->gc, img2, 0, 0, 0, 0,
+			       25 * scale, popup->num_items * 18 * scale);
+		gdk_image_destroy(img2);
+		gdk_image_destroy(img);
+		gdk_gc_unref(tmpgc);
+		gdk_pixmap_unref(tmp);
 	}
 	/* FIXME: What is this flush doing here? */
 	gdk_flush();
@@ -81,6 +118,13 @@ static void playlist_popup_expose(GtkWidget * widget, GdkEvent * event, gpointer
 static void playlist_popup_motion(GtkWidget * widget, GdkEventMotion * event, gpointer callback_data)
 {
 	gint active;
+	gint scale = cfg.doublesize + 1;
+
+	if (cfg.doublesize)
+	{
+		event->x /= scale;
+		event->y /= scale;
+	}
 
 	if (event->x >= 0 && event->x < 25 && event->y >= 0 && event->y < popup->num_items * 18)
 	{
@@ -106,6 +150,8 @@ static void playlist_popup_release(GtkWidget * widget, GdkEventButton * event, g
 void playlist_popup(gint x, gint y, gint num_items, gint * nx, gint * ny, gint * sx, gint * sy,
 		    gint barx, gint bary, gint base, void (*handler) (gint item))
 {
+	gint scale = cfg.doublesize + 1;
+
 	if (popup)
 		playlist_popup_destroy();
 	popup = g_malloc0(sizeof (PlaylistPopup));
@@ -128,13 +174,13 @@ void playlist_popup(gint x, gint y, gint num_items, gint * nx, gint * ny, gint *
 	gtk_widget_set_events(popup->window, GDK_BUTTON_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_EXPOSURE_MASK);
 	gtk_widget_realize(popup->window);
 
-	gtk_widget_set_usize(popup->window, 25, num_items * 18);
+	gtk_widget_set_usize(popup->window, 25 * scale, num_items * 18 * scale);
 	popup->gc = gdk_gc_new(popup->window->window);
 	gtk_signal_connect(GTK_OBJECT(popup->window), "expose_event", GTK_SIGNAL_FUNC(playlist_popup_expose), NULL);
 	gtk_signal_connect(GTK_OBJECT(popup->window), "motion_notify_event", GTK_SIGNAL_FUNC(playlist_popup_motion), NULL);
 	gtk_signal_connect(GTK_OBJECT(popup->window), "button_release_event", GTK_SIGNAL_FUNC(playlist_popup_release), NULL);
 	util_set_cursor(popup->window);
-	util_move_popup_window(popup->window, x - 1, y - 1);
+	util_move_popup_window(popup->window, x - scale, y - scale);
 	gtk_widget_show(popup->window);
 	gdk_window_raise(popup->window->window);
 	gdk_flush();

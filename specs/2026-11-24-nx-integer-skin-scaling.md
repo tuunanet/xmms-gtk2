@@ -118,6 +118,37 @@ Verified on a private Xvfb at 3x with playback: per-region frame diffs
 show animation only in the scaled vis rect (891-3456 changing pixels)
 and zero changes at the 1x rect (previously 99-372).
 
+## Post-review fix: hold-to-popup skinned menus
+
+UAT found the playlist's hold-to-popup skinned menus (file+, file-,
+select-all, misc-options, load-list) tiny and misplaced at scaled
+sizes, with no item highlight while holding. Root cause:
+`playlist_popup()` was wholly 1x — the popup window was sized
+`25 x num_items*18` device pixels, `playlist_popup_draw()` blitted 1x
+skin rects straight to the screen, `playlist_popup_motion()` hit-tested
+raw device coordinates, and `playlistwin_press()` anchored the popup by
+mixing the dock's device-space window origin (`dock_get_widget_pos`)
+with logical widget offsets. With the menu detached from the pressed
+button, the pointer never crossed the grab window, so the selected-item
+tracking ("hold down animation") never ran either.
+
+The fix keeps the 1x contract and scales everything around it: the menu
+is still composed at 1x, then replicated into the popup window through
+`create_scaled_image()` (the same backing-pixmap model as the skinned
+windows); window size, the -1px shift, and the motion hit-test all
+follow the scale; the five anchors in `playlistwin_press()` now scale
+their logical offsets (`xpos + 41 * scale`,
+`ypos + (h - 4*18 - 11) * scale`, and the REGION_R variant
+`(w - 46) * scale`). 1x geometry is pixel-identical to stock.
+
+Verified on a private Xvfb (uat-home `skin_scale=3.0`): holding
+misc-options pops `75x216` at the exact predicted anchor over the
+pressed button, the highlight follows XTEST pointer motion across the
+items, clears when the pointer leaves, and the window is destroyed on
+release. The load-list (REGION_R) and select-all popups land at their
+predicted anchors too. At 1x the popup is `25x72` at the stock
+position, unchanged.
+
 ## Tests
 
 - `tests/test-hidpi-scale.c`: mapping cap moves to 3 (3.0 → 3, 2.5 → 3,
