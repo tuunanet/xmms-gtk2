@@ -393,6 +393,7 @@ static void read_config(void)
 	cfg.disabled_iplugins = NULL;
 	cfg.enabled_gplugins = NULL;
 	cfg.mouse_change = 8;
+	cfg.playlist_font_scale = XMMS_DEFAULT_PLAYLIST_FONT_SCALE;
 
 	cfg.gentitle_format = NULL;
 
@@ -445,6 +446,7 @@ static void read_config(void)
 		xmms_cfg_read_boolean(cfgfile, "xmms", "playlist_visible", &cfg.playlist_visible);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "playlist_transparent", &cfg.playlist_transparent);
 		xmms_cfg_read_string(cfgfile, "xmms", "playlist_font", &cfg.playlist_font);
+		xmms_cfg_read_int(cfgfile, "xmms", "playlist_font_scale", &cfg.playlist_font_scale);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "use_fontsets", &cfg.use_fontsets);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "mainwin_use_xfont", &cfg.mainwin_use_xfont);
 		xmms_cfg_read_string(cfgfile, "xmms", "mainwin_font", &cfg.mainwin_font);
@@ -514,11 +516,19 @@ static void read_config(void)
 	    !strcmp(cfg.playlist_font, XMMS_INTERIM_PLAYLIST_FONT) ||
 	    !strcmp(cfg.playlist_font, XMMS_INTERIM_FIXED_PLAYLIST_FONT) ||
 	    !strcmp(cfg.playlist_font, XMMS_INTERIM_PROPORTIONAL_PLAYLIST_FONT) ||
+	    !strcmp(cfg.playlist_font, XMMS_INTERIM_SEMICONDENSED_PLAYLIST_FONT) ||
 	    !strcmp(cfg.playlist_font, XMMS_INTERIM_CLASSIC_FONT))
 	{
 		g_free(cfg.playlist_font);
 		cfg.playlist_font = g_strdup(XMMS_DEFAULT_PLAYLIST_FONT);
+		/* 90 shipped as the default scale with the interim font;
+		 * move it to the native-size default along with the font. */
+		if (cfg.playlist_font_scale == XMMS_INTERIM_PLAYLIST_FONT_SCALE)
+			cfg.playlist_font_scale = XMMS_DEFAULT_PLAYLIST_FONT_SCALE;
 	}
+	cfg.playlist_font_scale = CLAMP(cfg.playlist_font_scale,
+					XMMS_MIN_PLAYLIST_FONT_SCALE,
+					XMMS_MAX_PLAYLIST_FONT_SCALE);
 	if (cfg.mainwin_font == NULL ||
 	    !strcmp(cfg.mainwin_font, XMMS_LEGACY_MAINWIN_FONT) ||
 	    !strcmp(cfg.mainwin_font, XMMS_INTERIM_MAINWIN_FONT) ||
@@ -642,6 +652,7 @@ void save_config(void)
 	xmms_cfg_write_boolean(cfgfile, "xmms", "playlist_visible", cfg.playlist_visible);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "playlist_transparent", cfg.playlist_transparent);
 	xmms_cfg_write_string(cfgfile, "xmms", "playlist_font", cfg.playlist_font);
+	xmms_cfg_write_int(cfgfile, "xmms", "playlist_font_scale", cfg.playlist_font_scale);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "use_fontsets", cfg.use_fontsets);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "mainwin_use_xfont", cfg.mainwin_use_xfont);
 	xmms_cfg_write_string(cfgfile, "xmms", "mainwin_font", cfg.mainwin_font);

@@ -55,6 +55,7 @@ typedef struct
 	gint vu_mode, vis_refresh;
 	gint analyzer_falloff, peaks_falloff;
 	gint playlist_position;
+	gint playlist_font_scale;
 	gint pause_between_songs_time;
 	gboolean pause_between_songs, show_wm_decorations;
 	gint mouse_change;
