@@ -7,4 +7,3 @@ usr/share/icons/hicolor/16x16/apps/xmms.xpm
 usr/share/locale/
 usr/share/man/man1/
 usr/share/xmms/
-debian/xmms.lintian-overrides usr/share/lintian/overrides/xmms
