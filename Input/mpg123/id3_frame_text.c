@@ -54,7 +54,10 @@ guint id3_string_size(guint8 encoding, const char* text)
 	return length;
 }
 
-/* Returns a newly-allocated string in the locale's encoding. */
+/* Returns a newly-allocated string in UTF-8. UTF-8 frames pass
+ * through; UTF-16 frames decode to UTF-8 regardless of the process
+ * locale, matching the ID3v2.3+ write path. ISO-8859-1 frames are
+ * passed through byte-for-byte (the historical pipeline). */
 char* id3_string_decode(guint8 encoding, const char* text)
 {
 	switch (encoding)

@@ -38,6 +38,12 @@ for XMMS GTK2.
   through `util_font_load`.
 
 ### Fixed
+- Decoded UTF-16 ID3v2 text frames to UTF-8 regardless of the process
+  locale. With a non-UTF-8 locale (for example C/POSIX, common in
+  containers and headless environments), mp3 tag reading and title
+  editing silently dropped every non-ASCII character; the ID3v2.3
+  write path already assumed UTF-8, so round-trips now preserve
+  titles exactly at any locale.
 - Declared `xfonts-base` as a runtime dependency of the `xmms`
   package and added it to the release build environment: the playlist
   default font (and every skinned-window bitmap font pattern) resolves
