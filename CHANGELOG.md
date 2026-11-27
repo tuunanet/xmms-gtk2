@@ -15,6 +15,8 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+## [1.2.14] - 2026-11-27
+
 ### Added
 - Playlist editor font scale option: `playlist_font_scale` in the
   `[xmms]` section of `~/.xmms/config` scales the playlist text as a
