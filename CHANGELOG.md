@@ -38,6 +38,11 @@ for XMMS GTK2.
   through `util_font_load`.
 
 ### Fixed
+- Declared `xfonts-base` as a runtime dependency of the `xmms`
+  package and added it to the release build environment: the playlist
+  default font (and every skinned-window bitmap font pattern) resolves
+  from that package, and the packaging tests previously ran without
+  it, silently font-fallback-loading the playlist text.
 - Kept the docked skinned windows flush and fully visible across HiDPI
   autoscale and DoubleSize toggles on XWayland compositors that apply
   shape masks (mutter): the player and equalizer now apply their shape

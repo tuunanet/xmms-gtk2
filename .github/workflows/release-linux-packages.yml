@@ -170,6 +170,7 @@ jobs:
             lintian \
             pkg-config \
             xauth \
+            xfonts-base \
             xvfb \
             zlib1g-dev
           libc_version=$(dpkg-query -W -f='${Version}\n' libc6)

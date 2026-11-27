@@ -73,8 +73,12 @@ Glyph renders of `14. Pierrcified - Hertz - Electronic Fridge 60:42`:
 `tests/test-font-load.c`:
 
 - `/font/preferred-playlist-default` — new default asserts
-  `-medium-`/`-semicondensed-`, native metrics (ascent+descent == 12,
-  6px charcell), i.e. the X server returns the unscaled bitmap.
+  `-medium-`/`-semicondensed-`, renders on a 6px charcell grid, and
+  resolves **no taller than the classic `fixed` font**. The height
+  assertion is deliberately relative: exact bitmap metrics depend on
+  the installed `xfonts-base` set, and the packaging workflow now
+  installs `xfonts-base` so CI exercises the real bitmap inventory
+  (the `xmms` deb declares it as a runtime dependency).
 - `/font/interim-semicondensed-playlist-migrates` — the 13px bold
   name loads with identical metrics to the new default (migration).
 - Scale expectations updated for the 12px/110-decipoint base

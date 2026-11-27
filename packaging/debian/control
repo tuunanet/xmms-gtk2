@@ -22,7 +22,7 @@ Rules-Requires-Root: no
 
 Package: xmms
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}, xfonts-base
 Recommends: unzip
 Description: classic skinnable audio player
  XMMS GTK2 is a maintained preservation fork of XMMS 1.2.11. It keeps the

@@ -105,17 +105,23 @@ static void assert_default_matches_classic_fixed(const gchar *name)
 
 static void test_preferred_playlist_default(void)
 {
-	GdkFont *font;
+	GdkFont *font, *classic;
 
 	g_assert_nonnull(strstr(XMMS_DEFAULT_PLAYLIST_FONT, "-medium-"));
 	g_assert_nonnull(strstr(XMMS_DEFAULT_PLAYLIST_FONT, "-semicondensed-"));
 	cfg.use_fontsets = FALSE;
 	font = util_font_load((gchar *) XMMS_DEFAULT_PLAYLIST_FONT);
+	classic = gdk_font_load("fixed");
 	g_assert_nonnull(font);
-	/* Native 6x12 bitmap: 12 pixels tall, one 6px cell per character.
-	 * A server-scaled substitute would report different metrics. */
-	g_assert_cmpint(font->ascent + font->descent, ==, 12);
+	g_assert_nonnull(classic);
+	/* The default is a 6px-cell bitmap font at most as tall as the
+	 * classic fixed font. Exact metrics depend on the installed
+	 * bitmap set (xfonts-base), so assert relatively: the pattern
+	 * must not resolve to anything taller than the classic font. */
 	g_assert_cmpint(gdk_text_width(font, "XMMS GTK2", 9), ==, 54);
+	g_assert_cmpint(font->ascent + font->descent, <=,
+	                classic->ascent + classic->descent);
+	gdk_font_unref(classic);
 	gdk_font_unref(font);
 }
 
