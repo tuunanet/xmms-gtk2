@@ -25,12 +25,12 @@ size_t utf16_strlen(const char *string)
 
 char *convert_from_utf16(const unsigned char *utf16)
 {
-	return xmms_charset_convert(utf16, utf16_strlen(utf16), "UTF-16", NULL);
+	return xmms_charset_convert(utf16, utf16_strlen(utf16), "UTF-16", "UTF-8");
 }
 
 char *convert_from_utf16be(const unsigned char *utf16)
 {
-	return xmms_charset_convert(utf16, utf16_strlen(utf16), "UTF-16BE", NULL);
+	return xmms_charset_convert(utf16, utf16_strlen(utf16), "UTF-16BE", "UTF-8");
 }
 
 
