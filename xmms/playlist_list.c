@@ -529,10 +529,14 @@ PlayList_List *create_playlist_list(GList ** wlist, GdkPixmap * parent, GdkGC * 
 	return pl;
 }
 
-void playlist_list_set_font(char *font)
+void playlist_list_set_font(char *font, gint scale)
 {
+	gchar *scaled;
+
 	if (playlist_list_font)
 		gdk_font_unref(playlist_list_font);
 
-	playlist_list_font = util_font_load(font);
+	scaled = util_font_scale_name(font, scale);
+	playlist_list_font = util_font_load(scaled ? scaled : font);
+	g_free(scaled);
 }

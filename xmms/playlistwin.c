@@ -1913,7 +1913,7 @@ static void playlistwin_create_widgets(void)
 	playlistwin_close = create_pbutton(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 11, 3, 9, 9, cfg.playlist_shaded ? 138 : 167, cfg.playlist_shaded ? 45 : 3, 52, 42, playlistwin_close_cb, SKIN_PLEDIT);
 	playlistwin_close->pb_allow_draw = FALSE;
 	playlistwin_list = create_playlist_list(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, 12, 20, cfg.playlist_width - 31, cfg.playlist_height - 58);
-	playlist_list_set_font(cfg.playlist_font);
+	playlist_list_set_font(cfg.playlist_font, cfg.playlist_font_scale);
 	playlistwin_slider = create_playlistslider(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 15, 20, cfg.playlist_height - 58, playlistwin_list);
 	playlistwin_time_min = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 82, cfg.playlist_height - 15, 15, FALSE, SKIN_TEXT);
 	playlistwin_time_sec = create_textbox(&playlistwin_wlist, playlistwin_bg, playlistwin_gc, cfg.playlist_width - 64, cfg.playlist_height - 15, 10, FALSE, SKIN_TEXT);

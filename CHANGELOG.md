@@ -15,6 +15,26 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+### Added
+- Playlist editor font scale option: `playlist_font_scale` in the
+  `[xmms]` section of `~/.xmms/config` scales the playlist text as a
+  percentage of the chosen font's size (clamped to 25–400; default
+  `100`, which keeps the font's native bitmap pixels untouched). The
+  configured font string is never rewritten, and alias/wildcard font
+  names load unscaled. Covered by string and load-time tests in
+  `tests/test-font-load.c`.
+- Robust native default playlist font: the playlist editor now
+  defaults to the natively available 6x12 `fixed` bitmap font
+  (`-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso8859-1`)
+  instead of the 13px bold semicondensed bitmap, whose server-scaled
+  sizes rendered thin and broken glyphs. The new default is one pixel
+  shorter, keeps the condensed classic look, and renders crisp at the
+  default scale. Configs still carrying the 13px bold default are
+  migrated to the new default by the existing historical-font
+  migration, together with the interim `playlist_font_scale=90`
+  default; the 13px bold name keeps loading (as the migrated default)
+  through `util_font_load`.
+
 ### Fixed
 - Kept the docked skinned windows flush and fully visible across HiDPI
   autoscale and DoubleSize toggles on XWayland compositors that apply

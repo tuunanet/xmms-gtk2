@@ -389,7 +389,7 @@ void prefswin_apply_changes(void)
 		prefswin_toggle_wm_decorations();
 
 	textbox_set_xfont(mainwin_info, cfg.mainwin_use_xfont, cfg.mainwin_font);
-	playlist_list_set_font(cfg.playlist_font);
+	playlist_list_set_font(cfg.playlist_font, cfg.playlist_font_scale);
 	playlistwin_update_list();
 	mainwin_set_info_text();
 
