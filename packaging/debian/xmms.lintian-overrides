@@ -1,0 +1,5 @@
+# XMMS renders skinned-window and playlist text through core X11
+# bitmap fonts (a classic X11 application model). The xfonts-base
+# dependency is intentional; lintian flags it for fontconfig-era
+# applications where it would be unnecessary.
+package-depends-on-an-x-font-package
