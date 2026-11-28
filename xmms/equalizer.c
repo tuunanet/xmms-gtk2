@@ -342,6 +342,49 @@ static gboolean inside_sensitive_widgets(gint x, gint y)
 		inside_widget(x, y, equalizerwin_balance));
 }
 
+/* Mouse wheel events arrive as GDK scroll events under GTK2 (the X
+ * wheel buttons 4/5 never surface as button presses), so this keeps
+ * the GTK1 wheel path alive: the slider under the pointer steps two
+ * pixels per notch. */
+static gboolean equalizerwin_scroll_event(GtkWidget * widget,
+					  GdkEventScroll * event,
+					  gpointer callback_data)
+{
+	EqSlider *sliders[11];
+	gint i, dir, x, y;
+
+	if (cfg.equalizer_shaded)
+		return FALSE;
+
+	if (event->direction == GDK_SCROLL_UP)
+		dir = -1;
+	else if (event->direction == GDK_SCROLL_DOWN)
+		dir = 1;
+	else
+		return FALSE;
+
+	x = event->x;
+	y = event->y;
+	if (EQUALIZER_SCALE)
+	{
+		x /= (EQUALIZER_SCALE + 1);
+		y /= (EQUALIZER_SCALE + 1);
+	}
+
+	sliders[0] = equalizerwin_preamp;
+	for (i = 0; i < 10; i++)
+		sliders[i + 1] = equalizerwin_bands[i];
+	for (i = 0; i < 11; i++)
+	{
+		if (inside_widget(x, y, &sliders[i]->es_widget))
+		{
+			eqslider_scroll(sliders[i], dir);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 void equalizerwin_press(GtkWidget * widget, GdkEventButton * event, gpointer callback_data)
 {
 	gint mx, my;
@@ -797,6 +840,8 @@ static void equalizerwin_create_gtk(void)
 			   GTK_SIGNAL_FUNC(equalizerwin_delete), NULL);
 	gtk_signal_connect(GTK_OBJECT(equalizerwin), "button_press_event",
 			   GTK_SIGNAL_FUNC(equalizerwin_press), NULL);
+	gtk_signal_connect(GTK_OBJECT(equalizerwin), "scroll-event",
+			   GTK_SIGNAL_FUNC(equalizerwin_scroll_event), NULL);
 	gtk_signal_connect(GTK_OBJECT(equalizerwin), "button_release_event",
 			   GTK_SIGNAL_FUNC(equalizerwin_release), NULL);
 	gtk_signal_connect(GTK_OBJECT(equalizerwin), "motion_notify_event",

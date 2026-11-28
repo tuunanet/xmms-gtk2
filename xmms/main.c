@@ -1466,6 +1466,42 @@ static gboolean inside_sensitive_widgets(gint x, gint y)
 		inside_widget(x, y, mainwin_about));
 }
 
+/* Mouse wheel events arrive as GDK scroll events under GTK2 (the X
+ * wheel buttons never surface as button presses), so this keeps the
+ * GTK1 wheel path alive: vertical adjusts the volume, horizontal
+ * seeks. */
+static gboolean mainwin_scroll_event(GtkWidget * widget,
+				     GdkEventScroll * event,
+				     gpointer callback_data)
+{
+	switch (event->direction)
+	{
+		case GDK_SCROLL_UP:
+			mainwin_set_volume_diff(cfg.mouse_change);
+			break;
+		case GDK_SCROLL_DOWN:
+			mainwin_set_volume_diff(-cfg.mouse_change);
+			break;
+		case GDK_SCROLL_RIGHT:
+			if (playlist_get_current_length() != -1)
+				input_seek(CLAMP(input_get_time() +
+						 cfg.mouse_change * 1000,
+						 0,
+						 playlist_get_current_length()) / 1000);
+			break;
+		case GDK_SCROLL_LEFT:
+			if (playlist_get_current_length() != -1)
+				input_seek(CLAMP(input_get_time() -
+						 cfg.mouse_change * 1000,
+						 0,
+						 playlist_get_current_length()) / 1000);
+			break;
+		default:
+			return FALSE;
+	}
+	return TRUE;
+}
+
 void mainwin_press(GtkWidget * widget, GdkEventButton * event, gpointer callback_data)
 {
 	gboolean grab = TRUE;
@@ -3684,6 +3720,8 @@ static void mainwin_create_gtk(void)
 			   GTK_SIGNAL_FUNC(mainwin_destroy), NULL);
 	gtk_signal_connect(GTK_OBJECT(mainwin), "button_press_event",
 			   GTK_SIGNAL_FUNC(mainwin_press), NULL);
+	gtk_signal_connect(GTK_OBJECT(mainwin), "scroll-event",
+			   GTK_SIGNAL_FUNC(mainwin_scroll_event), NULL);
 	gtk_signal_connect(GTK_OBJECT(mainwin), "button_release_event",
 			   GTK_SIGNAL_FUNC(mainwin_release), NULL);
 	gtk_signal_connect(GTK_OBJECT(mainwin), "motion_notify_event",

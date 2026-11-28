@@ -56,6 +56,17 @@ for XMMS GTK2.
   asserting both the window geometry and the written keys.
 
 ### Fixed
+- Restored mouse wheel support dropped by the GTK2 port: the GTK1-era
+  handlers listened for the wheel buttons 4/5 as button presses, but
+  GTK2 delivers wheel motion as GDK scroll events, so none of them
+  ever fired — most visibly, the playlist editor no longer scrolled
+  with the wheel. New scroll-event handlers restore the original
+  behaviors: the playlist list scrolls three entries per notch, the
+  main window adjusts the volume with the vertical wheel and seeks
+  with a horizontal wheel, and the equalizer preamp/band sliders step
+  under the pointer. Covered by an XTEST end-to-end test that wheels
+  the playlist and asserts the list content moves and then restores
+  pixel-identically.
 - Scaled the playlist's hold-to-popup skinned menus (the submenus that
   pop up while holding the file+, file-, select-all, misc-options, and
   load-list buttons): the popup window was still created at 1x with

@@ -1373,6 +1373,27 @@ static void playlistwin_press(GtkWidget * widget, GdkEventButton * event, gpoint
 
 }
 
+/* Mouse wheel events arrive as GDK scroll events under GTK2 (the X
+ * wheel buttons 4/5 never surface as button presses), so this keeps
+ * the GTK1 wheel path alive: three list rows per notch, and the
+ * window-level skinned buttons keep handling clicks as before. */
+static gboolean playlistwin_scroll_event(GtkWidget * widget,
+					 GdkEventScroll * event,
+					 gpointer callback_data)
+{
+	if (cfg.playlist_shaded)
+		return FALSE;
+
+	if (event->direction == GDK_SCROLL_UP)
+		playlistwin_scroll(-3);
+	else if (event->direction == GDK_SCROLL_DOWN)
+		playlistwin_scroll(3);
+	else
+		return FALSE;
+
+	return TRUE;
+}
+
 static void playlistwin_focus_in(GtkWidget * widget, GdkEvent * event, gpointer callback_data)
 {
 	playlistwin_close->pb_allow_draw = TRUE;
@@ -2075,6 +2096,7 @@ static void playlistwin_create_gtk(void)
 
 	gtk_signal_connect(GTK_OBJECT(playlistwin), "delete_event", GTK_SIGNAL_FUNC(playlistwin_delete), NULL);
 	gtk_signal_connect(GTK_OBJECT(playlistwin), "button_press_event", GTK_SIGNAL_FUNC(playlistwin_press), NULL);
+	gtk_signal_connect(GTK_OBJECT(playlistwin), "scroll-event", GTK_SIGNAL_FUNC(playlistwin_scroll_event), NULL);
 	gtk_signal_connect(GTK_OBJECT(playlistwin), "button_release_event", GTK_SIGNAL_FUNC(playlistwin_release), NULL);
 	gtk_signal_connect(GTK_OBJECT(playlistwin), "motion_notify_event", GTK_SIGNAL_FUNC(playlistwin_motion), NULL);
 	gtk_signal_connect(GTK_OBJECT(playlistwin), "focus_in_event", GTK_SIGNAL_FUNC(playlistwin_focus_in), NULL);

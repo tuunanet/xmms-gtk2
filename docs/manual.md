@@ -326,6 +326,7 @@ When you start up XMMS, you will get a console very similar to that of WinAmp.
 | `Insert` | Add file dialog |
 | `Shift+Insert` | Add directory dialog |
 | `Alt+Insert` | Add url dialog |
+| `Mouse wheel` | Scroll the list (three entries per notch) |
 
 **Equalizer shade mode:**
 
