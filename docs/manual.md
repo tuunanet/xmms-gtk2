@@ -326,6 +326,7 @@ When you start up XMMS, you will get a console very similar to that of WinAmp.
 | `Insert` | Add file dialog |
 | `Shift+Insert` | Add directory dialog |
 | `Alt+Insert` | Add url dialog |
+| `Mouse wheel` | Scroll the list (three entries per notch) |
 
 **Equalizer shade mode:**
 
@@ -512,11 +513,34 @@ Here you change most of XMMS's behavior and settings.
 - **Equalizer doublesize linked** — Will display the Equalizer in doublesize if
   you make XMMS doublesize.
 - On desktops that report a HiDPI scale through `Xft.dpi` (150% or more),
-  XMMS starts in doublesize automatically so the skinned windows stay
-  readable where the compositor leaves XWayland unscaled. Set
-  `skin_autoscale=FALSE` in the `[xmms]` section of `~/.xmms/config` to
-  disable this (for example under KWin, which already upscales X11
-  windows itself).
+  XMMS starts scaled up automatically so the skinned windows stay
+  readable where the compositor leaves XWayland unscaled. The same
+  happens on displays whose resolution is well above QHD (2560x1440) —
+  for example a 32" 4K monitor (doublesize) or an 8K panel (triple
+  size) — even when no DPI is reported. The automatic scale is
+  whichever signal is stronger: the screen size relative to 2560x1440
+  (rounded to the nearest supported scale of 1x, 2x, or 3x), or
+  `Xft.dpi` relative to 96 DPI. Set `skin_autoscale=FALSE` in the
+  `[xmms]` section of `~/.xmms/config` to disable both automatic
+  signals (for example under KWin, which already upscales X11 windows
+  itself), or set `skin_scale=<coefficient>` to choose the size
+  yourself: `skin_scale=1.0` keeps the classic size on a large screen,
+  values from 1.5 select doublesize (550x232), values from 2.5 select
+  triple size (825x348), and `0` (the default) restores the automatic
+  choice. When a decision signal is present (automatic scaling enabled
+  or an explicit `skin_scale`), it decides the startup size in both
+  directions and replaces a stale `doublesize=TRUE` that an earlier
+  doubled session saved; the Ctrl+D toggle still switches between 1x
+  and the session's chosen scale for the running session. To keep a
+  non-default size across restarts, set `skin_scale` — note that XMMS
+  rewrites its config on exit, so edit it while XMMS is not running.
+  A fresh install (no `~/.xmms/config` yet) opens in doublesize on any
+  display: XMMS creates the config at first startup with
+  `doublesize=TRUE`, `skin_autoscale=TRUE`, and `skin_scale=1.5`.
+  The first session also opens the classic arrangement centered on
+  the screen — equalizer docked beside the player, playlist spanning
+  their combined width below. Existing configs are never rewritten
+  with these defaults.
 - **Smooth title scroll** — Makes the title scroll go smoother.
 - **Snap window at [ ] pixels** — Tells XMMS how close you can position the
   three windows until they dock / snap together with each other.

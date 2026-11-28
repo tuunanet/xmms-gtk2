@@ -30,5 +30,6 @@ EqSlider;
 EqSlider *create_eqslider(GList ** wlist, GdkPixmap * parent, GdkGC * gc, gint x, gint y);
 void eqslider_set_position(EqSlider * es, gfloat pos);
 gfloat eqslider_get_position(EqSlider * es);
+void eqslider_scroll(EqSlider * es, gint dir);
 
 #endif

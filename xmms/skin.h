@@ -20,6 +20,8 @@
 #ifndef SKIN_H
 #define SKIN_H
 
+#include "util.h"
+
 typedef enum
 {
 	SKIN_MAIN, SKIN_CBUTTONS, SKIN_TITLEBAR, SKIN_SHUFREP, SKIN_TEXT, SKIN_VOLUME,
@@ -73,12 +75,14 @@ typedef struct
 	GdkColor *pledit_normalbg, def_pledit_normalbg;
 	GdkColor *pledit_selectedbg, def_pledit_selectedbg;
 	guchar vis_color[24][3];
-	GdkBitmap *def_mask, *def_mask_ds;
-	GdkBitmap *def_mask_shade, *def_mask_shade_ds;
-	GdkBitmap *mask_main, *mask_main_ds;
-	GdkBitmap *mask_shade, *mask_shade_ds;
-	GdkBitmap *mask_eq, *mask_eq_ds;
-	GdkBitmap *mask_eq_shade, *mask_eq_shade_ds;
+	/* Shape masks indexed by skin scale (1 .. XMMS_SKIN_MAX_SCALE;
+	 * slot 0 unused). */
+	GdkBitmap *def_mask[XMMS_SKIN_MAX_SCALE + 1];
+	GdkBitmap *def_mask_shade[XMMS_SKIN_MAX_SCALE + 1];
+	GdkBitmap *mask_main[XMMS_SKIN_MAX_SCALE + 1];
+	GdkBitmap *mask_shade[XMMS_SKIN_MAX_SCALE + 1];
+	GdkBitmap *mask_eq[XMMS_SKIN_MAX_SCALE + 1];
+	GdkBitmap *mask_eq_shade[XMMS_SKIN_MAX_SCALE + 1];
 }
 Skin;
 
@@ -88,7 +92,7 @@ void init_skins(void);
 void load_skin(const gchar * path);
 void reload_skin(void);
 void cleanup_skins(void);
-GdkBitmap *skin_get_mask(MaskIndex mi, gboolean doublesize, gboolean shaded);
+GdkBitmap *skin_get_mask(MaskIndex mi, gint scale, gboolean shaded);
 GdkColor *get_skin_color(SkinColorIndex si);
 void get_skin_viscolor(guchar vis_color[24][3]);
 int skin_get_id(void);

@@ -8,7 +8,7 @@ LDLIBS += $(shell pkg-config --libs gtk+-2.0)
 
 .PHONY: check clean test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 
-check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
+check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-playlist-wheel test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 	./test-xentry
 	./test-filebrowser
 	./test-font-load
@@ -29,6 +29,7 @@ check: test-xentry test-filebrowser test-font-load test-popup-position test-keyb
 	./test-hidpi-scale
 	./test-hidpi-startup
 	./test-dock-resnap
+	./test-playlist-wheel
 
 test-xentry: $(srcdir)/test-xentry.c $(top_srcdir)/libxmms/xentry.c $(top_srcdir)/libxmms/xentry.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-xentry.c $(top_srcdir)/libxmms/xentry.c $(LDLIBS)
@@ -54,7 +55,11 @@ test-hidpi-startup: $(srcdir)/test-hidpi-startup.c $(top_builddir)/xmms/xmms
 
 test-dock-resnap: override CFLAGS += -DXMMS_BINARY=\"$(top_builddir)/xmms/xmms\"
 test-dock-resnap: $(srcdir)/test-dock-resnap.c $(top_builddir)/xmms/xmms
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-dock-resnap.c $(LDLIBS) -lX11
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-dock-resnap.c $(LDLIBS) -lX11 -lXtst
+
+test-playlist-wheel: override CFLAGS += -DXMMS_BINARY=\"$(top_builddir)/xmms/xmms\"
+test-playlist-wheel: $(srcdir)/test-playlist-wheel.c $(top_builddir)/xmms/xmms
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-playlist-wheel.c $(LDLIBS) -lX11 -lXtst
 
 test-popup-position: override CFLAGS += -ffunction-sections -fdata-sections
 test-popup-position: LDFLAGS += -Wl,--gc-sections

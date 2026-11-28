@@ -45,8 +45,19 @@ GtkWidget *mainwin, *mainwin_url_window = NULL, *mainwin_dir_browser = NULL;
 GtkWidget *mainwin_jtt = NULL, *mainwin_jtf = NULL, *mainwin_qm = NULL;
 GtkItemFactory *mainwin_options_menu, *mainwin_songname_menu, *mainwin_vis_menu;
 GtkItemFactory *mainwin_general_menu;
-GdkPixmap *mainwin_bg = NULL, *mainwin_bg_dblsize;
+GdkPixmap *mainwin_bg = NULL, *mainwin_bg_scaled;
 GdkGC *mainwin_gc;
+
+/* Size the player's scaled backing pixmap was allocated for; 0 when
+ * none is allocated (1x mode). */
+static gint mainwin_bg_scaled_w = 0, mainwin_bg_scaled_h = 0;
+/* Scale the DoubleSize toggle switches to when turned on: the startup
+ * decision, or 2x when startup was 1x. */
+static gint skin_scale_target = 2;
+/* Set by read_config() when ~/.xmms/config did not exist; main()
+ * finalizes the first-run window layout once the startup scale is
+ * known. */
+static gboolean xmms_first_run = FALSE;
 
 GtkAccelGroup *mainwin_accel;
 
@@ -336,11 +347,31 @@ static void make_xmms_dir(void)
 	g_free(filename);
 }
 
+/* First run: ~/.xmms/config does not exist yet, so create it right
+ * away with the seeded skin-scale keys. make_xmms_dir() must run first
+ * because read_config() executes before main() creates ~/.xmms.
+ * save_config() fills in the remaining keys on exit. */
+static void write_first_run_config(const gchar *filename)
+{
+	ConfigFile *cfgfile;
+
+	make_xmms_dir();
+	cfgfile = xmms_cfg_new();
+	xmms_cfg_write_boolean(cfgfile, "xmms", "doublesize",
+			       cfg.doublesize != 0);
+	xmms_cfg_write_boolean(cfgfile, "xmms", "skin_autoscale",
+			       cfg.skin_autoscale);
+	xmms_cfg_write_float(cfgfile, "xmms", "skin_scale", cfg.skin_scale);
+	xmms_cfg_write_file(cfgfile, filename);
+	xmms_cfg_free(cfgfile);
+}
+
 static void read_config(void)
 {
 	ConfigFile *cfgfile;
 	gchar *filename;
 	gint i, length;
+	gboolean doublesize_flag = FALSE;
 
 	memset(&cfg, 0, sizeof (Config));
 	cfg.autoscroll = TRUE;
@@ -359,6 +390,7 @@ static void read_config(void)
 	cfg.get_info_on_demand = TRUE;
 	cfg.eq_doublesize_linked = TRUE;
 	cfg.skin_autoscale = TRUE;
+	cfg.skin_scale = 0;
 	cfg.player_visible = TRUE;
 	cfg.no_playlist_advance = FALSE;
 	cfg.smooth_title_scroll = TRUE;
@@ -424,8 +456,10 @@ static void read_config(void)
 		xmms_cfg_read_boolean(cfgfile, "xmms", "player_visible", &cfg.player_visible);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "shuffle", &cfg.shuffle);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "repeat", &cfg.repeat);
-		xmms_cfg_read_boolean(cfgfile, "xmms", "doublesize", &cfg.doublesize);
+		xmms_cfg_read_boolean(cfgfile, "xmms", "doublesize", &doublesize_flag);
+		cfg.doublesize = doublesize_flag;
 		xmms_cfg_read_boolean(cfgfile, "xmms", "skin_autoscale", &cfg.skin_autoscale);
+		xmms_cfg_read_float(cfgfile, "xmms", "skin_scale", &cfg.skin_scale);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "autoscroll_songname", &cfg.autoscroll);
 		xmms_cfg_read_int(cfgfile, "xmms", "timer_mode", &cfg.timer_mode);
 		xmms_cfg_read_boolean(cfgfile, "xmms", "timer_minutes_only", &cfg.timer_minutes_only);
@@ -499,6 +533,27 @@ static void read_config(void)
 		xmms_cfg_read_string(cfgfile, "xmms", "generic_title_format", &cfg.gentitle_format);
 
 		xmms_cfg_free(cfgfile);
+	}
+	else
+	{
+		/* First run: seed the skin-scale defaults and create the
+		 * config file immediately, so the first write already
+		 * pins DoubleSize on every display (skin_scale=1.5
+		 * rounds up to 2x). Existing configs are never touched
+		 * here; save_config() adds the remaining keys on exit. */
+		cfg.doublesize = 1;
+		cfg.skin_autoscale = TRUE;
+		cfg.skin_scale = XMMS_DEFAULT_SKIN_SCALE;
+		/* Classic first-run arrangement: equalizer docked to the
+		 * right of the player, the playlist spanning their
+		 * combined width below. The offsets are 1x-relative to
+		 * the player; first_run_layout() centers the group once
+		 * the startup scale is known. */
+		cfg.equalizer_visible = TRUE;
+		cfg.playlist_visible = TRUE;
+		cfg.playlist_width = XMMS_FIRST_RUN_PLAYLIST_WIDTH;
+		xmms_first_run = TRUE;
+		write_first_run_config(filename);
 	}
 
 	if (cfg.playlist_font && strlen(cfg.playlist_font) == 0)
@@ -629,8 +684,9 @@ void save_config(void)
 	xmms_cfg_write_boolean(cfgfile, "xmms", "player_visible", cfg.player_visible);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "shuffle", mainwin_shuffle->tb_selected);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "repeat", mainwin_repeat->tb_selected);
-	xmms_cfg_write_boolean(cfgfile, "xmms", "doublesize", cfg.doublesize);
+	xmms_cfg_write_boolean(cfgfile, "xmms", "doublesize", cfg.doublesize != 0);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "skin_autoscale", cfg.skin_autoscale);
+	xmms_cfg_write_float(cfgfile, "xmms", "skin_scale", cfg.skin_scale);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "autoscroll_songname", cfg.autoscroll);
 	xmms_cfg_write_int(cfgfile, "xmms", "timer_mode", cfg.timer_mode);
 	xmms_cfg_write_boolean(cfgfile, "xmms", "timer_minutes_only", cfg.timer_minutes_only);
@@ -758,7 +814,7 @@ void mainwin_set_shape_mask(void)
 	if (!cfg.player_visible || cfg.show_wm_decorations)
 		return;
 
-	gtk_widget_shape_combine_mask(mainwin, skin_get_mask(SKIN_MASK_MAIN, cfg.doublesize, cfg.player_shaded), 0, 0);
+	gtk_widget_shape_combine_mask(mainwin, skin_get_mask(SKIN_MASK_MAIN, cfg.doublesize + 1, cfg.player_shaded), 0, 0);
 }
 
 
@@ -810,13 +866,14 @@ static gboolean dock_resnap_pair(GtkWidget *follower, gint *fx, gint *fy,
  * leader chain is player -> equalizer -> playlist; the playlist falls
  * back to the player when it was not docked to the equalizer.  The main
  * window anchors the group; every other window keeps its pre-rescale
- * position relative to its leader's new edge.  The playlist does not
- * rescale on toggles, so only its position is adjusted. */
+ * position relative to its leader's new edge.  The playlist rescales
+ * with the group (it always follows the player's scale), so its new
+ * size is computed the same way as the other windows. */
 static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
 			      const DockGeom *pl_old, gboolean eq_resized)
 {
 	gint ms = cfg.doublesize + 1;
-	gint playlist_h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+	gint playlist_h = PLAYLIST_HEIGHT;
 	DockGeom main_new, eq_new, pl_new;
 
 	main_new = *main_old;
@@ -831,7 +888,7 @@ static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
 	}
 
 	pl_new = *pl_old;
-	pl_new.w = cfg.playlist_width;
+	pl_new.w = PLAYLIST_WIDTH;
 	pl_new.h = playlist_h;
 
 	if (eq_resized)
@@ -845,14 +902,31 @@ static void resnap_dock_group(const DockGeom *main_old, const DockGeom *eq_old,
 			 pl_new.w, pl_new.h, main_old, &main_new);
 }
 
+/* Allocates (or re-allocates) the player's scaled backing pixmap for
+ * the given scale. The full unshaded size is allocated; the shaded
+ * mode only uses the top rows. */
+static void mainwin_ensure_scaled_bg(gint scale)
+{
+	gint w = 275 * scale, h = 116 * scale;
+
+	if (mainwin_bg_scaled && mainwin_bg_scaled_w == w && mainwin_bg_scaled_h == h)
+		return;
+	if (mainwin_bg_scaled)
+		gdk_pixmap_unref(mainwin_bg_scaled);
+	mainwin_bg_scaled = gdk_pixmap_new(NULL, w, h, gdk_rgb_get_visual()->depth);
+	mainwin_bg_scaled_w = w;
+	mainwin_bg_scaled_h = h;
+}
+
 void set_doublesize(gboolean ds)
 {
-	gint height, old_scale;
+	gint height, old_scale, new_scale;
 	DockGeom main_old, eq_old, pl_old;
 	gboolean eq_resized;
 
 	old_scale = cfg.doublesize + 1;
-	cfg.doublesize = ds;
+	new_scale = ds ? skin_scale_target : 1;
+	cfg.doublesize = new_scale - 1;
 	eq_resized = cfg.eq_doublesize_linked;
 
 	if (cfg.player_shaded)
@@ -869,13 +943,14 @@ void set_doublesize(gboolean ds)
 	eq_old.w = 275 * old_scale;
 	eq_old.h = (cfg.equalizer_shaded ? 14 : 116) * old_scale;
 	dock_get_widget_pos(playlistwin, &pl_old.x, &pl_old.y);
-	pl_old.w = cfg.playlist_width;
-	pl_old.h = cfg.playlist_shaded ? 14 : cfg.playlist_height;
+	pl_old.w = cfg.playlist_width * old_scale;
+	pl_old.h = (cfg.playlist_shaded ? 14 : cfg.playlist_height) * old_scale;
 
 	if (cfg.doublesize)
 	{
-		dock_resize(dock_window_list, mainwin, 550, height * 2);
-		gdk_window_set_back_pixmap(mainwin->window, mainwin_bg_dblsize, 0);
+		mainwin_ensure_scaled_bg(new_scale);
+		dock_resize(dock_window_list, mainwin, 275 * new_scale, height * new_scale);
+		gdk_window_set_back_pixmap(mainwin->window, mainwin_bg_scaled, 0);
 	}
 	else
 	{
@@ -888,10 +963,13 @@ void set_doublesize(gboolean ds)
 	 * window render cropped to the previous mask. */
 	mainwin_set_shape_mask();
 	draw_main_window(TRUE);
-	vis_set_doublesize(mainwin_vis, ds);
+	vis_set_scale(mainwin_vis, cfg.doublesize + 1);
 
 	if (eq_resized)
-		equalizerwin_set_doublesize(ds);
+		equalizerwin_set_scale(cfg.doublesize);
+
+	/* The playlist always follows the player's scale. */
+	playlistwin_set_scale(cfg.doublesize);
 
 	resnap_dock_group(&main_old, &eq_old, &pl_old, eq_resized);
 }
@@ -1109,14 +1187,15 @@ void draw_main_window(gboolean force)
 
 	if (redraw || force)
 	{
+		gint scale = cfg.doublesize + 1;
 
 		if (force)
 		{
 			if (cfg.doublesize)
 			{
 				img = gdk_image_get(mainwin_bg, 0, 0, 275, cfg.player_shaded ? 14 : 116);
-				img2 = create_dblsize_image(img);
-				gdk_draw_image(mainwin_bg_dblsize, mainwin_gc, img2, 0, 0, 0, 0, 550, cfg.player_shaded ? 28 : 232);
+				img2 = create_scaled_image(img, scale);
+				gdk_draw_image(mainwin_bg_scaled, mainwin_gc, img2, 0, 0, 0, 0, 275 * scale, (cfg.player_shaded ? 14 : 116) * scale);
 				gdk_image_destroy(img2);
 				gdk_image_destroy(img);
 			}
@@ -1132,11 +1211,11 @@ void draw_main_window(gboolean force)
 					if (cfg.doublesize)
 					{
 						img = gdk_image_get(mainwin_bg, w->x, w->y, w->width, w->height);
-						img2 = create_dblsize_image(img);
-						gdk_draw_image(mainwin_bg_dblsize, mainwin_gc, img2, 0, 0, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
+						img2 = create_scaled_image(img, scale);
+						gdk_draw_image(mainwin_bg_scaled, mainwin_gc, img2, 0, 0, w->x * scale, w->y * scale, w->width * scale, w->height * scale);
 						gdk_image_destroy(img2);
 						gdk_image_destroy(img);
-						gdk_window_clear_area(mainwin->window, w->x << 1, w->y << 1, w->width << 1, w->height << 1);
+						gdk_window_clear_area(mainwin->window, w->x * scale, w->y * scale, w->width * scale, w->height * scale);
 					}
 					else
 						gdk_window_clear_area(mainwin->window, w->x, w->y, w->width, w->height);
@@ -1335,8 +1414,8 @@ void mainwin_release(GtkWidget * widget, GdkEventButton * event, gpointer callba
 	}
 	if (mainwin_menurow->mr_doublesize_selected)
 	{
-		event->x /= 2;
-		event->y /= 2;
+		event->x /= (cfg.doublesize + 1);
+		event->y /= (cfg.doublesize + 1);
 	}
 	handle_release_cb(mainwin_wlist, widget, event);
 
@@ -1359,8 +1438,8 @@ void mainwin_motion(GtkWidget * widget, GdkEventMotion * event, gpointer callbac
 	}
 	if (cfg.doublesize)
 	{
-		event->x /= 2;
-		event->y /= 2;
+		event->x /= (cfg.doublesize + 1);
+		event->y /= (cfg.doublesize + 1);
 	}
 	if (dock_is_moving(mainwin))
 	{
@@ -1400,6 +1479,42 @@ static gboolean inside_sensitive_widgets(gint x, gint y)
 		inside_widget(x, y, mainwin_about));
 }
 
+/* Mouse wheel events arrive as GDK scroll events under GTK2 (the X
+ * wheel buttons never surface as button presses), so this keeps the
+ * GTK1 wheel path alive: vertical adjusts the volume, horizontal
+ * seeks. */
+static gboolean mainwin_scroll_event(GtkWidget * widget,
+				     GdkEventScroll * event,
+				     gpointer callback_data)
+{
+	switch (event->direction)
+	{
+		case GDK_SCROLL_UP:
+			mainwin_set_volume_diff(cfg.mouse_change);
+			break;
+		case GDK_SCROLL_DOWN:
+			mainwin_set_volume_diff(-cfg.mouse_change);
+			break;
+		case GDK_SCROLL_RIGHT:
+			if (playlist_get_current_length() != -1)
+				input_seek(CLAMP(input_get_time() +
+						 cfg.mouse_change * 1000,
+						 0,
+						 playlist_get_current_length()) / 1000);
+			break;
+		case GDK_SCROLL_LEFT:
+			if (playlist_get_current_length() != -1)
+				input_seek(CLAMP(input_get_time() -
+						 cfg.mouse_change * 1000,
+						 0,
+						 playlist_get_current_length()) / 1000);
+			break;
+		default:
+			return FALSE;
+	}
+	return TRUE;
+}
+
 void mainwin_press(GtkWidget * widget, GdkEventButton * event, gpointer callback_data)
 {
 	gboolean grab = TRUE;
@@ -1411,8 +1526,8 @@ void mainwin_press(GtkWidget * widget, GdkEventButton * event, gpointer callback
 		 * We should make a copy of this data instead of
 		 * tampering with the data we get from gtk+
 		 */
-		event->x /= 2;
-		event->y /= 2;
+		event->x /= (cfg.doublesize + 1);
+		event->y /= (cfg.doublesize + 1);
 	}
 
 	if ((event->button == 4 || event->button == 5) &&
@@ -2553,7 +2668,7 @@ static gboolean mainwin_configure(GtkWidget * window, GdkEventConfigure *event, 
 void mainwin_set_back_pixmap(void)
 {
 	if (cfg.doublesize)
-		gdk_window_set_back_pixmap(mainwin->window, mainwin_bg_dblsize, 0);
+		gdk_window_set_back_pixmap(mainwin->window, mainwin_bg_scaled, 0);
 	else
 		gdk_window_set_back_pixmap(mainwin->window, mainwin_bg, 0);
 	gdk_window_clear(mainwin->window);
@@ -3541,7 +3656,7 @@ static void mainwin_create_widgets(void)
 	mainwin_freq_text = create_textbox(&mainwin_wlist, mainwin_bg, mainwin_gc, 156, 43, 10, 0, SKIN_TEXT);
 
 	mainwin_menurow = create_menurow(&mainwin_wlist, mainwin_bg, mainwin_gc, 10, 22, 304, 0, 304, 44, mainwin_mr_change, mainwin_mr_release, SKIN_TITLEBAR);
-	mainwin_menurow->mr_doublesize_selected = cfg.doublesize;
+	mainwin_menurow->mr_doublesize_selected = (cfg.doublesize != 0);
 	mainwin_menurow->mr_always_selected = cfg.always_on_top;
 
 	mainwin_volume = create_hslider(&mainwin_wlist, mainwin_bg, mainwin_gc, 107, 57, 68, 13, 15, 422, 0, 422, 14, 11, 15, 0, 0, 51, mainwin_volume_framecb, mainwin_volume_motioncb, mainwin_volume_releasecb, SKIN_VOLUME);
@@ -3564,7 +3679,7 @@ static void mainwin_create_widgets(void)
 
 	mainwin_about = create_sbutton(&mainwin_wlist, mainwin_bg, mainwin_gc, 247, 83, 20, 25, show_about_window);
 
-	mainwin_vis = create_vis(&mainwin_wlist, mainwin_bg, mainwin->window, mainwin_gc, 24, 43, 76, cfg.doublesize);
+	mainwin_vis = create_vis(&mainwin_wlist, mainwin_bg, mainwin->window, mainwin_gc, 24, 43, 76, cfg.doublesize + 1);
 	mainwin_svis = create_svis(&mainwin_wlist, mainwin_bg, mainwin_gc, 79, 5);
 	active_vis = mainwin_vis;
 
@@ -3609,10 +3724,7 @@ static void mainwin_create_gtk(void)
 	mainwin_set_icon(mainwin);
 	util_set_cursor(mainwin);
 
-	if (cfg.doublesize)
-		gtk_widget_set_usize(mainwin, 550, cfg.player_shaded ? 28 : 232);
-	else
-		gtk_widget_set_usize(mainwin, 275, cfg.player_shaded ? 14 : 116);
+	gtk_widget_set_usize(mainwin, PLAYER_WIDTH, PLAYER_HEIGHT);
 	if (!cfg.show_wm_decorations)
 		gdk_window_set_decorations(mainwin->window, 0);
 	gtk_window_add_accel_group(GTK_WINDOW(mainwin), mainwin_accel);
@@ -3621,6 +3733,8 @@ static void mainwin_create_gtk(void)
 			   GTK_SIGNAL_FUNC(mainwin_destroy), NULL);
 	gtk_signal_connect(GTK_OBJECT(mainwin), "button_press_event",
 			   GTK_SIGNAL_FUNC(mainwin_press), NULL);
+	gtk_signal_connect(GTK_OBJECT(mainwin), "scroll-event",
+			   GTK_SIGNAL_FUNC(mainwin_scroll_event), NULL);
 	gtk_signal_connect(GTK_OBJECT(mainwin), "button_release_event",
 			   GTK_SIGNAL_FUNC(mainwin_release), NULL);
 	gtk_signal_connect(GTK_OBJECT(mainwin), "motion_notify_event",
@@ -3646,7 +3760,9 @@ static void mainwin_create_gtk(void)
 void mainwin_create(void)
 {
 	mainwin_bg = gdk_pixmap_new(NULL, 275, 116, gdk_rgb_get_visual()->depth);
-	mainwin_bg_dblsize = gdk_pixmap_new(NULL, 550, 232, gdk_rgb_get_visual()->depth);
+	mainwin_bg_scaled = NULL;
+	if (cfg.doublesize)
+		mainwin_ensure_scaled_bg(cfg.doublesize + 1);
 	mainwin_create_gtk();
 	mainwin_create_widgets();
 }
@@ -4347,9 +4463,50 @@ static void enable_x11r5_session_management(int argc, char **argv)
 #endif
 }
 
+/* Startup skin scale for this session, or 0 when no decision signal
+ * exists. An explicit skin_scale coefficient (>= 1) in the config
+ * overrides every automatic signal; otherwise the strongest automatic
+ * signal (display resolution vs. Xft.dpi) decides, and only when
+ * skin_autoscale has not opted out. */
+static gint startup_skin_scale(void)
+{
+	if (cfg.skin_scale >= 1.0)
+		return util_skin_scale_for_coefficient(cfg.skin_scale);
+	if (cfg.skin_autoscale)
+		return util_skin_scale_for_display(gdk_screen_width(),
+						   gdk_screen_height(),
+						   util_get_xft_dpi());
+	return 0;
+}
+
+/* First run: center the window group on the screen. The player
+ * anchors the group in device pixels; the equalizer and playlist
+ * offsets seeded by read_config() are 1x-relative to the player, and
+ * the autoscaled-start resnap places them flush at the startup scale
+ * (player + equalizer on top, playlist spanning their combined width
+ * below). */
+static void first_run_layout(gint scale)
+{
+	gint x = (gdk_screen_width() - (2 * 275) * scale) / 2;
+	gint y = (gdk_screen_height() - (116 + cfg.playlist_height) * scale) / 2;
+
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+
+	cfg.player_x = x;
+	cfg.player_y = y;
+	cfg.equalizer_x = x + 275;
+	cfg.equalizer_y = y;
+	cfg.playlist_x = x;
+	cfg.playlist_y = y + 116;
+}
+
 int main(int argc, char **argv)
 {
 	gboolean skin_autoscaled = FALSE;
+	gint scale;
 	char *filename;
 	const char *sm_client_id;
 	struct cmdlineopt options;
@@ -4436,17 +4593,31 @@ int main(int argc, char **argv)
 
 	sm_client_id = sm_init(argc, argv, options.previous_session_id);
 	gdk_set_sm_client_id(sm_client_id);
-	/* Adopt the desktop scale on HiDPI screens where the compositor
-	 * leaves XWayland unscaled (GNOME/mutter). Done before window
-	 * creation, exactly like the persisted DoubleSize startup path;
-	 * skin_autoscale=FALSE opts out persistently (e.g. under KWin,
-	 * which already upscales X11 clients). */
-	if (cfg.skin_autoscale &&
-	    util_skin_scale_for_dpi(util_get_xft_dpi()) >= 2)
+	/* Adopt the scale the display calls for: either the resolution
+	 * is well above the QHD baseline (e.g. a 32" 4K panel) or
+	 * Xft.dpi reports a desktop scale that the compositor leaves
+	 * XWayland unscaled for (GNOME/mutter). When a decision signal
+	 * exists it is authoritative in both directions — a scale of 2
+	 * doubles the windows before creation exactly like the
+	 * persisted DoubleSize startup path, and a scale of 1 clears a
+	 * stale doublesize=TRUE saved by an earlier doubled session.
+	 * Only with no signal at all (skin_autoscale=FALSE and no
+	 * skin_scale override) is the persisted bit honored unchanged.
+	 * skin_autoscale=FALSE opts out of the automatic signals
+	 * persistently (e.g. under KWin, which already upscales X11
+	 * clients), while an explicit skin_scale coefficient wins over
+	 * both. Done before window creation. */
+	scale = startup_skin_scale();
+	if (scale > 0)
 	{
-		cfg.doublesize = TRUE;
-		skin_autoscaled = TRUE;
+		cfg.doublesize = scale - 1;
+		if (scale >= 2)
+			skin_autoscaled = TRUE;
 	}
+	/* The DoubleSize toggle switches between 1x and this scale. */
+	skin_scale_target = (cfg.doublesize >= 1) ? cfg.doublesize + 1 : 2;
+	if (xmms_first_run)
+		first_run_layout(cfg.doublesize + 1);
 	mainwin_create();
 
 	filename = g_strconcat(g_get_home_dir(), "/.xmms/gtkrc", NULL);

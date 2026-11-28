@@ -353,7 +353,7 @@ void prefswin_apply_changes(void)
 
 	set_current_output_plugin(selected_oplugin);
 
-	equalizerwin_set_doublesize(cfg.doublesize && cfg.eq_doublesize_linked);
+	equalizerwin_set_scale(EQUALIZER_SCALE);
 
 	if (cfg.dim_titlebar)
 	{

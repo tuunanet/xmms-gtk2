@@ -29,6 +29,22 @@ void eqslider_set_position(EqSlider * es, gfloat pos)
 	draw_widget(es);
 }
 
+/* Mouse wheel adjustment, called from the equalizer window's scroll
+ * handler with dir -1 (wheel up) or +1 (wheel down); one step is two
+ * pixels like the GTK1 wheel path. */
+void eqslider_scroll(EqSlider * es, gint dir)
+{
+	es->es_position += dir * 2;
+	if (es->es_position < 0)
+		es->es_position = 0;
+	if (es->es_position > 50)
+		es->es_position = 50;
+	if (es->es_position >= 24 && es->es_position <= 26)
+		es->es_position = 25;
+	equalizerwin_eq_changed();
+	draw_widget(es);
+}
+
 gfloat eqslider_get_position(EqSlider * es)
 {
 	return 20.0 - (((gfloat) es->es_position * 20.0) / 25.0);

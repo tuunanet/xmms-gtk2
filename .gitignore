@@ -48,6 +48,7 @@
 /tests/test-hidpi-scale
 /tests/test-hidpi-startup
 /tests/test-dock-resnap
+/tests/test-playlist-wheel
 /tests/test-keyboard-shortcuts
 /tests/test-mpg123-file-duration
 /tests/test-mpg123-stream-position

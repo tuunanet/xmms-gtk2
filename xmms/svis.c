@@ -23,12 +23,6 @@ static gint svis_redraw_delays[] = {1, 2, 4, 8};
 static guint8 svis_scope_colors[] = {20, 19, 18, 19, 20};
 static guint8 svis_vu_normal_colors[] = {17, 17, 17, 12, 12, 12, 2, 2};
 
-#define DRAW_DS_PIXEL(ptr,value) \
-	*(ptr) = (value); \
-	*((ptr) + 1) = (value); \
-	*((ptr) + 76) = (value); \
-	*((ptr) + 77) = (value);
-
 #define SVIS_HEIGHT 5
 #define SVIS_WIDTH 38
 
@@ -95,9 +89,10 @@ void svis_timeout_func(SVis * svis, guchar * data)
 void svis_draw(Widget * w)
 {
 	SVis *svis = (SVis *) w;
-	gint x, y, h;
+	gint x, y, h, scale = cfg.doublesize + 1;
 	guchar svis_color[24][3];
-	guchar rgb_data[SVIS_WIDTH * 2 * SVIS_HEIGHT * 2], *ptr, c;
+	guchar frame[SVIS_WIDTH * SVIS_HEIGHT], *ptr, c;
+	guchar scaled[SVIS_WIDTH * XMMS_SKIN_MAX_SCALE * SVIS_HEIGHT * XMMS_SKIN_MAX_SCALE];
 	guint32 colors[24];
 	GdkRgbCmap *cmap;
 
@@ -110,9 +105,9 @@ void svis_draw(Widget * w)
 	}
 	cmap = gdk_rgb_cmap_new(colors, 24);
 
-	if (!cfg.doublesize)
+	/* The frame is always computed at 1x. */
 	{
-		memset(rgb_data, 0, SVIS_WIDTH * SVIS_HEIGHT);
+		memset(frame, 0, sizeof (frame));
 		if (cfg.vis_type == VIS_ANALYZER)
 		{
 			switch (cfg.vu_mode)
@@ -120,29 +115,32 @@ void svis_draw(Widget * w)
 				case VU_NORMAL:
 					for (y = 0; y < 2; y++)
 					{
-						ptr = rgb_data + ((y * 3) * 38);
-						h = (svis->vs_data[y] * 7) / 37;
+						ptr = frame + ((y * 3) * SVIS_WIDTH);
+						/* Scaled modes draw slightly longer
+						 * VU lamps, as the original 2x
+						 * path did. */
+						h = (svis->vs_data[y] * (scale > 1 ? 8 : 7)) / 37;
 						for (x = 0; x < h; x++, ptr += 5)
 						{
 							c = svis_vu_normal_colors[x];
 							*(ptr) = c;
 							*(ptr + 1) = c;
 							*(ptr + 2) = c;
-							*(ptr + 38) = c;
-							*(ptr + 39) = c;
-							*(ptr + 40) = c;
+							*(ptr + SVIS_WIDTH) = c;
+							*(ptr + SVIS_WIDTH + 1) = c;
+							*(ptr + SVIS_WIDTH + 2) = c;
 						}
 					}
 					break;
 				case VU_SMOOTH:
 					for (y = 0; y < 2; y++)
 					{
-						ptr = rgb_data + ((y * 3) * SVIS_WIDTH);
+						ptr = frame + ((y * 3) * SVIS_WIDTH);
 						for (x = 0; x < svis->vs_data[y]; x++, ptr++)
 						{
 							c = 17 - ((x * 15) / 37);
 							*(ptr) = c;
-							*(ptr + 38) = c;
+							*(ptr + SVIS_WIDTH) = c;
 						}
 					}
 					break;
@@ -153,65 +151,18 @@ void svis_draw(Widget * w)
 			for (x = 0; x < 38; x++)
 			{
 				h = svis->vs_data[x << 1] / 3;
-				ptr = rgb_data + ((4 - h) * 38) + x;
+				ptr = frame + ((4 - h) * SVIS_WIDTH) + x;
 				*ptr = svis_scope_colors[h];
 			}
 		}
 
-		gdk_draw_indexed_image(mainwin->window, mainwin_gc, svis->vs_widget.x, svis->vs_widget.y, svis->vs_widget.width, svis->vs_widget.height, GDK_RGB_DITHER_NORMAL, (guchar *) rgb_data, 38, cmap);
-	}
-	else /* doublesize */
-	{
-		memset(rgb_data, 0, SVIS_WIDTH * 2 * SVIS_HEIGHT * 2);
-		if (cfg.vis_type == VIS_ANALYZER)
+		if (scale > 1)
 		{
-			switch (cfg.vu_mode)
-			{
-				case VU_NORMAL:
-					for (y = 0; y < 2; y++)
-					{
-						ptr = rgb_data + ((y * 3) * 152);
-						h = (svis->vs_data[y] * 8) / 37;
-						for (x = 0; x < h; x++, ptr += 10)
-						{
-							c = svis_vu_normal_colors[x];
-							DRAW_DS_PIXEL(ptr, c);
-							DRAW_DS_PIXEL(ptr + 2, c);
-							DRAW_DS_PIXEL(ptr + 4, c);
-							DRAW_DS_PIXEL(ptr + 152, c);
-							DRAW_DS_PIXEL(ptr + 154, c);
-							DRAW_DS_PIXEL(ptr + 156, c);
-						}
-					}
-					break;
-				case VU_SMOOTH:
-					for (y = 0; y < 2; y++)
-					{
-						ptr = rgb_data + ((y * 3) * 152);
-						for (x = 0; x < svis->vs_data[y]; x++, ptr += 2)
-						{
-							c = 17 - ((x * 15) / 37);
-							DRAW_DS_PIXEL(ptr, c);
-							DRAW_DS_PIXEL(ptr + 152, c);
-						}
-					}
-					break;
-			}
+			util_expand_indexed_frame(frame, SVIS_WIDTH, SVIS_HEIGHT, scaled, scale);
+			gdk_draw_indexed_image(mainwin->window, mainwin_gc, svis->vs_widget.x * scale, svis->vs_widget.y * scale, svis->vs_widget.width * scale, svis->vs_widget.height * scale, GDK_RGB_DITHER_NONE, (guchar *) scaled, SVIS_WIDTH * scale, cmap);
 		}
-		else if (cfg.vis_type == VIS_SCOPE)
-		{
-			for (x = 0; x < 38; x++)
-			{
-				h = svis->vs_data[x << 1] / 3;
-				ptr = rgb_data + ((4 - h) * 152) + (x << 1);
-				*ptr = svis_scope_colors[h];
-				*(ptr + 1) = svis_scope_colors[h];
-				*(ptr + 76) = svis_scope_colors[h];
-				*(ptr + 77) = svis_scope_colors[h];
-			}
-		}
-
-		gdk_draw_indexed_image(mainwin->window, mainwin_gc, svis->vs_widget.x << 1, svis->vs_widget.y << 1, svis->vs_widget.width << 1, svis->vs_widget.height << 1, GDK_RGB_DITHER_NONE, (guchar *) rgb_data, 76, cmap);
+		else
+			gdk_draw_indexed_image(mainwin->window, mainwin_gc, svis->vs_widget.x, svis->vs_widget.y, svis->vs_widget.width, svis->vs_widget.height, GDK_RGB_DITHER_NORMAL, (guchar *) frame, SVIS_WIDTH, cmap);
 	}
 	gdk_rgb_cmap_free(cmap);
 	GDK_THREADS_LEAVE();
@@ -229,10 +180,12 @@ void svis_clear_data(SVis * svis)
 
 void svis_clear(SVis * svis)
 {
-	if (!cfg.doublesize)
-		gdk_window_clear_area(mainwin->window, svis->vs_widget.x, svis->vs_widget.y, svis->vs_widget.width, svis->vs_widget.height);
+	gint scale = cfg.doublesize + 1;
+
+	if (scale > 1)
+		gdk_window_clear_area(mainwin->window, svis->vs_widget.x * scale, svis->vs_widget.y * scale, svis->vs_widget.width * scale, svis->vs_widget.height * scale);
 	else
-		gdk_window_clear_area(mainwin->window, svis->vs_widget.x << 1, svis->vs_widget.y << 1, svis->vs_widget.width << 1, svis->vs_widget.height << 1);
+		gdk_window_clear_area(mainwin->window, svis->vs_widget.x, svis->vs_widget.y, svis->vs_widget.width, svis->vs_widget.height);
 }
 
 SVis *create_svis(GList ** wlist, GdkPixmap * parent, GdkGC * gc, gint x, gint y)

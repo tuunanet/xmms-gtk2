@@ -31,7 +31,7 @@ typedef struct
 	gint player_x, player_y, equalizer_x, equalizer_y;
 	gint playlist_x, playlist_y, playlist_width, playlist_height;
 	guint snap_distance;
-	gboolean use_realtime, shuffle, repeat, doublesize, autoscroll;
+	gboolean use_realtime, shuffle, repeat, autoscroll;
 	gboolean analyzer_peaks, equalizer_autoload, easy_move, equalizer_active;
 	gboolean playlist_visible, equalizer_visible, player_visible;
 	gboolean player_shaded, playlist_shaded, equalizer_shaded;
@@ -40,12 +40,17 @@ typedef struct
 	gboolean show_numbers_in_pl, snap_windows, save_window_position;
 	gboolean dim_titlebar, get_info_on_load;
 	gboolean get_info_on_demand, eq_doublesize_linked, skin_autoscale;
+	/* Extra skin scale factor: 0 = 1x, 1 = 2x, 2 = 3x. The
+	 * historical boolean doublesize bit now holds this value;
+	 * nonzero still means "scaled". */
+	gint doublesize;
 	gboolean sort_jump_to_file, use_eplugins, always_on_top, sticky;
 	gboolean no_playlist_advance, smooth_title_scroll, use_pl_metadata;
 	gboolean use_backslash_as_dir_delimiter;
 	gboolean random_skin_on_play, use_fontsets;
 	gboolean mainwin_use_xfont, timer_minutes_only;
 	gfloat equalizer_preamp, equalizer_bands[10];
+	gfloat skin_scale;
 	gchar *skin, *outputplugin, *filesel_path, *playlist_path;
 	gchar *playlist_font, *mainwin_font;
 	gchar *disabled_iplugins, *enabled_gplugins, *enabled_vplugins, *enabled_eplugins;

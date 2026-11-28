@@ -167,120 +167,147 @@ void del_directory(const char *dirname)
 #endif /* !HAVE_FTS_H */
 }
 
-GdkImage *create_dblsize_image(GdkImage * img)
+GdkImage *create_scaled_image(GdkImage * img, gint scale)
 {
-	GdkImage *dblimg;
-	register guint x, y;
+	GdkImage *scaledimg;
+	register guint x, y, rx, ry;
 
 	/*
-	 * This needs to be optimized
+	 * Pixel-replication scaler: each source pixel becomes an
+	 * scale x scale block of identical pixels. Integer scale only,
+	 * so skin pixel art stays crisp.
 	 */
 
-	dblimg = gdk_image_new(GDK_IMAGE_NORMAL, gdk_visual_get_best_with_depth(img->depth), img->width << 1, img->height << 1);
-	if (dblimg->bpp == 1)
+	scaledimg = gdk_image_new(GDK_IMAGE_NORMAL, gdk_visual_get_best_with_depth(img->depth), img->width * scale, img->height * scale);
+	if (scaledimg->bpp == 1)
 	{
-		char *srcptr, *ptr, *ptr2;
+		char *srcptr, *ptr;
 
 		srcptr = GDK_IMAGE_XIMAGE(img)->data;
-		ptr = GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + dblimg->bpl;
+		ptr = GDK_IMAGE_XIMAGE(scaledimg)->data;
 
 		for (y = 0; y < img->height; y++)
 		{
-			for (x = 0; x < img->width; x++)
+			for (ry = 0; ry < (guint) scale; ry++)
 			{
-				gint8 pix = *srcptr++;
-				*ptr++ = pix;
-				*ptr++ = pix;
-				*ptr2++ = pix;
-				*ptr2++ = pix;
+				char *row = ptr;
+				for (x = 0; x < img->width; x++)
+				{
+					gint8 pix = *srcptr++;
+					for (rx = 0; rx < (guint) scale; rx++)
+						*row++ = pix;
+				}
+				srcptr -= img->width;
+				ptr = row + scaledimg->bpl - scaledimg->width;
 			}
-			srcptr += img->bpl - img->width;
-			ptr += (dblimg->bpl << 1) - dblimg->width;
-			ptr2 += (dblimg->bpl << 1) - dblimg->width;
+			srcptr += img->bpl;
 		}
 	}
-	if (dblimg->bpp == 2)
+	if (scaledimg->bpp == 2)
 	{
-		guint16 *srcptr, *ptr, *ptr2;
+		guint16 *srcptr, *ptr;
 
 		srcptr = (guint16 *) GDK_IMAGE_XIMAGE(img)->data;
-		ptr = (guint16 *) GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + (dblimg->bpl >> 1);
+		ptr = (guint16 *) GDK_IMAGE_XIMAGE(scaledimg)->data;
 
 		for (y = 0; y < img->height; y++)
 		{
-			for (x = 0; x < img->width; x++)
+			for (ry = 0; ry < (guint) scale; ry++)
 			{
-				guint16 pix = *srcptr++;
-				*ptr++ = pix;
-				*ptr++ = pix;
-				*ptr2++ = pix;
-				*ptr2++ = pix;
+				guint16 *row = ptr;
+				for (x = 0; x < img->width; x++)
+				{
+					guint16 pix = *srcptr++;
+					for (rx = 0; rx < (guint) scale; rx++)
+						*row++ = pix;
+				}
+				srcptr -= img->width;
+				ptr = row + scaledimg->bpl / 2 - scaledimg->width;
 			}
-			srcptr += (img->bpl >> 1) - img->width;
-			ptr += (dblimg->bpl) - dblimg->width;
-			ptr2 += (dblimg->bpl) - dblimg->width;
+			srcptr += img->bpl / 2;
 		}
 	}
-	if (dblimg->bpp == 3)
+	if (scaledimg->bpp == 3)
 	{
-		char *srcptr, *ptr, *ptr2;
+		char *srcptr, *ptr;
 
 		srcptr = GDK_IMAGE_XIMAGE(img)->data;
-		ptr = GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + dblimg->bpl;
+		ptr = GDK_IMAGE_XIMAGE(scaledimg)->data;
 
 		for (y = 0; y < img->height; y++)
 		{
-			for (x = 0; x < img->width; x++)
+			for (ry = 0; ry < (guint) scale; ry++)
 			{
-				char pix1 = *srcptr++;
-				char pix2 = *srcptr++;
-				char pix3 = *srcptr++;
-				*ptr++ = pix1;
-				*ptr++ = pix2;
-				*ptr++ = pix3;
-				*ptr++ = pix1;
-				*ptr++ = pix2;
-				*ptr++ = pix3;
-				*ptr2++ = pix1;
-				*ptr2++ = pix2;
-				*ptr2++ = pix3;
-				*ptr2++ = pix1;
-				*ptr2++ = pix2;
-				*ptr2++ = pix3;
-
+				char *row = ptr;
+				for (x = 0; x < img->width; x++)
+				{
+					char pix1 = *srcptr++;
+					char pix2 = *srcptr++;
+					char pix3 = *srcptr++;
+					for (rx = 0; rx < (guint) scale; rx++)
+					{
+						*row++ = pix1;
+						*row++ = pix2;
+						*row++ = pix3;
+					}
+				}
+				srcptr -= img->width * 3;
+				ptr = row + scaledimg->bpl - scaledimg->width * 3;
 			}
-			srcptr += img->bpl - (img->width * 3);
-			ptr += (dblimg->bpl << 1) - (dblimg->width * 3);
-			ptr2 += (dblimg->bpl << 1) - (dblimg->width * 3);
+			srcptr += img->bpl;
 		}
 	}
-	if (dblimg->bpp == 4)
+	if (scaledimg->bpp == 4)
 	{
-		register guint32 *srcptr, *ptr, *ptr2, pix;
+		register guint32 *srcptr, *ptr, pix;
 
 		srcptr = (guint32 *) GDK_IMAGE_XIMAGE(img)->data;
-		ptr = (guint32 *) GDK_IMAGE_XIMAGE(dblimg)->data;
-		ptr2 = ptr + (dblimg->bpl >> 2);
+		ptr = (guint32 *) GDK_IMAGE_XIMAGE(scaledimg)->data;
 
 		for (y = 0; y < img->height; y++)
 		{
-			for (x = 0; x < img->width; x++)
+			for (ry = 0; ry < (guint) scale; ry++)
 			{
-				pix = *srcptr++;
-				*ptr++ = pix;
-				*ptr++ = pix;
-				*ptr2++ = pix;
-				*ptr2++ = pix;
+				guint32 *row = ptr;
+				for (x = 0; x < img->width; x++)
+				{
+					pix = *srcptr++;
+					for (rx = 0; rx < (guint) scale; rx++)
+						*row++ = pix;
+				}
+				srcptr -= img->width;
+				ptr = row + scaledimg->bpl / 4 - scaledimg->width;
 			}
-			srcptr += (img->bpl >> 2) - img->width;
-			ptr += (dblimg->bpl >> 1) - dblimg->width;
-			ptr2 += (dblimg->bpl >> 1) - dblimg->width;
+			srcptr += img->bpl / 4;
 		}
 	}
-	return dblimg;
+	return scaledimg;
+}
+
+/* Expands a width x height indexed-color frame (one byte per pixel)
+ * by an integer scale factor through pixel replication; dest must be
+ * width * scale x height * scale bytes. */
+void util_expand_indexed_frame(const guchar *frame, gint width, gint height,
+			       guchar *dest, gint scale)
+{
+	gint x, y, rx, ry;
+	gint dest_width = width * scale;
+
+	for (y = 0; y < height; y++)
+	{
+		for (ry = 0; ry < scale; ry++)
+		{
+			guchar *row = dest + (y * scale + ry) * dest_width;
+
+			for (x = 0; x < width; x++)
+			{
+				guchar pix = frame[y * width + x];
+
+				for (rx = 0; rx < scale; rx++)
+					row[x * scale + rx] = pix;
+			}
+		}
+	}
 }
 
 static char *read_string(const char *filename, const char *section, const char *key, gboolean comment)
@@ -1118,7 +1145,41 @@ gint util_get_xft_dpi(void)
 	return dpi;
 }
 
+/* Continuous size coefficient for a display resolution relative to
+ * the QHD baseline, where the classic 1x skinned UI is the accepted
+ * default (3840x2160 yields 1.5, 2560x1440 yields 1.0). The tighter
+ * axis wins so unusual aspect ratios do not over-scale. */
+gdouble util_skin_coefficient_for_resolution(gint width, gint height)
+{
+	gdouble by_width = width / (gdouble) XMMS_SKIN_BASE_WIDTH;
+	gdouble by_height = height / (gdouble) XMMS_SKIN_BASE_HEIGHT;
+
+	return MIN(by_width, by_height);
+}
+
+/* Maps a size coefficient onto an integer skin scale (1x up to
+ * XMMS_SKIN_MAX_SCALE), so 1.5 rounds up to 2 and 2.5 to 3;
+ * coefficients beyond the renderer cap saturate. */
+gint util_skin_scale_for_coefficient(gdouble coefficient)
+{
+	gint scale = (gint) (coefficient + 0.5);
+
+	return CLAMP(scale, 1, XMMS_SKIN_MAX_SCALE);
+}
+
 gint util_skin_scale_for_dpi(gint dpi)
 {
-	return (dpi >= XMMS_HIDPI_DOUBLE_DPI) ? 2 : 1;
+	return util_skin_scale_for_coefficient(dpi / (gdouble) XMMS_DEFAULT_DPI);
+}
+
+/* Automatic startup scale for a display: the strongest of the
+ * display-resolution and Xft.dpi signals decides, so a desktop that
+ * reports no (or too low a) DPI still scales up on a framebuffer
+ * well above the QHD baseline. */
+gint util_skin_scale_for_display(gint width, gint height, gint dpi)
+{
+	gdouble resolution = util_skin_coefficient_for_resolution(width, height);
+	gdouble by_dpi = dpi / (gdouble) XMMS_DEFAULT_DPI;
+
+	return util_skin_scale_for_coefficient(MAX(resolution, by_dpi));
 }

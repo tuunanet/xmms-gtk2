@@ -64,10 +64,23 @@
 /* 1.5x or more of the default 96 DPI counts as HiDPI and starts the
  * skin doubled (covers GNOME fractional scales of 150% and up). */
 #define XMMS_HIDPI_DOUBLE_DPI 144
+/* Display-resolution baseline for the automatic skin scale: QHD
+ * (2560x1440) keeps the classic 1x skinned UI, larger displays scale
+ * up proportionally. The skinned renderer supports integer scales up
+ * to XMMS_SKIN_MAX_SCALE (1x..3x), so the coefficient saturates. */
+#define XMMS_SKIN_BASE_WIDTH 2560
+#define XMMS_SKIN_BASE_HEIGHT 1440
+#define XMMS_SKIN_MAX_SCALE 3
+/* First-run default for the skin_scale coefficient: 1.5 rounds up to
+ * 2x, so a freshly created ~/.xmms/config starts the skinned UI in
+ * DoubleSize on every display. */
+#define XMMS_DEFAULT_SKIN_SCALE 1.5
+/* First-run playlist width: spans the player and equalizer docked
+ * side by side (2 * 275). */
+#define XMMS_FIRST_RUN_PLAYLIST_WIDTH 550
 
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);
-GdkImage *create_dblsize_image(GdkImage * img);
 char *read_ini_string(const char *filename, const char *section, const char *key);
 char *read_ini_string_no_comment(const char *filename, const char *section, const char *key);
 GArray *read_ini_array(const gchar * filename, const gchar * section, const gchar * key);
@@ -90,6 +103,12 @@ gint util_xft_dpi_parse(const gchar *value);
 gint util_xft_dpi_from_rdb(const gchar *rdb);
 gint util_get_xft_dpi(void);
 gint util_skin_scale_for_dpi(gint dpi);
+gdouble util_skin_coefficient_for_resolution(gint width, gint height);
+gint util_skin_scale_for_coefficient(gdouble coefficient);
+gint util_skin_scale_for_display(gint width, gint height, gint dpi);
+GdkImage *create_scaled_image(GdkImage * img, gint scale);
+void util_expand_indexed_frame(const guchar *frame, gint width, gint height,
+			       guchar *dest, gint scale);
 
 #if ENABLE_NLS
     gchar* util_menu_translate(const gchar *path, gpointer func_data);

@@ -20,7 +20,11 @@
 #ifndef PLAYLISTWIN_H
 #define PLAYLISTWIN_H
 
-#define PLAYLIST_HEIGHT (cfg.playlist_shaded ? 14 : cfg.playlist_height)
+/* The playlist window always follows the player's skin scale; its
+ * config dimensions stay in 1x coordinates. */
+#define PLAYLIST_SCALE (cfg.doublesize + 1)
+#define PLAYLIST_WIDTH (cfg.playlist_width * PLAYLIST_SCALE)
+#define PLAYLIST_HEIGHT ((cfg.playlist_shaded ? 14 : cfg.playlist_height) * PLAYLIST_SCALE)
 
 void playlistwin_update_list(void);
 gboolean playlistwin_item_visible(int index);
@@ -30,6 +34,7 @@ void playlistwin_set_shade_menu_cb(gboolean shaded);
 void playlistwin_raise(void);
 void playlistwin_create(void);
 void playlistwin_recreate(void);
+void playlistwin_set_scale(gint extra_scale);
 void draw_playlist_window(gboolean force);
 void playlistwin_hide_timer(void);
 void playlistwin_set_time(gint time, gint length, TimerMode mode);

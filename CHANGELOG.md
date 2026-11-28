@@ -15,6 +15,79 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+### Added
+- N x integer skin scaling: the skinned UI now supports 1x, 2x, and 3x
+  (main/equalizer at 825x348 in triple size). The scale selector is the
+  same `skin_scale` coefficient — values from 2.5 (and 8K-class
+  resolutions, e.g. 7680x4320) select 3x — and the Ctrl+D / DoubleSize
+  toggle switches between 1x and the session's chosen scale. Every
+  scaled component was generalized from the hardcoded 2x: backing
+  pixmaps (`create_scaled_image`), region.txt shape masks (generated
+  per scale), event coordinate translation, window hints and dock
+  geometry, and the analyzer/vis renderers (now computed at 1x and
+  expanded by pixel replication). The playlist follows the player's
+  scale too — including its drag-resize steps, geometry hints, shape
+  mask, and embedded vis — fixing the mixed-size docked chain at 2x/3x;
+  1x and 2x behavior is otherwise unchanged. Covered by unit tests
+  (coefficient mapping to 3), end-to-end startup tests (`skin_scale=3.0`
+  and a private-Xvfb 8K screen both render 825x348), and dock-resnap
+  cases exercising the scaled playlist in the docked chain (600x464 at
+  2x, 900x696 at 3x on a private 2560x1440 screen) plus the
+  3x-to-1x-to-3x toggle cycle.
+- Automatic skin scale from the display resolution: XMMS now picks its
+  startup size from a size coefficient relative to the QHD baseline —
+  2560x1440 keeps the classic 1x UI, while larger screens scale up
+  (a 32" 4K panel at 1.5 rounds up to DoubleSize) even when the desktop
+  reports no `Xft.dpi`. The automatic scale is the stronger of the
+  resolution ratio and the existing DPI signal. The new `skin_scale`
+  float key in `[xmms]` (default 0 = automatic) overrides the
+  coefficient explicitly; `skin_autoscale=FALSE` still opts out of the
+  automatic signals. A decision signal also replaces a stale
+  `doublesize=TRUE` saved by an earlier doubled session, which
+  previously masked both keys at startup. Covered by
+  `tests/test-hidpi-scale.c` (coefficient
+  math) and new end-to-end startup tests on private Xvfb 4K/QHD screens.
+- First-run config defaults: when `~/.xmms/config` does not exist yet,
+  XMMS now creates it at startup with `doublesize=TRUE`,
+  `skin_autoscale=TRUE`, and `skin_scale=1.5`, so fresh installs open
+  the skinned UI at DoubleSize on every display instead of the classic
+  1x on smaller screens. The first run also opens the classic
+  arrangement centered on the screen: the equalizer docked to the
+  player's right, the playlist spanning their combined width below,
+  and all three windows visible. Existing configs are never rewritten
+  with these defaults. Covered by an end-to-end first-run startup test
+  asserting the written keys, the window geometry, the docked layout,
+  and the centering.
+
+### Fixed
+- Restored mouse wheel support dropped by the GTK2 port: the GTK1-era
+  handlers listened for the wheel buttons 4/5 as button presses, but
+  GTK2 delivers wheel motion as GDK scroll events, so none of them
+  ever fired — most visibly, the playlist editor no longer scrolled
+  with the wheel. New scroll-event handlers restore the original
+  behaviors: the playlist list scrolls three entries per notch, the
+  main window adjusts the volume with the vertical wheel and seeks
+  with a horizontal wheel, and the equalizer preamp/band sliders step
+  under the pointer. Covered by an XTEST end-to-end test that wheels
+  the playlist and asserts the list content moves and then restores
+  pixel-identically.
+- Scaled the playlist's hold-to-popup skinned menus (the submenus that
+  pop up while holding the file+, file-, select-all, misc-options, and
+  load-list buttons): the popup window was still created at 1x with
+  1x skin blits and 1x motion hit-testing, and its anchor mixed the
+  window's device origin with logical widget offsets — at 2x/3x the
+  menu appeared tiny and detached from the pressed button, and the
+  item highlight never tracked the pointer because the popup window
+  was not under it. The menu is now composed at 1x and replicated
+  into a scaled popup window (25xnum_items*18 at 1x), pointer motion
+  is translated by the scale, and the anchors are scaled offsets; 1x
+  geometry is pixel-identical to the stock behavior.
+- Removed a leftover unconditional 1x visualization draw from the N x
+  scaling rework: every vis_draw call painted the analyzer twice — once
+  at the 1x device position and once at the scaled position — so at
+  2x/3x two spectrum displays animated in the main panel at once. The
+  frame is now drawn exactly once, through the scaled path.
+
 ## [1.2.14] - 2026-11-27
 
 ### Added
