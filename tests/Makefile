@@ -8,7 +8,7 @@ LDLIBS += $(shell pkg-config --libs gtk+-2.0)
 
 .PHONY: check clean test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 
-check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-playlist-wheel test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
+check: test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-playlist-wheel test-app-icon test-c-lint test-intl-generated-sources test-package-recipes test-plugin-linkage test-release-tools
 	./test-xentry
 	./test-filebrowser
 	./test-font-load
@@ -30,6 +30,7 @@ check: test-xentry test-filebrowser test-font-load test-popup-position test-keyb
 	./test-hidpi-startup
 	./test-dock-resnap
 	./test-playlist-wheel
+	./test-app-icon
 
 test-xentry: $(srcdir)/test-xentry.c $(top_srcdir)/libxmms/xentry.c $(top_srcdir)/libxmms/xentry.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-xentry.c $(top_srcdir)/libxmms/xentry.c $(LDLIBS)
@@ -60,6 +61,10 @@ test-dock-resnap: $(srcdir)/test-dock-resnap.c $(top_builddir)/xmms/xmms
 test-playlist-wheel: override CFLAGS += -DXMMS_BINARY=\"$(top_builddir)/xmms/xmms\"
 test-playlist-wheel: $(srcdir)/test-playlist-wheel.c $(top_builddir)/xmms/xmms
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-playlist-wheel.c $(LDLIBS) -lX11 -lXtst
+
+test-app-icon: override CFLAGS += -DXMMS_BINARY=\"$(top_builddir)/xmms/xmms\"
+test-app-icon: $(srcdir)/test-app-icon.c $(top_builddir)/xmms/xmms
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $(srcdir)/test-app-icon.c $(LDLIBS) -lX11
 
 test-popup-position: override CFLAGS += -ffunction-sections -fdata-sections
 test-popup-position: LDFLAGS += -Wl,--gc-sections
@@ -132,4 +137,4 @@ test-release-tools:
 	$(srcdir)/test-release-tools.sh $(top_srcdir)
 
 clean:
-	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-playlist-wheel test-plugins test-outputplugin-plugins
+	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-playlist-wheel test-app-icon test-plugins test-outputplugin-plugins

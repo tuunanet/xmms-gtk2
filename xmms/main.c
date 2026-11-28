@@ -38,6 +38,10 @@
 #include "libxmms/dirbrowser.h"
 #include "outputplugin.h"
 #include "xmms_mini.xpm"
+#include "xmms_icon_32.xpm"
+#include "xmms_icon_48.xpm"
+#include "xmms_icon_64.xpm"
+#include "xmms_icon_128.xpm"
 
 #define RANDTABLE_SIZE 128
 
@@ -3595,6 +3599,33 @@ void create_popups(void)
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(gtk_item_factory_get_widget(mainwin_general_menu, "/Visualization")), GTK_WIDGET(gtk_item_factory_get_widget(mainwin_vis_menu, "")));
 }
 
+/* The window icon in increasing sizes, published as _NET_WM_ICON so that
+ * panels pick a size-matched rendition instead of upscaling the 16x16
+ * pixmap the legacy WM hints carry. Created once, smallest first. */
+static GList *mainwin_icon_pixbufs (GtkWidget *win)
+{
+	static gchar **xpms[] =
+		{ xmms_mini_xpm, xmms_icon_32_xpm, xmms_icon_48_xpm,
+		  xmms_icon_64_xpm, xmms_icon_128_xpm, NULL };
+	static GList *pixbufs = NULL;
+	GdkPixmap *pixmap;
+	GdkPixbuf *pixbuf;
+	gint i;
+
+	if (!pixbufs)
+		for (i = 0; xpms[i]; i++)
+		{
+			pixmap = gdk_pixmap_create_from_xpm_d (win->window, NULL, NULL, xpms[i]);
+			if (!pixmap)
+				continue;
+			pixbuf = gdk_pixbuf_get_from_drawable (NULL, pixmap, NULL, 0, 0, 0, 0, -1, -1);
+			if (pixbuf)
+				pixbufs = g_list_append (pixbufs, pixbuf);
+			gdk_pixmap_unref (pixmap);
+		}
+	return pixbufs;
+}
+
 static void mainwin_set_icon (GtkWidget *win)
 {
 	static GdkPixmap *icon;
@@ -3611,6 +3642,7 @@ static void mainwin_set_icon (GtkWidget *win)
 	gdk_property_change (win->window, icon_atom, icon_atom, 32,
 			     GDK_PROP_MODE_REPLACE, (guchar *)data, 2);
 	gdk_window_set_icon(win->window, NULL, icon, mask);
+	gdk_window_set_icon_list(win->window, mainwin_icon_pixbufs (win));
 	gdk_window_set_icon_name(win->window, PACKAGE);
 }
 

@@ -59,6 +59,8 @@ urldecode.c urldecode.h \
 dnd.h \
 mkdtemp.c
 
-EXTRA_DIST= xmms_logo.xpm xmms_mini.xpm xmms.desktop xmms.wmconfig
+EXTRA_DIST= app-icon.png xmms_logo.xpm xmms_icon_32.xpm \
+	xmms_icon_48.xpm xmms_icon_64.xpm xmms_icon_128.xpm xmms_mini.xpm \
+	xmms.desktop xmms.wmconfig
 
 xmmsinclude_HEADERS = plugin.h fullscreen.h

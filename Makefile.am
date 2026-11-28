@@ -33,10 +33,24 @@ EXTRA_DIST = \
 	packaging/debian/source/format \
 	packaging/debian/xmms.docs \
 	packaging/debian/xmms.install \
+	packaging/icons/hicolor/16x16/apps/xmms.png \
+	packaging/icons/hicolor/22x22/apps/xmms.png \
+	packaging/icons/hicolor/24x24/apps/xmms.png \
+	packaging/icons/hicolor/32x32/apps/xmms.png \
+	packaging/icons/hicolor/36x36/apps/xmms.png \
+	packaging/icons/hicolor/48x48/apps/xmms.png \
+	packaging/icons/hicolor/64x64/apps/xmms.png \
+	packaging/icons/hicolor/72x72/apps/xmms.png \
+	packaging/icons/hicolor/96x96/apps/xmms.png \
+	packaging/icons/hicolor/128x128/apps/xmms.png \
+	packaging/icons/hicolor/192x192/apps/xmms.png \
+	packaging/icons/hicolor/256x256/apps/xmms.png \
+	packaging/icons/hicolor/512x512/apps/xmms.png \
 	packaging/xmms.desktop \
 	tests/Makefile \
 	tests/fixture-input-plugin.c \
 	tests/fixture-output-plugin.c \
+	tests/test-app-icon.c \
 	tests/test-alsa-pcm-state.c \
 	tests/test-alsa-volume.c \
 	tests/test-filebrowser.c \
@@ -64,6 +78,7 @@ EXTRA_DIST = \
 	tools/cppcheck-suppressions.txt \
 	tools/run-c-lint.sh \
 	tools/extract-release-notes.sh \
+	tools/generate-app-icon.py \
 	xmms.m4
 
 m4datadir = $(datadir)/aclocal

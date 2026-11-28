@@ -30,8 +30,10 @@ override_dh_auto_install:
 	find $(CURDIR)/debian/tmp -name '*.la' -delete
 	install -D -m 0644 packaging/xmms.desktop \
 		$(CURDIR)/debian/tmp/usr/share/applications/xmms.desktop
-	install -D -m 0644 xmms/xmms_mini.xpm \
-		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/16x16/apps/xmms.xpm
+	set -e; for icon in packaging/icons/hicolor/*/*/*.png; do \
+		install -D -m 0644 "$$icon" \
+			"$(CURDIR)/debian/tmp/usr/share/icons/hicolor/$${icon#packaging/icons/hicolor/}"; \
+	done
 
 override_dh_missing:
 	dh_missing --fail-missing

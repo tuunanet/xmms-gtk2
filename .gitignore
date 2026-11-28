@@ -58,6 +58,7 @@
 /tests/test-alsa-pcm-state
 /tests/test-alsa-volume
 /tests/test-output-pacing
+/tests/test-app-icon
 
 # Source distribution and package artifacts
 /xmms-[0-9]*/
