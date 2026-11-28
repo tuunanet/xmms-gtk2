@@ -1454,6 +1454,8 @@ void playlistwin_set_scale(gint extra_scale)
 	gint scale = extra_scale + 1;
 
 	vis_set_scale(playlistwin_vis, scale);
+	/* Reload the list font so the text tracks the new skin scale. */
+	playlist_list_set_font(cfg.playlist_font, cfg.playlist_font_scale);
 	playlistwin_set_hints();
 	dock_resize(dock_window_list, playlistwin, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
 	gtk_widget_set_usize(playlistwin, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);

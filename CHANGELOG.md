@@ -60,6 +60,16 @@ for XMMS GTK2.
   and the centering.
 
 ### Fixed
+- Made the playlist editor text follow the skin scale: the list font
+  now loads at the effective skin scale multiplied by
+  `playlist_font_scale` (100 = match the scaled skin), and reloads
+  when the scale changes, instead of rendering the font's native
+  pixels inside a doubled window — on a DoubleSize start the playlist
+  rows were half the height they should be (~13px text in a doubled
+  window). Fresh installs now get readable playlist text without any
+  configuration, and `playlist_font_scale` percentages remain a
+  refinement on top. Covered by an end-to-end test measuring the
+  rendered row pitch at 1x and 2x.
 - Restored mouse wheel support dropped by the GTK2 port: the GTK1-era
   handlers listened for the wheel buttons 4/5 as button presses, but
   GTK2 delivers wheel motion as GDK scroll events, so none of them
