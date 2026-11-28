@@ -305,11 +305,15 @@ static gint expected_startup_scale(const gchar *dpi)
 /* Launches XMMS with an isolated HOME on the given display (NULL for
  * the ambient one) and the given Xft.dpi injected (NULL removes the
  * property), measures the stable main window size, and always restores
- * the previous RESOURCE_MANAGER value. */
+ * the previous RESOURCE_MANAGER value. With create_config set, a
+ * minimal config file is seeded first; otherwise the run starts with
+ * no config at all (first run). When config_contents is non-NULL it
+ * receives the contents of ~/.xmms/config as XMMS left it. */
 static void launch_and_measure_on(const gchar *display_name,
+				  gboolean create_config,
 				  const gchar *config_extra,
 				  const gchar *dpi, guint *width,
-				  guint *height)
+				  guint *height, gchar **config_contents)
 {
 	gchar *runtime_directory;
 	gchar *resource_backup;
@@ -324,7 +328,8 @@ static void launch_and_measure_on(const gchar *display_name,
 	runtime_directory = g_dir_make_tmp("xmms-hidpi-startup-XXXXXX", &error);
 	g_assert_no_error(error);
 	g_assert_nonnull(runtime_directory);
-	write_config(runtime_directory, config_extra);
+	if (create_config)
+		write_config(runtime_directory, config_extra);
 
 	display = XOpenDisplay(display_name);
 	g_assert_nonnull(display);
@@ -351,6 +356,18 @@ static void launch_and_measure_on(const gchar *display_name,
 	if (main_window != None)
 		wait_for_stable_size(display, main_window, width, height);
 
+	if (config_contents)
+	{
+		gchar *path = g_build_filename(runtime_directory, ".xmms",
+					       "config", NULL);
+		gboolean read_config = g_file_get_contents(path,
+							   config_contents,
+							   NULL, NULL);
+
+		g_assert_true(read_config);
+		g_free(path);
+	}
+
 	write_resource_manager(display, resource_backup);
 
 	terminate_child(child);
@@ -364,7 +381,8 @@ static void launch_and_measure_on(const gchar *display_name,
 static void launch_and_measure(const gchar *config_extra, const gchar *dpi,
 			       guint *width, guint *height)
 {
-	launch_and_measure_on(NULL, config_extra, dpi, width, height);
+	launch_and_measure_on(NULL, TRUE, config_extra, dpi, width, height,
+			      NULL);
 }
 
 static void test_dpi_192_starts_doublesize(void)
@@ -465,7 +483,8 @@ static void run_on_private_screen(const gchar *geometry, guint *width,
 		g_test_skip("Xvfb is not available");
 		return;
 	}
-	launch_and_measure_on(display_name, NULL, NULL, width, height);
+	launch_and_measure_on(display_name, TRUE, NULL, NULL, width, height,
+			      NULL);
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 	terminate_child(xvfb_pid);
 	g_free(display_name);
@@ -537,6 +556,34 @@ static void test_autoscale_clears_persisted_doublesize(void)
 	g_assert_cmpuint(height, ==, SINGLE_SIZE_HEIGHT);
 }
 
+/* First run: no config file exists yet. XMMS must write
+ * ~/.xmms/config immediately with the seeded skin-scale keys
+ * (doublesize=TRUE, skin_autoscale=TRUE, skin_scale=1.5) and start
+ * DoubleSize on any display, because the seeded coefficient rounds up
+ * to 2x. */
+static void test_first_run_seeds_doublesize_config(void)
+{
+	guint width = 0, height = 0;
+	gchar *config_contents = NULL;
+	const gchar *scale;
+	gdouble seeded_scale;
+
+	launch_and_measure_on(NULL, FALSE, NULL, NULL, &width, &height,
+			      &config_contents);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+	g_assert_cmpuint(width, ==, DOUBLE_SIZE_WIDTH);
+	g_assert_cmpuint(height, ==, DOUBLE_SIZE_HEIGHT);
+
+	g_assert_nonnull(config_contents);
+	g_assert_nonnull(strstr(config_contents, "doublesize=TRUE"));
+	g_assert_nonnull(strstr(config_contents, "skin_autoscale=TRUE"));
+	scale = strstr(config_contents, "skin_scale=");
+	g_assert_nonnull(scale);
+	seeded_scale = g_ascii_strtod(scale + strlen("skin_scale="), NULL);
+	g_assert_cmpfloat(seeded_scale, >=, 1.5);
+	g_free(config_contents);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -564,6 +611,8 @@ int main(int argc, char **argv)
 			test_skin_scale_override_wins_over_persisted_doublesize);
 	g_test_add_func("/hidpi-startup/autoscale-clears-persisted-doublesize",
 			test_autoscale_clears_persisted_doublesize);
+	g_test_add_func("/hidpi-startup/first-run-seeds-doublesize-config",
+			test_first_run_seeds_doublesize_config);
 
 	return g_test_run();
 }

@@ -71,6 +71,10 @@
 #define XMMS_SKIN_BASE_WIDTH 2560
 #define XMMS_SKIN_BASE_HEIGHT 1440
 #define XMMS_SKIN_MAX_SCALE 3
+/* First-run default for the skin_scale coefficient: 1.5 rounds up to
+ * 2x, so a freshly created ~/.xmms/config starts the skinned UI in
+ * DoubleSize on every display. */
+#define XMMS_DEFAULT_SKIN_SCALE 1.5
 
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);

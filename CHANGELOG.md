@@ -47,6 +47,13 @@ for XMMS GTK2.
   previously masked both keys at startup. Covered by
   `tests/test-hidpi-scale.c` (coefficient
   math) and new end-to-end startup tests on private Xvfb 4K/QHD screens.
+- First-run config defaults: when `~/.xmms/config` does not exist yet,
+  XMMS now creates it at startup with `doublesize=TRUE`,
+  `skin_autoscale=TRUE`, and `skin_scale=1.5`, so fresh installs open
+  the skinned UI at DoubleSize on every display instead of the classic
+  1x on smaller screens. Existing configs are never rewritten with
+  these defaults. Covered by an end-to-end first-run startup test
+  asserting both the window geometry and the written keys.
 
 ### Fixed
 - Scaled the playlist's hold-to-popup skinned menus (the submenus that

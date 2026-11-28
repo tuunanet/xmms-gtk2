@@ -343,6 +343,25 @@ static void make_xmms_dir(void)
 	g_free(filename);
 }
 
+/* First run: ~/.xmms/config does not exist yet, so create it right
+ * away with the seeded skin-scale keys. make_xmms_dir() must run first
+ * because read_config() executes before main() creates ~/.xmms.
+ * save_config() fills in the remaining keys on exit. */
+static void write_first_run_config(const gchar *filename)
+{
+	ConfigFile *cfgfile;
+
+	make_xmms_dir();
+	cfgfile = xmms_cfg_new();
+	xmms_cfg_write_boolean(cfgfile, "xmms", "doublesize",
+			       cfg.doublesize != 0);
+	xmms_cfg_write_boolean(cfgfile, "xmms", "skin_autoscale",
+			       cfg.skin_autoscale);
+	xmms_cfg_write_float(cfgfile, "xmms", "skin_scale", cfg.skin_scale);
+	xmms_cfg_write_file(cfgfile, filename);
+	xmms_cfg_free(cfgfile);
+}
+
 static void read_config(void)
 {
 	ConfigFile *cfgfile;
@@ -510,6 +529,18 @@ static void read_config(void)
 		xmms_cfg_read_string(cfgfile, "xmms", "generic_title_format", &cfg.gentitle_format);
 
 		xmms_cfg_free(cfgfile);
+	}
+	else
+	{
+		/* First run: seed the skin-scale defaults and create the
+		 * config file immediately, so the first write already
+		 * pins DoubleSize on every display (skin_scale=1.5
+		 * rounds up to 2x). Existing configs are never touched
+		 * here; save_config() adds the remaining keys on exit. */
+		cfg.doublesize = 1;
+		cfg.skin_autoscale = TRUE;
+		cfg.skin_scale = XMMS_DEFAULT_SKIN_SCALE;
+		write_first_run_config(filename);
 	}
 
 	if (cfg.playlist_font && strlen(cfg.playlist_font) == 0)
