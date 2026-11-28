@@ -166,6 +166,7 @@ jobs:
             libmikmod-dev \
             libsm-dev \
             libvorbis-dev \
+            libxtst-dev \
             libxxf86vm-dev \
             lintian \
             pkg-config \
