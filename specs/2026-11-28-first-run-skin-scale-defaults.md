@@ -34,6 +34,27 @@ skin_scale=1.5
 - `skin_autoscale=TRUE` matches the existing in-memory default and is
   written explicitly so the file states all three keys.
 
+### First-run layout
+
+The first session also opens the classic arrangement centered on the
+primary screen: equalizer docked to the player's right edge, playlist
+below spanning their combined width (550 1x-px,
+`XMMS_FIRST_RUN_PLAYLIST_WIDTH`), all three windows visible
+(`equalizer_visible`/`playlist_visible` seeded TRUE).
+
+`read_config()` runs before GTK is initialized and before the startup
+scale is decided, so it only seeds 1x-relative offsets (equalizer at
++275/+0, playlist at +0/+116 from the player) and flags
+`xmms_first_run`. Once `main()` knows the scale and GDK is up,
+`first_run_layout(scale)` places the player anchor at the clamped
+center of the screen; the existing autoscaled-start resnap
+(`resnap_dock_group`) then snaps the equalizer and playlist flush at
+the scaled sizes — evaluated against the 1x geometry it already
+expects, the seeded offsets resolve to: equalizer right of the
+doubled player, playlist below the player at the player's x. On a 1x
+first run the offsets are already the final flush layout, so no resnap
+is needed either way.
+
 Existing configs are never touched by this path: the seeding runs only
 in the `cfgfile == NULL` branch of `read_config()`. An upgraded config
 without a `skin_scale` key keeps the automatic coefficient default
@@ -70,7 +91,12 @@ locale, so the file literally contains `skin_scale=1.5`.
   real binary with an isolated `HOME` containing no config, asserts
   the player maps at 550x232 (DoubleSize) on the ambient screen, and
   asserts `~/.xmms/config` exists with `doublesize=TRUE`,
-  `skin_autoscale=TRUE`, and a `skin_scale` value parsing to 1.5.
+  `skin_autoscale=TRUE`, and a `skin_scale` value parsing to 1.5. It
+  also asserts the first-run layout: all three windows mapped, the
+  equalizer flush to the player's right, the playlist flush below
+  spanning both, and the group centered on the screen (clamped).
 - The launcher was parameterized (`create_config`,
-  `config_contents`) so the same harness covers the no-config first
-  run; all pre-existing cases still seed a config and are unaffected.
+  `config_contents`, plus optional leave-running outputs with a
+  `finish_launch` teardown) so the same harness covers the no-config
+  first run; all pre-existing cases still seed a config and are
+  unaffected.

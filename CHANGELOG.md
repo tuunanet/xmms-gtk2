@@ -51,9 +51,13 @@ for XMMS GTK2.
   XMMS now creates it at startup with `doublesize=TRUE`,
   `skin_autoscale=TRUE`, and `skin_scale=1.5`, so fresh installs open
   the skinned UI at DoubleSize on every display instead of the classic
-  1x on smaller screens. Existing configs are never rewritten with
-  these defaults. Covered by an end-to-end first-run startup test
-  asserting both the window geometry and the written keys.
+  1x on smaller screens. The first run also opens the classic
+  arrangement centered on the screen: the equalizer docked to the
+  player's right, the playlist spanning their combined width below,
+  and all three windows visible. Existing configs are never rewritten
+  with these defaults. Covered by an end-to-end first-run startup test
+  asserting the written keys, the window geometry, the docked layout,
+  and the centering.
 
 ### Fixed
 - Restored mouse wheel support dropped by the GTK2 port: the GTK1-era

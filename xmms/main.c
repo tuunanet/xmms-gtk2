@@ -54,6 +54,10 @@ static gint mainwin_bg_scaled_w = 0, mainwin_bg_scaled_h = 0;
 /* Scale the DoubleSize toggle switches to when turned on: the startup
  * decision, or 2x when startup was 1x. */
 static gint skin_scale_target = 2;
+/* Set by read_config() when ~/.xmms/config did not exist; main()
+ * finalizes the first-run window layout once the startup scale is
+ * known. */
+static gboolean xmms_first_run = FALSE;
 
 GtkAccelGroup *mainwin_accel;
 
@@ -540,6 +544,15 @@ static void read_config(void)
 		cfg.doublesize = 1;
 		cfg.skin_autoscale = TRUE;
 		cfg.skin_scale = XMMS_DEFAULT_SKIN_SCALE;
+		/* Classic first-run arrangement: equalizer docked to the
+		 * right of the player, the playlist spanning their
+		 * combined width below. The offsets are 1x-relative to
+		 * the player; first_run_layout() centers the group once
+		 * the startup scale is known. */
+		cfg.equalizer_visible = TRUE;
+		cfg.playlist_visible = TRUE;
+		cfg.playlist_width = XMMS_FIRST_RUN_PLAYLIST_WIDTH;
+		xmms_first_run = TRUE;
 		write_first_run_config(filename);
 	}
 
@@ -4466,6 +4479,30 @@ static gint startup_skin_scale(void)
 	return 0;
 }
 
+/* First run: center the window group on the screen. The player
+ * anchors the group in device pixels; the equalizer and playlist
+ * offsets seeded by read_config() are 1x-relative to the player, and
+ * the autoscaled-start resnap places them flush at the startup scale
+ * (player + equalizer on top, playlist spanning their combined width
+ * below). */
+static void first_run_layout(gint scale)
+{
+	gint x = (gdk_screen_width() - (2 * 275) * scale) / 2;
+	gint y = (gdk_screen_height() - (116 + cfg.playlist_height) * scale) / 2;
+
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+
+	cfg.player_x = x;
+	cfg.player_y = y;
+	cfg.equalizer_x = x + 275;
+	cfg.equalizer_y = y;
+	cfg.playlist_x = x;
+	cfg.playlist_y = y + 116;
+}
+
 int main(int argc, char **argv)
 {
 	gboolean skin_autoscaled = FALSE;
@@ -4579,6 +4616,8 @@ int main(int argc, char **argv)
 	}
 	/* The DoubleSize toggle switches between 1x and this scale. */
 	skin_scale_target = (cfg.doublesize >= 1) ? cfg.doublesize + 1 : 2;
+	if (xmms_first_run)
+		first_run_layout(cfg.doublesize + 1);
 	mainwin_create();
 
 	filename = g_strconcat(g_get_home_dir(), "/.xmms/gtkrc", NULL);

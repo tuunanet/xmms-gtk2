@@ -537,7 +537,10 @@ Here you change most of XMMS's behavior and settings.
   A fresh install (no `~/.xmms/config` yet) opens in doublesize on any
   display: XMMS creates the config at first startup with
   `doublesize=TRUE`, `skin_autoscale=TRUE`, and `skin_scale=1.5`.
-  Existing configs are never rewritten with these defaults.
+  The first session also opens the classic arrangement centered on
+  the screen — equalizer docked beside the player, playlist spanning
+  their combined width below. Existing configs are never rewritten
+  with these defaults.
 - **Smooth title scroll** — Makes the title scroll go smoother.
 - **Snap window at [ ] pixels** — Tells XMMS how close you can position the
   three windows until they dock / snap together with each other.

@@ -75,6 +75,9 @@
  * 2x, so a freshly created ~/.xmms/config starts the skinned UI in
  * DoubleSize on every display. */
 #define XMMS_DEFAULT_SKIN_SCALE 1.5
+/* First-run playlist width: spans the player and equalizer docked
+ * side by side (2 * 275). */
+#define XMMS_FIRST_RUN_PLAYLIST_WIDTH 550
 
 gchar *find_file_recursively(const char *dirname, const char *file);
 void del_directory(const char *dirname);
