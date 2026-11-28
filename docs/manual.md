@@ -559,13 +559,16 @@ Here you can change the fonts XMMS uses.
   The default is the native 6x12 `fixed` bitmap font, rendered crisp at
   every pixel. The text size can additionally be scaled with
   `playlist_font_scale` in the `[xmms]` section of `~/.xmms/config`: a
-  percentage applied to the chosen font's size, clamped to 25–400
-  (default `100`). Non-100 values rewrite the font's X name and let
-  the X server bitmap-scale it: `90` is one visible step smaller and
-  still clean, but other values can look soft, because bitmap fonts
-  render best at their native size. It only applies to fonts whose
-  full X font name specifies a size, and takes effect at startup or
-  after applying the Preferences dialog.
+  percentage applied to the chosen font's size **on top of the skin
+  scale**, clamped to 25–400 (default `100`, which matches the scaled
+  skin: at DoubleSize the list text renders doubled, like the rest of
+  the skinned UI). `200` doubles it again. Non-100 values rewrite the
+  font's X name and let the X server bitmap-scale it: `90` is one
+  visible step smaller and still clean, but other values can look
+  soft, because bitmap fonts render best at integer multiples of their
+  native size. It only applies to fonts whose full X font name
+  specifies a size, and takes effect at startup, after applying the
+  Preferences dialog, and when the skin scale changes.
 - **Use X font** — Makes XMMS use a font for the scrolling title in the main
   window.
 

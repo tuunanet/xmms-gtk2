@@ -536,7 +536,10 @@ void playlist_list_set_font(char *font, gint scale)
 	if (playlist_list_font)
 		gdk_font_unref(playlist_list_font);
 
-	scaled = util_font_scale_name(font, scale);
+	/* The list follows the player's skin scale, so the text scales
+	 * with it too; playlist_font_scale is a percentage on top
+	 * (100 = match the scaled skin). */
+	scaled = util_font_scale_name(font, scale * PLAYLIST_SCALE);
 	playlist_list_font = util_font_load(scaled ? scaled : font);
 	g_free(scaled);
 }

@@ -47,6 +47,21 @@
 	"equalizer_visible=FALSE\n" \
 	"skin_autoscale=FALSE\n"
 
+/* Same geometry with the legacy persisted DoubleSize bit: no autoscale
+ * signal exists, so the doubled start is honored unchanged. */
+#define WHEEL_CONFIG_DOUBLESIZE \
+	"[xmms]\n" \
+	"player_x=20\n" \
+	"player_y=20\n" \
+	"playlist_x=20\n" \
+	"playlist_y=252\n" \
+	"playlist_width=300\n" \
+	"playlist_height=232\n" \
+	"playlist_visible=TRUE\n" \
+	"equalizer_visible=FALSE\n" \
+	"skin_autoscale=FALSE\n" \
+	"doublesize=TRUE\n"
+
 static gint unexpected_x_error;
 
 static int record_x_error(Display *display, XErrorEvent *event)
@@ -381,6 +396,73 @@ static void send_wheel_notch(Display *display, Window window, guint button)
 	XFlush(display);
 }
 
+/* Vertical pitch of the playlist text rows, measured from the frame:
+ * per-scanline peak brightness across a text column band reveals the
+ * text lines; the distance between the first two band starts is the
+ * row pitch. scale is the skin scale (1 or 2) used to locate the list
+ * widget's device-pixel geometry. Returns -1 when fewer than two text
+ * bands are found. */
+static gint measure_text_row_pitch(Display *display, Window window,
+				   gint scale)
+{
+	XImage *image = grab_window(display, window);
+	gint list_x = 12 * scale, list_y = 20 * scale;
+	gint x_end = list_x + 120 * scale;
+	gint y_end = list_y + 140 * scale;
+	glong *brightness;
+	glong max_bright = 0, threshold;
+	gint width = image->width, height = image->height;
+	gint first_band = -1, second_band = -1;
+	gint in_band = 0, sub_threshold = 0;
+	gint y, x, pitch;
+
+	if (x_end >= width)
+		x_end = width - 1;
+	if (y_end >= height)
+		y_end = height - 1;
+
+	brightness = g_new0(glong, height);
+	for (y = list_y; y < y_end; y++)
+		for (x = list_x; x < x_end; x++)
+		{
+			gulong pixel = XGetPixel(image, x, y);
+			glong bright = (pixel & 0xff) +
+				       ((pixel >> 8) & 0xff) +
+				       ((pixel >> 16) & 0xff);
+
+			if (bright > brightness[y])
+				brightness[y] = bright;
+			if (brightness[y] > max_bright)
+				max_bright = brightness[y];
+		}
+	XDestroyImage(image);
+
+	threshold = max_bright * 2 / 5;
+	for (y = list_y; y < y_end && second_band == -1; y++)
+	{
+		if (brightness[y] >= threshold)
+		{
+			if (!in_band)
+			{
+				if (first_band == -1)
+					first_band = y;
+				else
+					second_band = y;
+				in_band = 1;
+			}
+			sub_threshold = 0;
+		}
+		else if (in_band && ++sub_threshold >= 3)
+			in_band = 0;
+	}
+	g_free(brightness);
+
+	if (first_band == -1 || second_band == -1)
+		return -1;
+	pitch = second_band - first_band;
+	return pitch;
+}
+
 static void region_assert(XImage *a, XImage *b, glong expected_diffs)
 {
 	glong differing = count_region_pixel_diffs(a, b, PLAYLIST_LIST_Y);
@@ -439,11 +521,64 @@ static void test_playlist_wheel_scrolls_list(void)
 	g_assert_cmpint(unexpected_x_error, ==, 0);
 }
 
+/* The playlist text must follow the skin scale: at a doubled start the
+ * text rows are about twice the 1x pitch. (Regression: the list font
+ * loaded at its native pixel size regardless of the skin scale,
+ * leaving tiny text amid doubled skin graphics.) */
+static void test_playlist_text_scales_with_skin(void)
+{
+	GPid xvfb_pid = 0, child;
+	gchar *display_name = NULL, *runtime_directory = NULL;
+	Display *display;
+	Window playlist_window;
+	XImage *settled;
+	gint pitch_single, pitch_double;
+
+	if (!start_xvfb("1280x1024x24", &xvfb_pid, &display_name))
+	{
+		g_test_skip("Xvfb is not available");
+		return;
+	}
+
+	launch_on(display_name, WHEEL_CONFIG, &playlist_window, &child,
+		  &display, &runtime_directory);
+	wait_for_stable_frame(display, playlist_window, &settled);
+	XDestroyImage(settled);
+	pitch_single = measure_text_row_pitch(display, playlist_window, 1);
+	terminate_child(child);
+	XCloseDisplay(display);
+	remove_tree(runtime_directory);
+	g_free(runtime_directory);
+
+	launch_on(display_name, WHEEL_CONFIG_DOUBLESIZE, &playlist_window,
+		  &child, &display, &runtime_directory);
+	wait_for_stable_frame(display, playlist_window, &settled);
+	XDestroyImage(settled);
+	pitch_double = measure_text_row_pitch(display, playlist_window, 2);
+	terminate_child(child);
+	XCloseDisplay(display);
+	remove_tree(runtime_directory);
+	g_free(runtime_directory);
+	terminate_child(xvfb_pid);
+	g_free(display_name);
+	g_assert_cmpint(unexpected_x_error, ==, 0);
+
+	g_test_message("playlist row pitch: 1x=%dpx, 2x=%dpx",
+		       pitch_single, pitch_double);
+	g_assert_cmpint(pitch_single, >=, 8);
+	g_assert_cmpint(pitch_single, <=, 40);
+	g_assert_cmpint(pitch_double, >=, 16);
+	g_assert_cmpint(pitch_double, <=, 60);
+	g_assert_cmpint(pitch_double * 5, >=, pitch_single * 8);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
 	g_test_add_func("/playlist-wheel/scrolls-list-and-restores",
 			test_playlist_wheel_scrolls_list);
+	g_test_add_func("/playlist-wheel/text-follows-skin-scale",
+			test_playlist_text_scales_with_skin);
 
 	return g_test_run();
 }
