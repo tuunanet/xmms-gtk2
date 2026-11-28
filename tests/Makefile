@@ -132,4 +132,4 @@ test-release-tools:
 	$(srcdir)/test-release-tools.sh $(top_srcdir)
 
 clean:
-	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-plugins test-outputplugin-plugins
+	rm -rf test-xentry test-filebrowser test-font-load test-popup-position test-keyboard-shortcuts test-pluginenum test-outputplugin test-output-pacing test-alsa-pcm-state test-alsa-volume test-mpg123-file-duration test-mpg123-fileinfo test-mpg123-stream-position test-hidpi-scale test-hidpi-startup test-dock-resnap test-playlist-wheel test-plugins test-outputplugin-plugins

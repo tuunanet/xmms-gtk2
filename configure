@@ -4003,7 +4003,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=xmms
- VERSION=1.2.14
+ VERSION=1.2.15
 
 
 printf "%s\n" "#define PACKAGE \"$PACKAGE\"" >>confdefs.h
