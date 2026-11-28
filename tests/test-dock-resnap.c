@@ -674,6 +674,10 @@ static void test_playlist_drag_resize_stays_flush_at_triple_scale(void)
 
 int main(int argc, char **argv)
 {
+	GPid xvfb_pid = 0;
+	gchar *xvfb_display = NULL;
+	int result;
+
 	g_test_init(&argc, &argv, NULL);
 	g_test_add_func("/dock-resnap/autoscaled-start-is-flush",
 			test_autoscaled_start_is_flush);
@@ -684,5 +688,21 @@ int main(int argc, char **argv)
 	g_test_add_func("/dock-resnap/playlist-drag-resize-at-triple-scale",
 			test_playlist_drag_resize_stays_flush_at_triple_scale);
 
-	return g_test_run();
+	/* Self-host the X server: the suite spawns real XMMS instances
+	 * against the ambient display (plus private screens for the
+	 * scaled cases), so owning the ambient server keeps the run
+	 * deterministic regardless of how the caller provides a
+	 * display. */
+	if (!start_xvfb("1280x1024x24", &xvfb_pid, &xvfb_display))
+	{
+		g_print("Xvfb is not available; skipping the e2e suite\n");
+		return 0;
+	}
+	g_setenv("DISPLAY", xvfb_display, TRUE);
+
+	result = g_test_run();
+
+	terminate_child(xvfb_pid);
+	g_free(xvfb_display);
+	return result;
 }
