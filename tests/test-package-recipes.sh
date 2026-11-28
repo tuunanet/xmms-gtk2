@@ -24,6 +24,15 @@ require_file()
 	fi
 }
 
+require_absent_file()
+{
+	if test -e "$srcdir/$1"; then
+		not_ok "does not include $1"
+	else
+		ok "does not include $1"
+	fi
+}
+
 require_text()
 {
 	file=$1
@@ -105,6 +114,18 @@ require_text packaging/xmms.desktop 'Exec=xmms %U' \
 	'preserves the xmms executable name'
 require_absent_text packaging/xmms.desktop 'Encoding=' \
 	'does not use the obsolete desktop Encoding key'
+require_text packaging/xmms.desktop 'StartupWMClass=xmms' \
+	'associates XMMS windows with the launcher explicitly'
+require_text xmms/main.c '"XMMS_Player", "xmms"' \
+	'keeps the window class the launcher entry matches'
+require_absent_file xmms/xmms.desktop \
+	'drops the legacy desktop entry'
+require_absent_file xmms/xmms.wmconfig \
+	'drops the legacy wmconfig menu entry'
+require_absent_text xmms/Makefile.am 'xmms.desktop' \
+	'does not ship the legacy desktop entry'
+require_absent_text xmms/Makefile.am 'xmms.wmconfig' \
+	'does not ship the legacy wmconfig menu entry'
 require_text tools/build-deb.sh 'dpkg-buildpackage --build=binary --no-sign' \
 	'builds unsigned binary Debian packages'
 require_text tools/build-deb.sh "grep 'undefined symbol: .*_ZGV'" \
