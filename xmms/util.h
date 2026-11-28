@@ -37,10 +37,26 @@
 #define XMMS_INTERIM_PROPORTIONAL_MAINWIN_FONT \
 	"-adobe-helvetica-medium-r-normal--8-*-*-*-p-*-iso8859-1"
 #define XMMS_INTERIM_CLASSIC_FONT "fixed"
-#define XMMS_DEFAULT_PLAYLIST_FONT \
+#define XMMS_INTERIM_SEMICONDENSED_PLAYLIST_FONT \
 	"-misc-fixed-bold-r-semicondensed--13-120-75-75-c-60-iso8859-1"
+/* Shipped briefly as the default playlist font scale, paired with the
+ * 13px bold interim font above; migrated to 100 with the native 6x12
+ * font so existing configs land on native-size rendering. */
+#define XMMS_INTERIM_PLAYLIST_FONT_SCALE 90
+#define XMMS_DEFAULT_PLAYLIST_FONT \
+	"-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso8859-1"
 #define XMMS_DEFAULT_MAINWIN_FONT \
 	"-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-1"
+
+/* Playlist editor text scale, in percent of the configured font's size.
+ * The default playlist font (6x12) is natively available, so the
+ * default scale is 100 and renders every pixel from the bitmap font
+ * itself. Other values rewrite the XLFD size fields and let the X
+ * server bitmap-scale; 90 percent is one visible step smaller (12px
+ * -> 11px) and still clean, while some other values can look soft. */
+#define XMMS_MIN_PLAYLIST_FONT_SCALE 25
+#define XMMS_DEFAULT_PLAYLIST_FONT_SCALE 100
+#define XMMS_MAX_PLAYLIST_FONT_SCALE 400
 
 /* Desktop DPI detection for HiDPI startup scaling. */
 #define XMMS_DEFAULT_DPI 96
@@ -71,6 +87,7 @@ GtkWidget *util_create_add_url_window(gchar *caption, GtkSignalFunc ok_func, Gtk
 GtkWidget *util_create_filebrowser(gboolean clear_pl_on_ok);
 gboolean util_filebrowser_is_dir(GtkFileSelection * filesel);
 GdkFont *util_font_load(gchar *name);
+gchar *util_font_scale_name(const gchar *name, gint scale);
 void util_set_cursor(GtkWidget *window);
 void util_dump_menu_rc(void);
 void util_read_menu_rc(void);

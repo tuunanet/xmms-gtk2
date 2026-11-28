@@ -34,6 +34,6 @@ PlayList_List *create_playlist_list(GList ** wlist, GdkPixmap * parent, GdkGC * 
 void playlist_list_move_up(PlayList_List *pl);
 void playlist_list_move_down(PlayList_List *pl);
 int playlist_list_get_playlist_position(PlayList_List *pl, int x, int y);
-void playlist_list_set_font(char *font);
+void playlist_list_set_font(char *font, gint scale);
 
 #endif

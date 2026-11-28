@@ -921,6 +921,7 @@ static const gchar *util_font_resolve_default(const gchar *name)
 	    !strcmp(name, XMMS_INTERIM_PLAYLIST_FONT) ||
 	    !strcmp(name, XMMS_INTERIM_FIXED_PLAYLIST_FONT) ||
 	    !strcmp(name, XMMS_INTERIM_PROPORTIONAL_PLAYLIST_FONT) ||
+	    !strcmp(name, XMMS_INTERIM_SEMICONDENSED_PLAYLIST_FONT) ||
 	    !strcmp(name, XMMS_DEFAULT_PLAYLIST_FONT))
 		return XMMS_DEFAULT_PLAYLIST_FONT;
 	if (!strcmp(name, XMMS_LEGACY_MAINWIN_FONT) ||
@@ -930,6 +931,65 @@ static const gchar *util_font_resolve_default(const gchar *name)
 	    !strcmp(name, XMMS_DEFAULT_MAINWIN_FONT))
 		return XMMS_DEFAULT_MAINWIN_FONT;
 	return NULL;
+}
+
+/*
+ * Rewrite a fully-specified XLFD with its pixel size (field 7) and point
+ * size (field 8, decipoints) scaled to scale/100. The X server derives
+ * the actual bitmap size from the point size and resolution, so both
+ * fields must move together. Returns NULL when the name is not a fully
+ * specified XLFD (an alias such as "fixed" or a wildcard pattern), or
+ * when scale is 100; the caller then loads the name unchanged.
+ */
+gchar *util_font_scale_name(const gchar *name, gint scale)
+{
+	gchar **fields;
+	gchar *scaled = NULL;
+	gchar *pixel_str, *point_str;
+	gchar *end;
+	glong pixel, point;
+	guint n_fields;
+
+	g_return_val_if_fail(name != NULL, NULL);
+
+	if (scale < XMMS_MIN_PLAYLIST_FONT_SCALE)
+		scale = XMMS_MIN_PLAYLIST_FONT_SCALE;
+	else if (scale > XMMS_MAX_PLAYLIST_FONT_SCALE)
+		scale = XMMS_MAX_PLAYLIST_FONT_SCALE;
+	if (scale == 100)
+		return NULL;
+
+	fields = g_strsplit(name, "-", 0);
+	n_fields = g_strv_length(fields);
+	/*
+	 * A full XLFD starts with a dash and has 14 fields; the
+	 * registry-encoding field may contain dashes, so only require
+	 * the count lower bound. Fields: ""(0) foundry(1) family(2)
+	 * weight(3) slant(4) setwidth(5) add-style(6) pixel(7) point(8).
+	 */
+	if (n_fields < 14 || fields[0][0] != '\0')
+		goto out;
+
+	pixel = strtol(fields[7], &end, 10);
+	if (end == fields[7] || *end != '\0' || pixel < 1)
+		goto out;
+	point = strtol(fields[8], &end, 10);
+	if (end == fields[8] || *end != '\0' || point < 1)
+		goto out;
+
+	pixel = MAX((pixel * scale + 50) / 100, 1);
+	point = MAX((point * scale + 50) / 100, 1);
+	pixel_str = g_strdup_printf("%ld", pixel);
+	point_str = g_strdup_printf("%ld", point);
+	g_free(fields[7]);
+	g_free(fields[8]);
+	fields[7] = pixel_str;
+	fields[8] = point_str;
+	scaled = g_strjoinv("-", fields);
+
+out:
+	g_strfreev(fields);
+	return scaled;
 }
 
 GdkFont *util_font_load(char *name)

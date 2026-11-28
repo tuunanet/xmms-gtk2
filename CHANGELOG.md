@@ -65,6 +65,41 @@ for XMMS GTK2.
   at the 1x device position and once at the scaled position — so at
   2x/3x two spectrum displays animated in the main panel at once. The
   frame is now drawn exactly once, through the scaled path.
+
+## [1.2.14] - 2026-11-27
+
+### Added
+- Playlist editor font scale option: `playlist_font_scale` in the
+  `[xmms]` section of `~/.xmms/config` scales the playlist text as a
+  percentage of the chosen font's size (clamped to 25–400; default
+  `100`, which keeps the font's native bitmap pixels untouched). The
+  configured font string is never rewritten, and alias/wildcard font
+  names load unscaled. Covered by string and load-time tests in
+  `tests/test-font-load.c`.
+- Robust native default playlist font: the playlist editor now
+  defaults to the natively available 6x12 `fixed` bitmap font
+  (`-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso8859-1`)
+  instead of the 13px bold semicondensed bitmap, whose server-scaled
+  sizes rendered thin and broken glyphs. The new default is one pixel
+  shorter, keeps the condensed classic look, and renders crisp at the
+  default scale. Configs still carrying the 13px bold default are
+  migrated to the new default by the existing historical-font
+  migration, together with the interim `playlist_font_scale=90`
+  default; the 13px bold name keeps loading (as the migrated default)
+  through `util_font_load`.
+
+### Fixed
+- Decoded UTF-16 ID3v2 text frames to UTF-8 regardless of the process
+  locale. With a non-UTF-8 locale (for example C/POSIX, common in
+  containers and headless environments), mp3 tag reading and title
+  editing silently dropped every non-ASCII character; the ID3v2.3
+  write path already assumed UTF-8, so round-trips now preserve
+  titles exactly at any locale.
+- Declared `xfonts-base` as a runtime dependency of the `xmms`
+  package and added it to the release build environment: the playlist
+  default font (and every skinned-window bitmap font pattern) resolves
+  from that package, and the packaging tests previously ran without
+  it, silently font-fallback-loading the playlist text.
 - Kept the docked skinned windows flush and fully visible across HiDPI
   autoscale and DoubleSize toggles on XWayland compositors that apply
   shape masks (mutter): the player and equalizer now apply their shape
