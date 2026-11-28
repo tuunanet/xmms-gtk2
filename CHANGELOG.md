@@ -15,6 +15,25 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+### Changed
+- New application icon (silver headphones on a black tile) replaces the
+  legacy artwork everywhere the player and `wmxmms` show it: the window icon,
+  the About dialog, the idle Spectrum analyzer and Blur Scope backgrounds,
+  and the dock app's launch tile. The window icon is now published at 16 to
+  128 px through `_NET_WM_ICON`, so panels pick a size-matched rendition
+  instead of upscaling the 16x16 pixmap, and the Debian package installs a
+  full hicolor PNG set (16 to 512 px) for the desktop entry. Every rendition
+  is generated from `xmms/app-icon.png` with `tools/generate-app-icon.py`.
+- The desktop entry declares `StartupWMClass=xmms`, so GNOME and Plasma
+  associate the player, playlist, and equalizer windows with the launcher
+  explicitly instead of by name heuristics.
+
+### Removed
+- The legacy `xmms/xmms.desktop` and `xmms/xmms.wmconfig`. The 1990s-era
+  launcher metadata was only shipped in the source tarball, never installed,
+  and still pointed at the previous icon; the desktop entry the package
+  installs remains the single one.
+
 ## [1.2.15] - 2026-11-28
 
 ### Added

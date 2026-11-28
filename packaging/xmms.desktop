@@ -9,3 +9,4 @@ Type=Application
 Categories=AudioVideo;Audio;Player;
 MimeType=audio/mpeg;audio/x-mpeg;audio/x-mp3;audio/x-wav;audio/x-scpls;audio/x-mpegurl;audio/mpegurl;application/ogg;audio/ogg;
 StartupNotify=false
+StartupWMClass=xmms

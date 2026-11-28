@@ -197,6 +197,7 @@ flowchart LR
 | `packaging/debian/` | `control`, `rules`, `.install` files for `xmms` and `libxmms-dev` |
 | `tools/build-deb.sh` | Helper invoked via `make deb` |
 | `packaging/xmms.desktop` | Desktop entry metadata |
+| `packaging/icons/hicolor/` | Themed launcher icons for the desktop entry, generated from `xmms/app-icon.png` by `tools/generate-app-icon.py` |
 | `.github/workflows/release-linux-packages.yml` | Manual Linux Mint 22.3 + Ubuntu 26.04 package builds and draft Release assembly |
 
 Debian packages are a **distribution** concern; runtime architecture does not

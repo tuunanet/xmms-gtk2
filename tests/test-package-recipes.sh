@@ -24,6 +24,15 @@ require_file()
 	fi
 }
 
+require_absent_file()
+{
+	if test -e "$srcdir/$1"; then
+		not_ok "does not include $1"
+	else
+		ok "does not include $1"
+	fi
+}
+
 require_text()
 {
 	file=$1
@@ -105,6 +114,18 @@ require_text packaging/xmms.desktop 'Exec=xmms %U' \
 	'preserves the xmms executable name'
 require_absent_text packaging/xmms.desktop 'Encoding=' \
 	'does not use the obsolete desktop Encoding key'
+require_text packaging/xmms.desktop 'StartupWMClass=xmms' \
+	'associates XMMS windows with the launcher explicitly'
+require_text xmms/main.c '"XMMS_Player", "xmms"' \
+	'keeps the window class the launcher entry matches'
+require_absent_file xmms/xmms.desktop \
+	'drops the legacy desktop entry'
+require_absent_file xmms/xmms.wmconfig \
+	'drops the legacy wmconfig menu entry'
+require_absent_text xmms/Makefile.am 'xmms.desktop' \
+	'does not ship the legacy desktop entry'
+require_absent_text xmms/Makefile.am 'xmms.wmconfig' \
+	'does not ship the legacy wmconfig menu entry'
 require_text tools/build-deb.sh 'dpkg-buildpackage --build=binary --no-sign' \
 	'builds unsigned binary Debian packages'
 require_text tools/build-deb.sh "grep 'undefined symbol: .*_ZGV'" \
@@ -227,6 +248,40 @@ require_absent_text Makefile.am 'xmms.spec' \
 	'does not ship legacy RPM package metadata'
 require_absent_text Makefile.am 'packaging/rpm' \
 	'does not ship modern RPM package recipes'
+
+# Application icon set. packaging/icons and the XPM renditions are generated
+# from xmms/app-icon.png by tools/generate-app-icon.py.
+require_file tools/generate-app-icon.py
+require_file xmms/app-icon.png
+require_text Makefile.am 'tools/generate-app-icon.py' \
+	'distributes the application icon generator'
+require_text Makefile.in 'tools/generate-app-icon.py' \
+	'ships the generated distribution rule for the icon generator'
+require_text xmms/Makefile.am 'app-icon.png' \
+	'distributes the master application artwork'
+require_text xmms/Makefile.in 'app-icon.png' \
+	'ships the generated distribution rule for the master artwork'
+require_text packaging/debian/xmms.install 'usr/share/icons/hicolor/' \
+	'packages the themed launcher icons'
+require_text packaging/debian/rules 'packaging/icons/hicolor' \
+	'installs the themed launcher icons'
+for size in 16 22 24 32 36 48 64 72 96 128 192 256 512; do
+	require_file "packaging/icons/hicolor/${size}x${size}/apps/xmms.png"
+done
+require_text Makefile.am 'packaging/icons/hicolor/512x512/apps/xmms.png' \
+	'distributes the themed launcher icons'
+require_text Makefile.in 'packaging/icons/hicolor/512x512/apps/xmms.png' \
+	'ships the generated distribution rule for the launcher icons'
+require_text Makefile.am 'tests/test-app-icon.c' \
+	'distributes the application icon regression test'
+require_text Makefile.in 'tests/test-app-icon.c' \
+	'ships the generated distribution rule for the icon regression test'
+require_text tests/Makefile 'test-app-icon:' \
+	'runs the application icon e2e test from make check'
+require_text Visualization/sanalyzer/xmms_logo.xpm '"250 100 ' \
+	'sizes the spectrum analyzer background to its window'
+require_text Visualization/blur_scope/xmms_logo.xpm '"256 128 ' \
+	'sizes the Blur Scope background to its window'
 
 if test "$failures" -ne 0; then
 	echo "$failures package recipe checks failed" >&2

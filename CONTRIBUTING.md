@@ -118,6 +118,9 @@ local and interactive; CI does not receive model credentials.
 - Add user-visible changes to the `Unreleased` section of
   [`CHANGELOG.md`](CHANGELOG.md).
 - Update documentation in the same pull request as the behavior it describes.
+- After editing the application artwork in `xmms/app-icon.png`, run
+  `tools/generate-app-icon.py` (requires Pillow) and commit the regenerated
+  icons together with it.
 - Use focused commit messages such as `fix: restore playback after ALSA seek`.
 
 ## Autotools files
