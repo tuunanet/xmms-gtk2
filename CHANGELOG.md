@@ -15,6 +15,8 @@ for XMMS GTK2.
 
 ## [Unreleased]
 
+## [1.2.15] - 2026-11-28
+
 ### Added
 - N x integer skin scaling: the skinned UI now supports 1x, 2x, and 3x
   (main/equalizer at 825x348 in triple size). The scale selector is the
