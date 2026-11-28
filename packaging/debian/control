@@ -12,6 +12,7 @@ Build-Depends:
  libmikmod-dev,
  libsm-dev,
  libvorbis-dev,
+ libxtst-dev,
  libxxf86vm-dev,
  pkg-config,
  xvfb,
